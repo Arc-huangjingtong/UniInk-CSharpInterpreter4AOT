@@ -47,6 +47,12 @@
         <Compile Include="Tests.cs"/>
         <Compile Include="Properties\AssemblyInfo.cs"/>
     </ItemGroup>
+    <ItemGroup>
+      <ProjectReference Include="..\Arc.UniInk\Arc.UniInk\Arc.UniInk.csproj">
+        <Project>{f969106d-bd96-4e8f-a217-4b90d2975179}</Project>
+        <Name>Arc.UniInk</Name>
+      </ProjectReference>
+    </ItemGroup>
     <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets"/>
     <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
          Other similar extension points exist, see Microsoft.Common.targets.

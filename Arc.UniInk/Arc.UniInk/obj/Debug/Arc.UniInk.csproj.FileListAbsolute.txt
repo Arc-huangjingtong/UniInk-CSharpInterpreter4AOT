@@ -1,0 +1,6 @@
+D:\Project\UniInk\Arc.UniInk\Arc.UniInk\bin\Debug\Arc.UniInk.dll
+D:\Project\UniInk\Arc.UniInk\Arc.UniInk\bin\Debug\Arc.UniInk.pdb
+D:\Project\UniInk\Arc.UniInk\Arc.UniInk\obj\Debug\Arc.UniInk.csproj.AssemblyReference.cache
+D:\Project\UniInk\Arc.UniInk\Arc.UniInk\obj\Debug\Arc.UniInk.csproj.CoreCompileInputs.cache
+D:\Project\UniInk\Arc.UniInk\Arc.UniInk\obj\Debug\Arc.UniInk.dll
+D:\Project\UniInk\Arc.UniInk\Arc.UniInk\obj\Debug\Arc.UniInk.pdb
