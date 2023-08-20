@@ -1,0 +1,9 @@
+D:\Project\UniInk\Arc.UniInk.Test\bin\Debug\Arc.UniInk.Test.dll
+D:\Project\UniInk\Arc.UniInk.Test\bin\Debug\Arc.UniInk.Test.pdb
+D:\Project\UniInk\Arc.UniInk.Test\bin\Debug\nunit.framework.dll
+D:\Project\UniInk\Arc.UniInk.Test\bin\Debug\nunit.framework.xml
+D:\Project\UniInk\Arc.UniInk.Test\obj\Debug\Arc.UniInk.Test.csproj.AssemblyReference.cache
+D:\Project\UniInk\Arc.UniInk.Test\obj\Debug\Arc.UniInk.Test.csproj.CoreCompileInputs.cache
+D:\Project\UniInk\Arc.UniInk.Test\obj\Debug\Arc.UniInk.Test.csproj.CopyComplete
+D:\Project\UniInk\Arc.UniInk.Test\obj\Debug\Arc.UniInk.Test.dll
+D:\Project\UniInk\Arc.UniInk.Test\obj\Debug\Arc.UniInk.Test.pdb

@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Arc.UniInk", "Arc.UniInk\Arc.UniInk.csproj", "{F969106D-BD96-4E8F-A217-4B90D2975179}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Arc.UniInk.Test", "..\Arc.UniInk.Test\Arc.UniInk.Test.csproj", "{D4E69C6F-59C7-4687-B3E4-646E26C9A7FE}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F969106D-BD96-4E8F-A217-4B90D2975179}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F969106D-BD96-4E8F-A217-4B90D2975179}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F969106D-BD96-4E8F-A217-4B90D2975179}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F969106D-BD96-4E8F-A217-4B90D2975179}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D4E69C6F-59C7-4687-B3E4-646E26C9A7FE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D4E69C6F-59C7-4687-B3E4-646E26C9A7FE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D4E69C6F-59C7-4687-B3E4-646E26C9A7FE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D4E69C6F-59C7-4687-B3E4-646E26C9A7FE}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
