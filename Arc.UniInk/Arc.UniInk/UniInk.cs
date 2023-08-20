@@ -2355,7 +2355,7 @@ namespace Arc.UniInk
                 if (OptionEInlineNamespacesRule != EInlineNamespacesRule.BlockAll)
                 {
                     var subIndex = 0;
-                    var namespaceMatch = varOrFunctionRegEx.Match(expression.Substring(i + subIndex));
+                    var namespaceMatch = varOrFunctionRegEx.Match(expression.Substring(i));
 
                     while (staticType == null && namespaceMatch.Success && !namespaceMatch.Groups["sign"].Success && !namespaceMatch.Groups["assignationOperator"].Success && !namespaceMatch.Groups["postfixOperator"].Success && !namespaceMatch.Groups["isfunction"].Success && i + subIndex < expression.Length && !typeName.EndsWith("?"))
                     {
@@ -2384,7 +2384,7 @@ namespace Arc.UniInk
                 else
                 {
                     var subIndex = 0;
-                    var typeMatch = varOrFunctionRegEx.Match(expression.Substring(i + subIndex));
+                    var typeMatch = varOrFunctionRegEx.Match(expression.Substring(i));
 
                     if (staticType == null && typeMatch.Success && !typeMatch.Groups["sign"].Success && !typeMatch.Groups["assignationOperator"].Success && !typeMatch.Groups["postfixOperator"].Success && !typeMatch.Groups["isfunction"].Success && !typeMatch.Groups["inObject"].Success && i + subIndex < expression.Length && !typeName.EndsWith("?"))
                     {
