@@ -44,10 +44,7 @@ namespace Arc.UniInk
         ///sign: 匹配数字字面量前面的符号，可以是加号或减号。
         ///hasDecimal: 匹配数字字面量是否包含小数点。
         ///type: 匹配数字字面量的类型后缀，可以是u、l、d、f、m等。
-        private const string numberRegexOrigPattern = @"^(?<sign>[+-])?([0-9][0-9_{1}]*[0-9]|\d)(?<hasdecimal>{0}?([0-9][0-9_]*[0-9]|\d)(e[+-]?([0-9][0-9_]*[0-9]|\d))?)?(?<type>ul|[fdulm])?";
-
-        ///匹配C#代码中的数字
-        private string numberRegexPattern;
+        private const string numberRegexPattern = @"^(?<sign>[+-])?([0-9][0-9_{1}]*[0-9]|\d)(?<hasdecimal>\.?([0-9][0-9_]*[0-9]|\d)(e[+-]?([0-9][0-9_]*[0-9]|\d))?)?(?<type>ul|[fdulm])?";
 
         //匹配C#代码中的二进制和十六进制数字字面量
         ///sign : 匹配数字字面量前面的符号，可以是加号或减号。
@@ -66,9 +63,6 @@ namespace Arc.UniInk
 
         //匹配 数组或者二位数组
         private static readonly Regex arrayTypeDetectionRegex = new(@"^(\s*(\[(?>(?>\s+)|[,])*)\])+", RegexOptions.Compiled);
-
-        //匹配 赋值运算符或后缀运算符。
-        private static readonly Regex assignationOrPostFixOperatorRegex = new(@"^(?>\s*)((?<assignmentPrefix>[+\-*/%&|^]|<<|>>|\?\?)?=(?![=>])|(?<postfixOperator>([+][+]|--)(?![\p{L}_0-9])))");
 
         //匹配 泛型
         private static readonly Regex genericsDecodeRegex = new("(?<name>[^,<>]+)(?<isgeneric>[<](?>[^<>]+|(?<gentag>[<])|(?<-gentag>[>]))*(?(gentag)(?!))[>])?", RegexOptions.Compiled);
@@ -564,83 +558,6 @@ namespace Arc.UniInk
         /// <summary>是否区分大小写:导致的字符串比较器规则</summary>
         private StringComparer StringComparerForCasing => OptionCaseSensitiveEvaluationActive ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase;
 
-        /// <summary>
-        /// 真: 所有不带小数和精度后缀的数都被视为double类型 <para/>
-        /// 假: 所有不带小数和精度后缀的数都被视为int类型 (警告:部分操作会导致四舍五入<para/>
-        /// 默认:假
-        /// </summary>
-        public bool OptionForceIntegerNumbersEvaluationsAsDoubleByDefault { get; set; }
-
-
-        /// <summary>
-        /// 用来求值的数字的文化信息.<para/>
-        /// 与OptionNumberParsingDecimalSeparator和OptionNumberParsingThousandSeparator同步。<para/>
-        /// 所以总是设置一个完整的CultureInfo对象，不要直接改变CultureInfoForNumberParsing.NumberFormat.NumberDecimalSeparator和CultureInfoForNumberParsing.NumberFormat.NumberGroupSeparator属性。<para/>
-        /// 警告，如果在分隔符中使用逗号，也要更改OptionFunctionArgumentsSeparator和OptionInitializersSeparator，否则会产生冲突
-        /// </summary>
-        public CultureInfo CultureInfoForNumberParsing
-        {
-            get => cultureInfoForNumberParsing;
-
-            set
-            {
-                cultureInfoForNumberParsing = value;
-
-                OptionNumberParsingDecimalSeparator = cultureInfoForNumberParsing.NumberFormat.NumberDecimalSeparator;
-                OptionNumberParsingThousandSeparator = cultureInfoForNumberParsing.NumberFormat.NumberGroupSeparator;
-            }
-        }
-
-        private CultureInfo cultureInfoForNumberParsing = CultureInfo.InvariantCulture.Clone() as CultureInfo;
-
-        private string optionNumberParsingDecimalSeparator = ".";
-
-        /// <summary>
-        /// 设置解释器数字的小数分隔符(默认: ".")<para/>
-        /// 警告：如果同时使用逗号更改OptionFunctionArgumentsSeparator和OptionInitializersSeparator，则会产生冲突。<para/>
-        /// 修改CultureInfoForNumberParsing
-        /// </summary>
-        public string OptionNumberParsingDecimalSeparator
-        {
-            get => optionNumberParsingDecimalSeparator;
-            set
-            {
-                optionNumberParsingDecimalSeparator = value ?? ".";
-                CultureInfoForNumberParsing.NumberFormat.NumberDecimalSeparator = optionNumberParsingDecimalSeparator;
-
-                numberRegexPattern = string.Format(numberRegexOrigPattern, optionNumberParsingDecimalSeparator != null ? Regex.Escape(optionNumberParsingDecimalSeparator) : ".", optionNumberParsingThousandSeparator != null ? Regex.Escape(optionNumberParsingThousandSeparator) : "");
-            }
-        }
-
-        private string optionNumberParsingThousandSeparator = string.Empty;
-
-        /// <summary>
-        /// 允许在解析表达式时更改数字的千位分隔符<para/>
-        /// 默认为 string.Empty<para/>
-        /// 警告，如果使用逗号，也改变OptionFunctionArgumentsSeparator和OptionInitializersSeparator，否则会产生冲突。<para/>
-        /// 修改 CultureInfoForNumberParsing。
-        /// </summary>
-        public string OptionNumberParsingThousandSeparator
-        {
-            get => optionNumberParsingThousandSeparator;
-
-            set
-            {
-                optionNumberParsingThousandSeparator = value ?? string.Empty;
-                CultureInfoForNumberParsing.NumberFormat.NumberGroupSeparator = value ?? string.Empty;
-
-                numberRegexPattern = string.Format(numberRegexOrigPattern, optionNumberParsingDecimalSeparator != null ? Regex.Escape(optionNumberParsingDecimalSeparator) : ".", optionNumberParsingThousandSeparator != null ? Regex.Escape(optionNumberParsingThousandSeparator) : "");
-            }
-        }
-
-        /// <summary>设置函数参数的分隔符 (默认: “,”)</summary>
-        /// <remarks>警告:设置为空格会产生冲突</remarks>
-        public string OptionFunctionArgumentsSeparator { get; set; } = ",";
-
-        /// <summary>设置关键字new之后的“{”和“}”之间的对象和集合初始化的分隔符 (默认: “,”)</summary>
-        /// <remarks>警告:OptionNumberParsingDecimalSeparator设置为逗号","会和此产生冲突</remarks>
-        public string OptionInitializersSeparator { get; set; } = ",";
-
 
         /// <summary>允许使用内存中的任何内联命名空间 见: <see cref="EInlineNamespacesRule"/></summary>
         public EInlineNamespacesRule OptionEInlineNamespacesRule { get; set; } = EInlineNamespacesRule.AllowAll;
@@ -733,18 +650,7 @@ namespace Arc.UniInk
         /// F:则禁用此功能<para/>
         /// </summary>
         public bool OptionPropertyOrFieldSetActive { get; set; } = true;
-
-        /// <summary>
-        /// T:(默认)则允许对类似于集合、列表、数组和字典的索引元素进行赋值（使用=、+=、-=、*=、/=、%=、&=、|=、^=、<<=、>>=、++或--）<para/>
-        /// F:则禁用此功能<para/>
-        /// </summary>
-        public bool OptionIndexingAssignationActive { get; set; } = true;
-
-
-        /// <summary>
-        /// 设置在脚本中找不到关键字return时如何反应。默认为ReturnLastResult
-        /// </summary>
-        public EOnNoReturnKeywordMode NoReturnKeywordMode { get; set; }
+        
 
         /// <summary>
         /// T:(默认)则在每个表达式之后，ScriptEvaluate需要有一个分号[;]<para/>
@@ -850,11 +756,7 @@ namespace Arc.UniInk
         #region 构造函数和可重写的init方法
 
         /// <summary>默认构造器</summary>
-        public UniInk()
-        {
-            DefaultDecimalSeparatorInit();
-            Init();
-        }
+        public UniInk() { }
 
         /// <summary>带有初始化变量的构造函数</summary>
         /// <param name="variables">解释器中可以使用的变量</param>
@@ -892,16 +794,6 @@ namespace Arc.UniInk
             Context = context;
             Variables = variables;
         }
-
-        private void DefaultDecimalSeparatorInit() //默认十进制，分隔符初始化为"."
-        {
-            numberRegexPattern = string.Format(numberRegexOrigPattern, @"\.", string.Empty);
-
-            CultureInfoForNumberParsing.NumberFormat.NumberDecimalSeparator = ".";
-        }
-
-        /// <summary>所有构造函数的初始化方法</summary>
-        protected virtual void Init() { }
 
         #endregion
 
@@ -1153,7 +1045,8 @@ namespace Arc.UniInk
                             {
                                 throw new SyntaxErrorException("wrong foreach syntax");
                             }
-                            else if (!foreachParenthisEvaluationMatch.Groups["in"].Value.Equals("in", StringComparisonForCasing))
+
+                            if (!foreachParenthisEvaluationMatch.Groups["in"].Value.Equals("in", StringComparisonForCasing))
                             {
                                 throw new SyntaxErrorException("no [in] keyword found in foreach");
                             }
@@ -1222,11 +1115,7 @@ namespace Arc.UniInk
             breakCalled = isBreak;
             continueCalled = isContinue;
 
-            if (isReturn || NoReturnKeywordMode == EOnNoReturnKeywordMode.ReturnLastResult)
-                return lastResult;
-            if (NoReturnKeywordMode == EOnNoReturnKeywordMode.ReturnNull)
-                return null;
-            throw new SyntaxErrorException("没有找到 [return] 关键字");
+            return lastResult;
 
             void ExecuteBlocksStacks()
             {
@@ -1261,7 +1150,7 @@ namespace Arc.UniInk
 
                                 if (exceptionVariable.Length >= 2)
                                 {
-                                    if (!((ClassOrEnumType)Evaluate(exceptionVariable[0])).Type.IsAssignableFrom(exception.GetType()))
+                                    if (!((ClassOrEnumType)Evaluate(exceptionVariable[0])).Type.IsInstanceOfType(exception))
                                         continue;
 
                                     exceptionName = exceptionVariable[1];
@@ -1565,16 +1454,16 @@ namespace Arc.UniInk
 
                     if (numberSuffixToParse.TryGetValue(type, out var parseFunc))
                     {
-                        stack.Push(parseFunc(numberNoType, CultureInfoForNumberParsing));
+                        stack.Push(parseFunc(numberNoType, CultureInfo.InvariantCulture));
                     }
                 }
-                else if (OptionForceIntegerNumbersEvaluationsAsDoubleByDefault || numberMatch.Groups["hasdecimal"].Success)
+                else if (numberMatch.Groups["hasdecimal"].Success)
                 {
-                    stack.Push(double.Parse(numberMatch.Value.Replace("_", ""), NumberStyles.Any, CultureInfoForNumberParsing));
+                    stack.Push(double.Parse(numberMatch.Value.Replace("_", ""), NumberStyles.Any, CultureInfo.InvariantCulture));
                 }
                 else
                 {
-                    stack.Push(int.Parse(numberMatch.Value.Replace("_", ""), NumberStyles.Any, CultureInfoForNumberParsing));
+                    stack.Push(int.Parse(numberMatch.Value.Replace("_", ""), NumberStyles.Any, CultureInfo.InvariantCulture));
                 }
 
                 return true;
@@ -1622,7 +1511,7 @@ namespace Arc.UniInk
                 {
                     object element = null;
 
-                    var initArgs = GetExpressionsParenthesized(expression, ref i, true, OptionInitializersSeparator, "{", "}");
+                    var initArgs = GetExpressionsParenthesized(expression, ref i, true, startChar: "{", endChar: "}");
 
                     InitSimpleObjet(element, initArgs);
 
@@ -1653,7 +1542,7 @@ namespace Arc.UniInk
                             {
                                 var subIndex = subExpr.IndexOf("{", StringComparison.Ordinal) + 1;
 
-                                var subArgs = GetExpressionsParenthesized(subExpr, ref subIndex, true, OptionInitializersSeparator, "{", "}");
+                                var subArgs = GetExpressionsParenthesized(subExpr, ref subIndex, true, startChar: "{", endChar: "}");
 
                                 if (subArgs.Count == 2)
                                 {
@@ -1675,7 +1564,7 @@ namespace Arc.UniInk
 
                     if (instanceCreationMatch.Groups["isfunction"].Success)
                     {
-                        var constructorArgs = GetExpressionsParenthesized(expression, ref i, true, OptionFunctionArgumentsSeparator);
+                        var constructorArgs = GetExpressionsParenthesized(expression, ref i, true);
                         i++;
 
                         var cArgs = constructorArgs.ConvertAll(Evaluate);
@@ -1688,7 +1577,7 @@ namespace Arc.UniInk
                         {
                             i += blockBeginningMatch.Length;
 
-                            var initArgs = GetExpressionsParenthesized(expression, ref i, true, OptionInitializersSeparator, "{", "}");
+                            var initArgs = GetExpressionsParenthesized(expression, ref i, true, startChar: "{", endChar: "}");
 
                             Init(element, initArgs);
                         }
@@ -1703,7 +1592,7 @@ namespace Arc.UniInk
                     {
                         var element = Activator.CreateInstance(type, new object[0]);
 
-                        var initArgs = GetExpressionsParenthesized(expression, ref i, true, OptionInitializersSeparator, "{", "}");
+                        var initArgs = GetExpressionsParenthesized(expression, ref i, true, startChar: "{", endChar: "}");
 
                         Init(element, initArgs);
 
@@ -1711,7 +1600,7 @@ namespace Arc.UniInk
                     }
                     else if (instanceCreationMatch.Groups["isArray"].Success)
                     {
-                        var arrayArgs = GetExpressionsParenthesized(expression, ref i, true, OptionInitializersSeparator, "[", "]");
+                        var arrayArgs = GetExpressionsParenthesized(expression, ref i, true, startChar: "[", endChar: "]");
                         i++;
                         Array array = null;
 
@@ -1726,7 +1615,7 @@ namespace Arc.UniInk
                         {
                             i += initInNewBeginningMatch.Length;
 
-                            var arrayElements = GetExpressionsParenthesized(expression, ref i, true, OptionInitializersSeparator, "{", "}");
+                            var arrayElements = GetExpressionsParenthesized(expression, ref i, true, startChar: "{", endChar: "}");
 
                             if (array == null)
                                 array = Array.CreateInstance(type, arrayElements.Count);
@@ -1774,7 +1663,7 @@ namespace Arc.UniInk
                 if (varFuncMatch.Groups["isfunction"].Success)
                 {
                     //找到括号包裹的部分(参数)
-                    var funcArgs = GetExpressionsParenthesized(expression, ref i, true, OptionFunctionArgumentsSeparator);
+                    var funcArgs = GetExpressionsParenthesized(expression, ref i, true);
 
                     //如果是对象的方法,或者是this的方法
                     if (inObject || (Context?.GetType().GetMethods(InstanceBindingFlag).Any(methodInfo => methodInfo.Name.Equals(varFuncName, StringComparisonForCasing)) ?? false))
@@ -2912,7 +2801,7 @@ namespace Arc.UniInk
                 for (var i = list.Count - 1; i >= 0; i--)
                 {
                     // 如果当前的操作符不是当前的操作符,则跳过
-                    if (list[i] as ExpressionOperator != _operatorMsg.Key) continue;
+                    if (!(list[i] as ExpressionOperator).Equals(_operatorMsg.Key)) continue;
 
                     // 如果当前的操作符 同时也是 是右操作符,则
                     if (UnaryPostfixOperators.Contains(_operatorMsg.Key))
@@ -4246,20 +4135,7 @@ namespace Arc.UniInk
     #endregion
 
     #region Enums
-
-    /// <summary>用于定义当<see cref="UniInk.ScriptEvaluate"/>没有找到<c>return</c>关键字时的行为</summary>
-    /// <remarks>用于<see cref="UniInk.NoReturnKeywordMode"/></remarks>
-    public enum EOnNoReturnKeywordMode
-    {
-        /// <summary>自动返回最后一个计算的表达式</summary>
-        ReturnLastResult,
-
-        /// <summary>返回<c>null</c></summary>
-        ReturnNull,
-
-        /// <summary>抛出SyntaxException异常</summary>
-        ThrowSyntaxException
-    }
+    
 
     /// <summary>内联命名空间的解释规则</summary>
     /// <remarks>用于<see cref="UniInk.OptionEInlineNamespacesRule"/></remarks>
