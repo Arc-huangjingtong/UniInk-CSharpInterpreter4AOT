@@ -558,11 +558,8 @@ namespace Arc.UniInk
         /// <summary>是否区分大小写:导致的字符串比较器规则</summary>
         private StringComparer StringComparerForCasing => OptionCaseSensitiveEvaluationActive ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase;
 
-
-        /// <summary>允许使用内存中的任何内联命名空间 见: <see cref="EInlineNamespacesRule"/></summary>
-        public EInlineNamespacesRule OptionEInlineNamespacesRule { get; set; } = EInlineNamespacesRule.AllowAll;
-
-        /// <summary>此列表用于允许或阻止取决于<see cref="OptionEInlineNamespacesRule"/>内联写入的命名空间列表。<para/>
+        
+        /// <summary>此列表用于允许内联写入的命名空间列表。<para/>
         /// 类型依赖的直接访问 <see cref="Namespaces"/> 不受此列表的影响。
         /// </summary>
         public List<string> InlineNamespacesList { get; set; } = new();
@@ -650,7 +647,7 @@ namespace Arc.UniInk
         /// F:则禁用此功能<para/>
         /// </summary>
         public bool OptionPropertyOrFieldSetActive { get; set; } = true;
-        
+
 
         /// <summary>
         /// T:(默认)则在每个表达式之后，ScriptEvaluate需要有一个分号[;]<para/>
@@ -2222,52 +2219,31 @@ namespace Arc.UniInk
             // For inline namespace parsing
             if (staticType == null)
             {
-                if (OptionEInlineNamespacesRule != EInlineNamespacesRule.BlockAll)
+                var subIndex = 0;
+                var namespaceMatch = varOrFunctionRegEx.Match(expression.Substring(i));
+
+                while (staticType == null && namespaceMatch.Success && !namespaceMatch.Groups["sign"].Success && !namespaceMatch.Groups["assignationOperator"].Success && !namespaceMatch.Groups["postfixOperator"].Success && !namespaceMatch.Groups["isfunction"].Success && i + subIndex < expression.Length && !typeName.EndsWith("?"))
                 {
-                    var subIndex = 0;
-                    var namespaceMatch = varOrFunctionRegEx.Match(expression.Substring(i));
+                    subIndex += namespaceMatch.Length;
+                    typeName += $"{namespaceMatch.Groups["inObject"].Value}{namespaceMatch.Groups["name"].Value}{((i + subIndex < expression.Length && expression.Substring(i + subIndex)[0] == '?') ? "?" : "")}";
 
-                    while (staticType == null && namespaceMatch.Success && !namespaceMatch.Groups["sign"].Success && !namespaceMatch.Groups["assignationOperator"].Success && !namespaceMatch.Groups["postfixOperator"].Success && !namespaceMatch.Groups["isfunction"].Success && i + subIndex < expression.Length && !typeName.EndsWith("?"))
+                    staticType = GetTypeByFriendlyName(typeName, namespaceMatch.Groups["isgeneric"].Value);
+
+                    if (staticType != null)
                     {
-                        subIndex += namespaceMatch.Length;
-                        typeName += $"{namespaceMatch.Groups["inObject"].Value}{namespaceMatch.Groups["name"].Value}{((i + subIndex < expression.Length && expression.Substring(i + subIndex)[0] == '?') ? "?" : "")}";
-
-                        staticType = GetTypeByFriendlyName(typeName, namespaceMatch.Groups["isgeneric"].Value);
-
-                        if (staticType != null)
+                        if (!InlineNamespacesList.Contains(staticType.Namespace))
                         {
-                            if (OptionEInlineNamespacesRule == EInlineNamespacesRule.AllowOnlyInlineNamespacesList && !InlineNamespacesList.Contains(staticType.Namespace))
-                            {
-                                staticType = null;
-                            }
-                            else
-                            {
-                                i += subIndex;
-                            }
-
-                            break;
+                            staticType = null;
                         }
-
-                        namespaceMatch = varOrFunctionRegEx.Match(expression.Substring(i + subIndex));
-                    }
-                }
-                else
-                {
-                    var subIndex = 0;
-                    var typeMatch = varOrFunctionRegEx.Match(expression.Substring(i));
-
-                    if (staticType == null && typeMatch.Success && !typeMatch.Groups["sign"].Success && !typeMatch.Groups["assignationOperator"].Success && !typeMatch.Groups["postfixOperator"].Success && !typeMatch.Groups["isfunction"].Success && !typeMatch.Groups["inObject"].Success && i + subIndex < expression.Length && !typeName.EndsWith("?"))
-                    {
-                        subIndex += typeMatch.Length;
-                        typeName += $"{typeMatch.Groups["name"].Value}{((i + subIndex < expression.Length && expression.Substring(i + subIndex)[0] == '?') ? "?" : "")}";
-
-                        staticType = GetTypeByFriendlyName(typeName, typeMatch.Groups["isgeneric"].Value);
-
-                        if (staticType != null)
+                        else
                         {
                             i += subIndex;
                         }
+
+                        break;
                     }
+
+                    namespaceMatch = varOrFunctionRegEx.Match(expression.Substring(i + subIndex));
                 }
             }
 
@@ -4133,26 +4109,7 @@ namespace Arc.UniInk
     }
 
     #endregion
-
-    #region Enums
     
-
-    /// <summary>内联命名空间的解释规则</summary>
-    /// <remarks>用于<see cref="UniInk.OptionEInlineNamespacesRule"/></remarks>
-    public enum EInlineNamespacesRule
-    {
-        /// <summary>允许使用内存中的任何内联命名空间</summary>
-        AllowAll,
-
-        /// <summary>只允许使用在<see cref="UniInk.InlineNamespacesList"/>中定义的内联命名空间</summary>
-        AllowOnlyInlineNamespacesList,
-
-        /// <summary>禁止使用任何内联命名空间</summary>
-        BlockAll
-    }
-
-    #endregion
-
     #region Exceptions
 
     /// <summary>用于封装在表达式子部分中发生的异常，以便在表达式求值需要继续执行时，将异常传递到更高层次的调用栈中。</summary>
