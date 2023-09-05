@@ -44,10 +44,10 @@ namespace Arc.UniInk
         ///sign: 匹配数字字面量前面的符号，可以是加号或减号。
         ///hasDecimal: 匹配数字字面量是否包含小数点。
         ///type: 匹配数字字面量的类型后缀，可以是u、l、d、f、m等。
-        private const string numberRegexOrigPattern = @"^(?<sign>[+-])?([0-9][0-9_{1}]*[0-9]|\d)(?<hasdecimal>{0}?([0-9][0-9_]*[0-9]|\d)(e[+-]?([0-9][0-9_]*[0-9]|\d))?)?(?<type>ul|[fdulm])?";
+        private const string numberRegexPattern = @"^(?<sign>[+-])?([0-9][0-9_{1}]*[0-9]|\d)(?<hasdecimal>\.?([0-9][0-9_]*[0-9]|\d)(e[+-]?([0-9][0-9_]*[0-9]|\d))?)?(?<type>ul|[fdulm])?";
 
         ///匹配C#代码中的数字
-        private string numberRegexPattern;
+        //private string numberRegexPattern;
 
         //匹配C#代码中的二进制和十六进制数字字面量
         ///sign : 匹配数字字面量前面的符号，可以是加号或减号。
@@ -92,7 +92,7 @@ namespace Arc.UniInk
 
         protected static readonly Regex instanceCreationWithNewKeywordRegex = new(@"^new(?=\w)\s*((?<isAnonymous>[{])|((?<name>[\p{L}_][\p{L}_0-9]*)(?>\s*)(?<isgeneric>[<](?>[^<>]+|(?<gentag>[<])|(?<-gentag>[>]))*(?(gentag)(?!))[>])?(?>\s*)((?<isfunction>[(])|(?<isArray>\[)|(?<isInit>[{{]))?))", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
-        protected string CastRegexPattern = @"^\((?>\s*)(?<typeName>[\p{L}_][\p{L}_0-9\.\[\]<>]*[?]?)(?>\s*)\)";
+        protected const string CastRegexPattern = @"^\((?>\s*)(?<typeName>[\p{L}_][\p{L}_0-9\.\[\]<>]*[?]?)(?>\s*)\)";
 
 
         // 仅限于脚本模式下
@@ -118,9 +118,9 @@ namespace Arc.UniInk
 
         #region Enums
 
-        protected enum IfBlockEvaluatedState { NoBlockEvaluated, If, ElseIf }
+        protected enum EBlockState_If { NoBlock, If, ElseIf }
 
-        protected enum TryBlockEvaluatedState { NoBlockEvaluated, Try, Catch }
+        protected enum EBlockState_Try { NoBlock, Try, Catch }
 
         #endregion
 
@@ -463,18 +463,6 @@ namespace Arc.UniInk
         /// <summary> 用于类型解析的共享缓存 </summary>
         public static readonly Dictionary<string, Type> CachedTypesDic = new();
 
-        /// <summary> 清除所有ExpressionEvaluator缓存 </summary>
-        public static void ClearAllCaches() => CachedTypesDic.Clear();
-
-
-        protected ExpressionEvaluationEventArg _evaluationEventArg;
-        protected VariableEvaluationEventArg _variableEvaluationEventArg;
-        protected FunctionEvaluationEventArg _functionEvaluationEventArg;
-        protected IndexingPreEvaluationEventArg _indexingPreEvaluationEventArg;
-        protected ParameterCastEvaluationEventArg _parameterCastEvaluationEventArg;
-        protected VariablePreEvaluationEventArg _variablePreEvaluationEventArg;
-        protected FunctionPreEvaluationEventArg _functionPreEvaluationEventArg;
-
         #endregion
 
         #region 程序集, 命名空间, 类型列表
@@ -543,15 +531,6 @@ namespace Arc.UniInk
         }
 
 
-        /// <summary>
-        /// 设置变量时,是否自己控制比较器<para/>
-        /// 真: 变量字典将保留为给定状态，因此变量在求值器外保持不变，并且键的比较器可以由用户定义<para/>
-        /// 假: 变量字典的引用在内部被复制，以遵循OptionCaseSensitiveEvaluationActive，并使用内部受保护的比较器进行键的比较<para/>
-        /// 默认为false
-        /// </summary>
-        public bool OptionVariablesPersistenceCustomComparer { get; set; }
-
-
         /// <summary>是否区分大小写</summary>
         private bool optionCaseSensitiveEvaluationActive = true;
 
@@ -607,8 +586,6 @@ namespace Arc.UniInk
             {
                 optionNumberParsingDecimalSeparator = value ?? ".";
                 CultureInfoForNumberParsing.NumberFormat.NumberDecimalSeparator = optionNumberParsingDecimalSeparator;
-
-                numberRegexPattern = string.Format(numberRegexOrigPattern, optionNumberParsingDecimalSeparator != null ? Regex.Escape(optionNumberParsingDecimalSeparator) : ".", optionNumberParsingThousandSeparator != null ? Regex.Escape(optionNumberParsingThousandSeparator) : "");
             }
         }
 
@@ -628,8 +605,6 @@ namespace Arc.UniInk
             {
                 optionNumberParsingThousandSeparator = value ?? string.Empty;
                 CultureInfoForNumberParsing.NumberFormat.NumberGroupSeparator = value ?? string.Empty;
-
-                numberRegexPattern = string.Format(numberRegexOrigPattern, optionNumberParsingDecimalSeparator != null ? Regex.Escape(optionNumberParsingDecimalSeparator) : ".", optionNumberParsingThousandSeparator != null ? Regex.Escape(optionNumberParsingThousandSeparator) : "");
             }
         }
 
@@ -642,109 +617,8 @@ namespace Arc.UniInk
         public string OptionInitializersSeparator { get; set; } = ",";
 
 
-        /// <summary>允许使用内存中的任何内联命名空间 见: <see cref="EInlineNamespacesRule"/></summary>
-        public EInlineNamespacesRule OptionEInlineNamespacesRule { get; set; } = EInlineNamespacesRule.AllowAll;
-
-        /// <summary>此列表用于允许或阻止取决于<see cref="OptionEInlineNamespacesRule"/>内联写入的命名空间列表。<para/>
-        /// 类型依赖的直接访问 <see cref="Namespaces"/> 不受此列表的影响。
-        /// </summary>
-        public List<string> InlineNamespacesList { get; set; } = new();
-
         private Func<UniInk, List<string>, object> newMethodMem;
 
-        /// <summary>
-        /// T:(默认)允许使用默认函数new(ClassNam，…)创建对象实例。
-        /// F:禁用此功能。
-        /// </summary>
-        public bool OptionNewFunctionEvaluationActive
-        {
-            get => complexStandardFuncDictionary.ContainsKey("new");
-            set
-            {
-                if (value && !complexStandardFuncDictionary.ContainsKey("new"))
-                {
-                    complexStandardFuncDictionary["new"] = newMethodMem;
-                }
-                else if (!value && complexStandardFuncDictionary.ContainsKey("new"))
-                {
-                    newMethodMem = complexStandardFuncDictionary["new"];
-                    complexStandardFuncDictionary.Remove("new");
-                }
-            }
-        }
-
-        /// <summary>
-        /// T:(默认)允许使用 C# 语法 new ClassName(...) 创建对象实例。<para/>
-        /// F:禁用此功能。<para/>
-        /// </summary>
-        public bool OptionNewKeywordEvaluationActive { get; set; } = true;
-
-        /// <summary>
-        /// T:(默认)允许在类上调用静态方法<para/>
-        /// F:禁用此功能<para/>
-        /// </summary>
-        public bool OptionStaticMethodsCallActive { get; set; } = true;
-
-        /// <summary>
-        /// T:(默认)允许获取类的静态属性。<para/>
-        /// F:禁用此功能。<para/>
-        /// </summary>
-        public bool OptionStaticPropertiesGetActive { get; set; } = true;
-
-        /// <summary>
-        /// T:(默认)允许在对象上调用实例方法。<para/>
-        /// F:禁用此功能。<para/>
-        /// </summary>
-        public bool OptionInstanceMethodsCallActive { get; set; } = true;
-
-        /// <summary>
-        /// T:(默认)允许获取对象的实例属性<para/>
-        /// F:禁用此功能<para/>
-        /// </summary>
-        public bool OptionInstancePropertiesGetActive { get; set; } = true;
-
-        /// <summary>
-        /// T:(默认)允许通过索引或键获取对象，如<code>IndexedObject[indexOrKey]</code><para/>
-        /// F:禁用此功能<para/>
-        /// </summary>
-        public bool OptionIndexerActive { get; set; } = true;
-
-        /// <summary>
-        /// T:(默认)允许使用双引号对字符串进行解释<para/>
-        /// F:禁用此功能<para/>
-        /// </summary>
-        public bool OptionStringEvaluationActive { get; set; } = true;
-
-        /// <summary>
-        /// T:(默认)允许使用单引号对字符进行解释。<para/>
-        /// F:禁用此功能。<para/>
-        /// </summary>
-        public bool OptionCharEvaluationActive { get; set; } = true;
-
-
-        /// <summary>
-        /// T:(默认)允许将值赋给变量中的变量字典 with (=, +=, -=, *=, /=, %=, &amp;=, |=, ^=, &lt;&lt;=, &gt;&gt;=, ++ or --)<para/>
-        /// F:则禁用此功能<para/>
-        /// </summary>
-        public bool OptionVariableAssignationActive { get; set; } = true;
-
-        /// <summary>
-        /// T:(默认)允许使用 (=, +=, -=, *=, /=, %=, &amp;=, |=, ^=, &lt;&lt;=, &gt;&gt;=, ++ or --)<para/>
-        /// F:则禁用此功能<para/>
-        /// </summary>
-        public bool OptionPropertyOrFieldSetActive { get; set; } = true;
-
-        /// <summary>
-        /// T:(默认)则允许对类似于集合、列表、数组和字典的索引元素进行赋值（使用=、+=、-=、*=、/=、%=、&=、|=、^=、<<=、>>=、++或--）<para/>
-        /// F:则禁用此功能<para/>
-        /// </summary>
-        public bool OptionIndexingAssignationActive { get; set; } = true;
-
-
-        /// <summary>
-        /// 设置在脚本中找不到关键字return时如何反应。默认为ReturnLastResult
-        /// </summary>
-        public EOnNoReturnKeywordMode NoReturnKeywordMode { get; set; }
 
         /// <summary>
         /// T:(默认)则在每个表达式之后，ScriptEvaluate需要有一个分号[;]<para/>
@@ -796,14 +670,8 @@ namespace Arc.UniInk
             get => variables;
             set
             {
-                if (OptionVariablesPersistenceCustomComparer)
-                {
-                    variables = value;
-                }
-                else
-                {
-                    variables = value == null ? new Dictionary<string, object>(StringComparerForCasing) : new Dictionary<string, object>(value, StringComparerForCasing);
-                }
+                if (value == null) return;
+                variables = new Dictionary<string, object>(value, StringComparerForCasing);
             }
         }
 
@@ -850,11 +718,7 @@ namespace Arc.UniInk
         #region 构造函数和可重写的init方法
 
         /// <summary>默认构造器</summary>
-        public UniInk()
-        {
-            DefaultDecimalSeparatorInit();
-            Init();
-        }
+        public UniInk() { }
 
         /// <summary>带有初始化变量的构造函数</summary>
         /// <param name="variables">解释器中可以使用的变量</param>
@@ -863,15 +727,6 @@ namespace Arc.UniInk
         /// <summary>具有上下文初始化的构造函数</summary>
         /// <param name="context">提出它的字段、属性和方法的上下文</param>
         public UniInk(object context) : this() => Context = context;
-
-        /// <summary>带有初始化变量的构造函数</summary>
-        /// <param name="variables">解释器中可以使用的变量</param>
-        /// <param name="optionVariablesPersistenceCustomComparer">在设置<see cref="Variables"/>前设置<see cref="OptionVariablesPersistenceCustomComparer"/></param>
-        public UniInk(Dictionary<string, object> variables, bool optionVariablesPersistenceCustomComparer) : this()
-        {
-            OptionVariablesPersistenceCustomComparer = optionVariablesPersistenceCustomComparer;
-            Variables = variables;
-        }
 
         /// <summary>具有变量和上下文初始化的构造函数</summary>
         /// <param name="context">提出它的字段、属性和方法的上下文</param>
@@ -882,36 +737,13 @@ namespace Arc.UniInk
             Variables = variables;
         }
 
-        /// <summary>具有变量和上下文初始化的构造函数</summary>
-        /// <param name="context">提出它的字段、属性和方法的上下文</param>
-        /// <param name="variables">解释器中可以使用的变量</param>
-        /// <param name="optionVariablesPersistenceCustomComparer">在设置<see cref="Variables"/>前设置<see cref="OptionVariablesPersistenceCustomComparer"/></param>
-        public UniInk(object context, Dictionary<string, object> variables, bool optionVariablesPersistenceCustomComparer) : this()
-        {
-            OptionVariablesPersistenceCustomComparer = optionVariablesPersistenceCustomComparer;
-            Context = context;
-            Variables = variables;
-        }
-
-        private void DefaultDecimalSeparatorInit() //默认十进制，分隔符初始化为"."
-        {
-            numberRegexPattern = string.Format(numberRegexOrigPattern, @"\.", string.Empty);
-
-            CultureInfoForNumberParsing.NumberFormat.NumberDecimalSeparator = ".";
-        }
-
-        /// <summary>所有构造函数的初始化方法</summary>
-        protected virtual void Init() { }
-
         #endregion
 
         #region 主要的求值方法(Expressions and scripts)
 
         #region 脚本
 
-        /// <summary>
-        /// 求值脚本(用分号分隔的多个表达式)<para/> 支持一些条件、循环等c#代码流管理关键字
-        /// </summary>
+        /// <summary>解释脚本(用分号分隔的多个表达式),支持一些条件、循环等c#代码流管理关键字</summary>
         /// <typeparam name="T">要对表达式的结果进行强制转换的类型</typeparam>
         /// <param name="script">求值的脚本</param>
         /// <returns>最后一次求值表达式的结果</returns>
@@ -922,18 +754,14 @@ namespace Arc.UniInk
         /// <returns>最后一次求值表达式的结果</returns>
         public object ScriptEvaluate(string script)
         {
-            OnEvaluatScript?.Invoke(this, _evaluationEventArg.Refresh(script, this));
-
-            script = _evaluationEventArg.Expression;
-
             var isReturn = false;
             var isBreak = false;
             var isContinue = false;
 
             var result = ScriptEvaluate(script, ref isReturn, ref isBreak, ref isContinue);
 
-            if (isBreak) throw new SyntaxErrorException("无效关键字:[break]");
-            if (isContinue) throw new SyntaxErrorException("无效关键字:[continue]");
+            if (isBreak) throw new SyntaxException("无效关键字:[break]");
+            if (isContinue) throw new SyntaxException("无效关键字:[continue]");
             return result;
         }
 
@@ -944,8 +772,8 @@ namespace Arc.UniInk
             var isBreak = breakCalled;
             var isContinue = continueCalled;
             var startOfExpression = 0;
-            var ifBlockEvaluatedState = IfBlockEvaluatedState.NoBlockEvaluated;
-            var tryBlockEvaluatedState = TryBlockEvaluatedState.NoBlockEvaluated;
+            var ifBlockEvaluatedState = EBlockState_If.NoBlock;
+            var tryBlockEvaluatedState = EBlockState_Try.NoBlock;
             var ifElseStatementsList = new List<List<string>>();
             var tryStatementsList = new List<List<string>>();
 
@@ -1003,48 +831,48 @@ namespace Arc.UniInk
                             i++;
                         }
 
-                        if (string.IsNullOrWhiteSpace(subScript)) throw new SyntaxErrorException($"[{keyword}] 语句后无指令");
+                        if (string.IsNullOrWhiteSpace(subScript)) throw new SyntaxException($"[{keyword}] 语句后无指令");
                     }
 
                     if (keyword.Equals("elseif", StringComparisonForCasing))
                     {
-                        if (ifBlockEvaluatedState == IfBlockEvaluatedState.NoBlockEvaluated)
+                        if (ifBlockEvaluatedState == EBlockState_If.NoBlock)
                         {
-                            throw new SyntaxErrorException("[else if] 没有对应的 [if]");
+                            throw new SyntaxException("[else if] 没有对应的 [if]");
                         }
                         else
                         {
                             ifElseStatementsList.Add(new List<string> { keywordAttributes[0], subScript });
-                            ifBlockEvaluatedState = IfBlockEvaluatedState.ElseIf;
+                            ifBlockEvaluatedState = EBlockState_If.ElseIf;
                         }
                     }
                     else if (keyword.Equals("else", StringComparisonForCasing))
                     {
-                        if (ifBlockEvaluatedState == IfBlockEvaluatedState.NoBlockEvaluated)
+                        if (ifBlockEvaluatedState == EBlockState_If.NoBlock)
                         {
-                            throw new SyntaxErrorException("[else] 没有对应的 [if]");
+                            throw new SyntaxException("[else] 没有对应的 [if]");
                         }
                         else
                         {
                             ifElseStatementsList.Add(new List<string> { "true", subScript });
-                            ifBlockEvaluatedState = IfBlockEvaluatedState.NoBlockEvaluated;
+                            ifBlockEvaluatedState = EBlockState_If.NoBlock;
                         }
                     }
                     else if (keyword.Equals("catch", StringComparisonForCasing))
                     {
-                        if (tryBlockEvaluatedState == TryBlockEvaluatedState.NoBlockEvaluated)
-                            throw new SyntaxErrorException(" [catch] 没有对应的  [try] ");
+                        if (tryBlockEvaluatedState == EBlockState_Try.NoBlock)
+                            throw new SyntaxException(" [catch] 没有对应的  [try] ");
 
                         tryStatementsList.Add(new List<string> { "catch", keywordAttributes.Count > 0 ? keywordAttributes[0] : null, subScript });
-                        tryBlockEvaluatedState = TryBlockEvaluatedState.Catch;
+                        tryBlockEvaluatedState = EBlockState_Try.Catch;
                     }
                     else if (keyword.Equals("finally", StringComparisonForCasing))
                     {
-                        if (tryBlockEvaluatedState == TryBlockEvaluatedState.NoBlockEvaluated)
-                            throw new SyntaxErrorException(" [finally] 没有对应的  [try]");
+                        if (tryBlockEvaluatedState == EBlockState_Try.NoBlock)
+                            throw new SyntaxException(" [finally] 没有对应的  [try]");
 
                         tryStatementsList.Add(new List<string> { "finally", subScript });
-                        tryBlockEvaluatedState = TryBlockEvaluatedState.NoBlockEvaluated;
+                        tryBlockEvaluatedState = EBlockState_Try.NoBlock;
                     }
                     else
                     {
@@ -1053,14 +881,14 @@ namespace Arc.UniInk
                         if (keyword.Equals("if", StringComparisonForCasing))
                         {
                             ifElseStatementsList.Add(new List<string> { keywordAttributes[0], subScript });
-                            ifBlockEvaluatedState = IfBlockEvaluatedState.If;
-                            tryBlockEvaluatedState = TryBlockEvaluatedState.NoBlockEvaluated;
+                            ifBlockEvaluatedState = EBlockState_If.If;
+                            tryBlockEvaluatedState = EBlockState_Try.NoBlock;
                         }
                         else if (keyword.Equals("try", StringComparisonForCasing))
                         {
                             tryStatementsList.Add(new List<string> { subScript });
-                            ifBlockEvaluatedState = IfBlockEvaluatedState.NoBlockEvaluated;
-                            tryBlockEvaluatedState = TryBlockEvaluatedState.Try;
+                            ifBlockEvaluatedState = EBlockState_If.NoBlock;
+                            tryBlockEvaluatedState = EBlockState_Try.Try;
                         }
                         else if (keyword.Equals("do", StringComparisonForCasing))
                         {
@@ -1095,12 +923,12 @@ namespace Arc.UniInk
                                 }
                                 else
                                 {
-                                    throw new SyntaxErrorException("A [;] character is missing. (After the do while condition)");
+                                    throw new SyntaxException("A [;] character is missing. (After the do while condition)");
                                 }
                             }
                             else
                             {
-                                throw new SyntaxErrorException("No [while] keyword after the [do] keyword and block");
+                                throw new SyntaxException("No [while] keyword after the [do] keyword and block");
                             }
                         }
                         else if (keyword.Equals("while", StringComparisonForCasing))
@@ -1151,11 +979,11 @@ namespace Arc.UniInk
 
                             if (!foreachParenthisEvaluationMatch.Success)
                             {
-                                throw new SyntaxErrorException("wrong foreach syntax");
+                                throw new SyntaxException("wrong foreach syntax");
                             }
                             else if (!foreachParenthisEvaluationMatch.Groups["in"].Value.Equals("in", StringComparisonForCasing))
                             {
-                                throw new SyntaxErrorException("no [in] keyword found in foreach");
+                                throw new SyntaxException("no [in] keyword found in foreach");
                             }
                             else
                             {
@@ -1206,15 +1034,15 @@ namespace Arc.UniInk
                         startOfExpression--;
                     }
 
-                    ifBlockEvaluatedState = IfBlockEvaluatedState.NoBlockEvaluated;
-                    tryBlockEvaluatedState = TryBlockEvaluatedState.NoBlockEvaluated;
+                    ifBlockEvaluatedState = EBlockState_If.NoBlock;
+                    tryBlockEvaluatedState = EBlockState_Try.NoBlock;
 
                     if (OptionNeedScriptEndSemicolon || i < script.Length) i++;
                 }
             }
 
             if (!script.Substring(startOfExpression).Trim().Equals(string.Empty) && !isReturn && !isBreak && !isContinue && OptionNeedScriptEndSemicolon)
-                throw new SyntaxErrorException($"{script} 中缺少 [;] 字符");
+                throw new SyntaxException($"{script} 中缺少 [;] 字符");
 
             ExecuteBlocksStacks();
 
@@ -1222,11 +1050,7 @@ namespace Arc.UniInk
             breakCalled = isBreak;
             continueCalled = isContinue;
 
-            if (isReturn || NoReturnKeywordMode == EOnNoReturnKeywordMode.ReturnLastResult)
-                return lastResult;
-            if (NoReturnKeywordMode == EOnNoReturnKeywordMode.ReturnNull)
-                return null;
-            throw new SyntaxErrorException("没有找到 [return] 关键字");
+            return lastResult;
 
             void ExecuteBlocksStacks()
             {
@@ -1240,7 +1064,7 @@ namespace Arc.UniInk
                 {
                     if (tryStatementsList.Count == 1)
                     {
-                        throw new SyntaxErrorException("try语句至少需要一个catch或一个finally语句。");
+                        throw new SyntaxException("try语句至少需要一个catch或一个finally语句。");
                     }
 
                     try
@@ -1371,7 +1195,7 @@ namespace Arc.UniInk
                     }
                     else
                     {
-                        throw new SyntaxErrorException("[throw]后 缺少[Exception]实例");
+                        throw new SyntaxException("[throw]后 缺少[Exception]实例");
                     }
                 }
 
@@ -1428,52 +1252,24 @@ namespace Arc.UniInk
             var stack = new Stack<object>();
 
             evaluationStackCount++;
-
             try
             {
-                //生成一个事件信息
-                var EventArg = new ExpressionEvaluationEventArg(expression, this);
+                //如果是lambda表达式，则入栈
+                if (GetLambdaExpression(expression, stack)) return stack.Pop(); //然后出栈
 
-                //触发事件
-                ExpressionEvaluating?.Invoke(this, EventArg);
 
-                //获取新的表达式
-                expression = EventArg.Expression;
-
-                object result;
-                if (EventArg.HasValue)
+                for (var i = 0; i < expression.Length; i++)
                 {
-                    result = EventArg.Value;
-                }
-                else
-                {
-                    //如果是lambda表达式，则入栈
-                    if (GetLambdaExpression(expression, stack))
-                        return stack.Pop(); //然后出栈
-
-
-                    for (var i = 0; i < expression.Length; i++)
+                    if (!ParsingMethods.Any(parsingMethod => parsingMethod(expression, stack, ref i)))
                     {
-                        if (!ParsingMethods.Any(parsingMethod => parsingMethod(expression, stack, ref i)))
-                        {
-                            var s = expression.Substring(i, 1);
+                        var s = expression.Substring(i, 1);
+                        if (string.IsNullOrWhiteSpace(s)) continue;
 
-                            if (!s.Trim().Equals(string.Empty))
-                                throw new SyntaxErrorException($"无效的字符 [{(int)s[0]}:{s}]");
-                        }
+                        throw new SyntaxException($"无效的字符 [{(int)s[0]}:{s}]");
                     }
-
-                    result = ProcessStack(stack);
-
-                    EventArg = new ExpressionEvaluationEventArg(expression, this, result);
-
-                    ExpressionEvaluated?.Invoke(this, EventArg);
-
-                    if (EventArg.HasValue)
-                        result = EventArg.Value;
                 }
 
-                return result;
+                return ProcessStack(stack);
             }
             catch (TargetInvocationException exception) when (exception.InnerException != null)
             {
@@ -1483,9 +1279,6 @@ namespace Arc.UniInk
                     exceptionToThrow = exceptionToThrow.InnerException;
 
                 throw exceptionToThrow;
-
-                // ExceptionDispatchInfo.Capture(exceptionToThrow).Throw();
-                // Will not go here but need to return something to avoid compilation errors.
             }
             finally
             {
@@ -1587,8 +1380,6 @@ namespace Arc.UniInk
         /// <summary>解析实例化</summary>
         private bool EvaluateInstanceCreationWithNewKeyword(string expression, Stack<object> stack, ref int i)
         {
-            if (!OptionNewKeywordEvaluationActive) return false;
-
             var instanceCreationMatch = instanceCreationWithNewKeywordRegex.Match(expression.Substring(i));
 
             if (instanceCreationMatch.Success && (stack.Count == 0 || stack.Peek() is ExpressionOperator))
@@ -1609,7 +1400,7 @@ namespace Arc.UniInk
                         }
                         else
                         {
-                            throw new SyntaxErrorException($" [{subExpr}]中的 '=' 字符缺失,它在对象初始化器中。它必须包含一个。");
+                            throw new SyntaxException($" [{subExpr}]中的 '=' 字符缺失,它在对象初始化器中。它必须包含一个。");
                         }
                     });
 
@@ -1637,7 +1428,7 @@ namespace Arc.UniInk
                     var type = EvaluateType(completeName + genericTypes, ref typeIndex);
 
                     if (type == null || (typeIndex > 0 && typeIndex < completeName.Length))
-                        throw new SyntaxErrorException($"Type or class {completeName}{genericTypes} is unknown");
+                        throw new SyntaxException($"Type or class {completeName}{genericTypes} is unknown");
 
                     void Init(object element, List<string> initArgs)
                     {
@@ -1663,7 +1454,7 @@ namespace Arc.UniInk
                                 }
                                 else
                                 {
-                                    throw new SyntaxErrorException($"的初始化中的参数数目错误 [{subExpr}]");
+                                    throw new SyntaxException($"的初始化中的参数数目错误 [{subExpr}]");
                                 }
                             });
                         }
@@ -1738,7 +1529,7 @@ namespace Arc.UniInk
                     }
                     else
                     {
-                        throw new SyntaxErrorException($"A new expression requires that type be followed by (), [] or {{}}(Check : {instanceCreationMatch.Value})");
+                        throw new SyntaxException($"A new expression requires that type be followed by (), [] or {{}}(Check : {instanceCreationMatch.Value})");
                     }
                 }
 
@@ -1757,7 +1548,7 @@ namespace Arc.UniInk
 
             //有var 关键字 但 没有赋值运算符
             if (varFuncMatch.Groups["varKeyword"].Success && !varFuncMatch.Groups["assignationOperator"].Success)
-                throw new SyntaxErrorException($"隐式变量未初始化! [var {varFuncMatch.Groups["name"].Value}]");
+                throw new SyntaxException($"隐式变量未初始化! [var {varFuncMatch.Groups["name"].Value}]");
 
             if (varFuncMatch.Success //匹配成功
                 && (!varFuncMatch.Groups["sign"].Success || stack.Count == 0 || stack.Peek() is ExpressionOperator) //前缀没有符号 且栈为空 或者栈顶为运算符 
@@ -1780,7 +1571,7 @@ namespace Arc.UniInk
                     if (inObject || (Context?.GetType().GetMethods(InstanceBindingFlag).Any(methodInfo => methodInfo.Name.Equals(varFuncName, StringComparisonForCasing)) ?? false))
                     {
                         if (inObject && (stack.Count == 0 || stack.Peek() is ExpressionOperator))
-                            throw new SyntaxErrorException($"[{varFuncMatch.Value})] 必须紧跟一个对象"); //只有点
+                            throw new SyntaxException($"[{varFuncMatch.Value})] 必须紧跟一个对象"); //只有点
 
                         var obj = inObject ? stack.Pop() : Context;
                         var keepObj = obj;
@@ -1815,7 +1606,7 @@ namespace Arc.UniInk
                                 PreEvaluateFunction?.Invoke(this, functionPreEvaluationEventArg);
 
                                 if (functionPreEvaluationEventArg.CancelEvaluation)
-                                    throw new SyntaxErrorException($"[{objType}] 对象没有名为 [{varFuncName}] 的方法.");
+                                    throw new SyntaxException($"[{objType}] 对象没有名为 [{varFuncName}] 的方法.");
 
                                 if (functionPreEvaluationEventArg.FunctionReturnedValue)
                                 {
@@ -1860,11 +1651,6 @@ namespace Arc.UniInk
                                     });
 
                                     var flag = DetermineInstanceOrStatic(ref objType, ref obj, ref valueTypeNestingTrace);
-
-                                    if (!OptionStaticMethodsCallActive && (flag & BindingFlags.Static) != 0)
-                                        throw new SyntaxErrorException($"[{objType}] 找不到函数: [{varFuncName}].");
-                                    if (!OptionInstanceMethodsCallActive && (flag & BindingFlags.Instance) != 0)
-                                        throw new SyntaxErrorException($"[{objType}] 找不到函数: \"{varFuncName}\".");
 
                                     // 寻找标准实例或公共方法
                                     var methodInfo = GetRealMethod(ref objType, ref obj, varFuncName, flag, oArgs, genericsTypes, inferedGenericsTypes, argsWithKeywords);
@@ -1942,11 +1728,11 @@ namespace Arc.UniInk
                                                             fnOverloadsPrint += string.Join(",", parInfo.Select(x => x.ParameterType.FullName ?? x.ParameterType.Name)) + "\n";
                                                         }
 
-                                                        throw new SyntaxErrorException($"[{objType}] extension method \"{varFuncName}\" has no overload for arguments: {fnArgsPrint}. Candidates: {fnOverloadsPrint}");
+                                                        throw new SyntaxException($"[{objType}] extension method \"{varFuncName}\" has no overload for arguments: {fnArgsPrint}. Candidates: {fnOverloadsPrint}");
                                                     }
                                                 }
 
-                                                throw new SyntaxErrorException($"[{objType}] 对象方法  [{varFuncName}] ");
+                                                throw new SyntaxException($"[{objType}] 对象方法  [{varFuncName}] ");
                                             }
                                         }
                                     }
@@ -1954,7 +1740,7 @@ namespace Arc.UniInk
                             }
                         }
                         catch (SecurityException) { throw; }
-                        catch (SyntaxErrorException) { throw; }
+                        catch (SyntaxException) { throw; }
                         catch (NullReferenceException nullException)
                         {
                             stack.Push(new BubbleExceptionContainer(nullException));
@@ -1964,7 +1750,7 @@ namespace Arc.UniInk
                         catch (Exception ex)
                         {
                             //Transport the exception in stack.
-                            var nestedException = new SyntaxErrorException($"The call of the method \"{varFuncName}\" on type [{objType}] generate this error : {ex.InnerException?.Message ?? ex.Message}", ex);
+                            var nestedException = new SyntaxException($"The call of the method \"{varFuncName}\" on type [{objType}] generate this error : {ex.InnerException?.Message ?? ex.Message}", ex);
                             stack.Push(new BubbleExceptionContainer(nestedException));
                             return true; //Signals an error to the parsing method array call                          
                         }
@@ -1977,7 +1763,7 @@ namespace Arc.UniInk
 
                         if (functionPreEvaluationEventArg.CancelEvaluation)
                         {
-                            throw new SyntaxErrorException($"Function [{varFuncName}] unknown in expression : [{expression.Replace("\r", "").Replace("\n", "")}]");
+                            throw new SyntaxException($"Function [{varFuncName}] unknown in expression : [{expression.Replace("\r", "").Replace("\n", "")}]");
                         }
                         else if (functionPreEvaluationEventArg.FunctionReturnedValue)
                         {
@@ -2023,7 +1809,7 @@ namespace Arc.UniInk
                             }
                             else
                             {
-                                throw new SyntaxErrorException($"Function [{varFuncName}] unknown in expression : [{expression.Replace("\r", "").Replace("\n", "")}]");
+                                throw new SyntaxException($"Function [{varFuncName}] unknown in expression : [{expression.Replace("\r", "").Replace("\n", "")}]");
                             }
                         }
                     }
@@ -2034,7 +1820,7 @@ namespace Arc.UniInk
                     if (inObject || Context?.GetType().GetProperties(InstanceBindingFlag).Any(propInfo => propInfo.Name.Equals(varFuncName, StringComparisonForCasing)) == true || Context?.GetType().GetFields(InstanceBindingFlag).Any(fieldInfo => fieldInfo.Name.Equals(varFuncName, StringComparisonForCasing)) == true)
                     {
                         if (inObject && (stack.Count == 0 || stack.Peek() is ExpressionOperator))
-                            throw new SyntaxErrorException($"[{varFuncMatch.Value}] 后面必须有一个对象");
+                            throw new SyntaxException($"[{varFuncMatch.Value}] 后面必须有一个对象");
 
                         var obj = inObject ? stack.Pop() : Context;
                         var keepObj = obj;
@@ -2072,7 +1858,7 @@ namespace Arc.UniInk
 
                                 if (variablePreEvaluationEventArg.CancelEvaluation)
                                 {
-                                    throw new SyntaxErrorException($"[{objType}] 对象没有名为 [{varFuncName}] 的公共属性或成员", new Exception("变量求值已取消"));
+                                    throw new SyntaxException($"[{objType}] 对象没有名为 [{varFuncName}] 的公共属性或成员", new Exception("变量求值已取消"));
                                 }
 
                                 if (variablePreEvaluationEventArg.HasValue)
@@ -2083,10 +1869,6 @@ namespace Arc.UniInk
                                 {
                                     var flag = DetermineInstanceOrStatic(ref objType, ref obj, ref valueTypeNestingTrace);
 
-                                    if (!OptionStaticPropertiesGetActive && (flag & BindingFlags.Static) != 0)
-                                        throw new SyntaxErrorException($"[{objType}] 对象没有命名的公共属性或字段 [{varFuncName}] ");
-                                    if (!OptionInstancePropertiesGetActive && (flag & BindingFlags.Instance) != 0)
-                                        throw new SyntaxErrorException($"[{objType}] 对象没有命名的公共属性或字段 [{varFuncName}].");
 
                                     var isDynamic = (flag & BindingFlags.Instance) != 0 && obj is IDictionary<string, object>; //&& obj is IDynamicMetaObjectProvider
                                     var dictionaryObject = obj as IDictionary<string, object>;
@@ -2148,42 +1930,37 @@ namespace Arc.UniInk
                                     if (pushVarValue) stack.Push(varValue);
 
 
-                                    if (OptionPropertyOrFieldSetActive)
+                                    if (varFuncMatch.Groups["assignationOperator"].Success)
                                     {
-                                        if (varFuncMatch.Groups["assignationOperator"].Success)
+                                        varValue = ManageKindOfAssignation(expression, ref i, varFuncMatch, () => varValue, stack);
+                                    }
+                                    else if (varFuncMatch.Groups["postfixOperator"].Success)
+                                    {
+                                        //不是++就是--;
+                                        varValue = varFuncMatch.Groups["postfixOperator"].Value.Equals("++") ? (int)varValue + 1 : (int)varValue - 1;
+                                    }
+                                    else
+                                    {
+                                        assign = false;
+                                    }
+
+                                    if (assign)
+                                    {
+                                        if (isDynamic)
                                         {
-                                            varValue = ManageKindOfAssignation(expression, ref i, varFuncMatch, () => varValue, stack);
+                                            dictionaryObject[varFuncName] = varValue;
                                         }
-                                        else if (varFuncMatch.Groups["postfixOperator"].Success)
+                                        else if (valueTypeNestingTrace != null)
                                         {
-                                            //不是++就是--;
-                                            varValue = varFuncMatch.Groups["postfixOperator"].Value.Equals("++") ? (int)varValue + 1 : (int)varValue - 1;
+                                            valueTypeNestingTrace.Value = varValue;
+                                            valueTypeNestingTrace.AssignValue();
                                         }
                                         else
                                         {
-                                            assign = false;
-                                        }
-
-                                        if (assign)
-                                        {
-                                            if (isDynamic)
-                                            {
-                                                dictionaryObject[varFuncName] = varValue;
-                                            }
-                                            else if (valueTypeNestingTrace != null)
-                                            {
-                                                valueTypeNestingTrace.Value = varValue;
-                                                valueTypeNestingTrace.AssignValue();
-                                            }
-                                            else
-                                            {
-                                                throw new NotImplementedException();
-                                                //((dynamic)member).SetValue(obj, varValue);
-                                            }
+                                            throw new NotImplementedException();
+                                            //((dynamic)member).SetValue(obj, varValue);
                                         }
                                     }
-                                    else if (varFuncMatch.Groups["assignationOperator"].Success) i -= varFuncMatch.Groups["assignationOperator"].Length;
-                                    else if (varFuncMatch.Groups["postfixOperator"].Success) i -= varFuncMatch.Groups["postfixOperator"].Length;
                                 }
                             }
                         }
@@ -2191,14 +1968,14 @@ namespace Arc.UniInk
                         {
                             throw;
                         }
-                        catch (SyntaxErrorException)
+                        catch (SyntaxException)
                         {
                             throw;
                         }
                         catch (Exception ex)
                         {
                             //Transport the exception in stack.
-                            var nestedException = new SyntaxErrorException($"[{objType}] object has no public Property or Member named \"{varFuncName}\".", ex);
+                            var nestedException = new SyntaxException($"[{objType}] object has no public Property or Member named \"{varFuncName}\".", ex);
                             stack.Push(new BubbleExceptionContainer(nestedException));
                             i--;
                             return true; //Signals an error to the parsing method array call
@@ -2212,7 +1989,7 @@ namespace Arc.UniInk
 
                         if (variablePreEvaluationEventArg.CancelEvaluation)
                         {
-                            throw new SyntaxErrorException($"Variable [{varFuncName}] unknown in expression : [{expression}]");
+                            throw new SyntaxException($"Variable [{varFuncName}] unknown in expression : [{expression}]");
                         }
                         else if (variablePreEvaluationEventArg.HasValue)
                         {
@@ -2227,11 +2004,11 @@ namespace Arc.UniInk
                             if (stack.Count == 1 && stack.Peek() is ClassOrEnumType classOrEnum)
                             {
                                 if (Variables.ContainsKey(varFuncName))
-                                    throw new SyntaxErrorException($"Can not declare a new variable named [{varFuncName}]. A variable with this name already exists");
+                                    throw new SyntaxException($"Can not declare a new variable named [{varFuncName}]. A variable with this name already exists");
                                 if (varFuncMatch.Groups["varKeyword"].Success)
-                                    throw new SyntaxErrorException("Can not declare a variable with type and var keyword.");
+                                    throw new SyntaxException("Can not declare a variable with type and var keyword.");
                                 if (varFuncMatch.Groups["dynamicKeyword"].Success)
-                                    throw new SyntaxErrorException("Can not declare a variable with type and dynamic keyword.");
+                                    throw new SyntaxException("Can not declare a variable with type and dynamic keyword.");
 
                                 stack.Pop();
 
@@ -2243,43 +2020,33 @@ namespace Arc.UniInk
 
                             stack.Push(cusVarValueToPush);
 
-                            if (OptionVariableAssignationActive)
-                            {
-                                var assign = true;
 
-                                if (varFuncMatch.Groups["assignationOperator"].Success)
-                                {
-                                    cusVarValueToPush = ManageKindOfAssignation(expression, ref i, varFuncMatch, () => cusVarValueToPush, stack);
-                                }
-                                else if (varFuncMatch.Groups["postfixOperator"].Success)
-                                {
-                                    throw new NotImplementedException();
-                                    //cusVarValueToPush = varFuncMatch.Groups["postfixOperator"].Value.Equals("++") ? (dynamic)cusVarValueToPush + 1 : (dynamic)cusVarValueToPush - 1;
-                                }
-                                else if (varFuncMatch.Groups["prefixOperator"].Success)
-                                {
-                                    throw new NotImplementedException();
-                                    //stack.Pop();
-                                    //cusVarValueToPush = varFuncMatch.Groups["prefixOperator"].Value.Equals("++") ? (dynamic)cusVarValueToPush + 1 : (dynamic)cusVarValueToPush - 1;
-                                    //stack.Push(cusVarValueToPush);
-                                }
-                                else
-                                {
-                                    assign = false;
-                                }
+                            var assign = true;
 
-                                if (assign)
-                                {
-                                    AssignVariable(varFuncName, cusVarValueToPush);
-                                }
-                            }
-                            else if (varFuncMatch.Groups["assignationOperator"].Success)
+                            if (varFuncMatch.Groups["assignationOperator"].Success)
                             {
-                                i -= varFuncMatch.Groups["assignationOperator"].Length;
+                                cusVarValueToPush = ManageKindOfAssignation(expression, ref i, varFuncMatch, () => cusVarValueToPush, stack);
                             }
                             else if (varFuncMatch.Groups["postfixOperator"].Success)
                             {
-                                i -= varFuncMatch.Groups["postfixOperator"].Length;
+                                throw new NotImplementedException();
+                                //cusVarValueToPush = varFuncMatch.Groups["postfixOperator"].Value.Equals("++") ? (dynamic)cusVarValueToPush + 1 : (dynamic)cusVarValueToPush - 1;
+                            }
+                            else if (varFuncMatch.Groups["prefixOperator"].Success)
+                            {
+                                throw new NotImplementedException();
+                                //stack.Pop();
+                                //cusVarValueToPush = varFuncMatch.Groups["prefixOperator"].Value.Equals("++") ? (dynamic)cusVarValueToPush + 1 : (dynamic)cusVarValueToPush - 1;
+                                //stack.Push(cusVarValueToPush);
+                            }
+                            else
+                            {
+                                assign = false;
+                            }
+
+                            if (assign)
+                            {
+                                AssignVariable(varFuncName, cusVarValueToPush);
                             }
                         }
                         else
@@ -2302,7 +2069,7 @@ namespace Arc.UniInk
                                 }
                                 else
                                 {
-                                    throw new SyntaxErrorException($"变量 [{varFuncName}] 在脚本中未知 : [{expression}]");
+                                    throw new SyntaxException($"变量 [{varFuncName}] 在脚本中未知 : [{expression}]");
                                 }
                             }
                         }
@@ -2330,54 +2097,21 @@ namespace Arc.UniInk
             var typeName = $"{currentName}{((i < expression.Length && expression.Substring(i)[0] == '?') ? "?" : "")}";
             var staticType = GetTypeByFriendlyName(typeName, genericsTypes);
 
-            // For inline namespace parsing
             if (staticType == null)
             {
-                if (OptionEInlineNamespacesRule != EInlineNamespacesRule.BlockAll)
+                var subIndex = 0;
+                var typeMatch = varOrFunctionRegEx.Match(expression.Substring(i));
+
+                if (typeMatch.Success && !typeMatch.Groups["sign"].Success && !typeMatch.Groups["assignationOperator"].Success && !typeMatch.Groups["postfixOperator"].Success && !typeMatch.Groups["isfunction"].Success && !typeMatch.Groups["inObject"].Success && i + subIndex < expression.Length && !typeName.EndsWith("?"))
                 {
-                    var subIndex = 0;
-                    var namespaceMatch = varOrFunctionRegEx.Match(expression.Substring(i));
+                    subIndex += typeMatch.Length;
+                    typeName += $"{typeMatch.Groups["name"].Value}{((i + subIndex < expression.Length && expression.Substring(i + subIndex)[0] == '?') ? "?" : "")}";
 
-                    while (staticType == null && namespaceMatch.Success && !namespaceMatch.Groups["sign"].Success && !namespaceMatch.Groups["assignationOperator"].Success && !namespaceMatch.Groups["postfixOperator"].Success && !namespaceMatch.Groups["isfunction"].Success && i + subIndex < expression.Length && !typeName.EndsWith("?"))
+                    staticType = GetTypeByFriendlyName(typeName, typeMatch.Groups["isgeneric"].Value);
+
+                    if (staticType != null)
                     {
-                        subIndex += namespaceMatch.Length;
-                        typeName += $"{namespaceMatch.Groups["inObject"].Value}{namespaceMatch.Groups["name"].Value}{((i + subIndex < expression.Length && expression.Substring(i + subIndex)[0] == '?') ? "?" : "")}";
-
-                        staticType = GetTypeByFriendlyName(typeName, namespaceMatch.Groups["isgeneric"].Value);
-
-                        if (staticType != null)
-                        {
-                            if (OptionEInlineNamespacesRule == EInlineNamespacesRule.AllowOnlyInlineNamespacesList && !InlineNamespacesList.Contains(staticType.Namespace))
-                            {
-                                staticType = null;
-                            }
-                            else
-                            {
-                                i += subIndex;
-                            }
-
-                            break;
-                        }
-
-                        namespaceMatch = varOrFunctionRegEx.Match(expression.Substring(i + subIndex));
-                    }
-                }
-                else
-                {
-                    var subIndex = 0;
-                    var typeMatch = varOrFunctionRegEx.Match(expression.Substring(i));
-
-                    if (staticType == null && typeMatch.Success && !typeMatch.Groups["sign"].Success && !typeMatch.Groups["assignationOperator"].Success && !typeMatch.Groups["postfixOperator"].Success && !typeMatch.Groups["isfunction"].Success && !typeMatch.Groups["inObject"].Success && i + subIndex < expression.Length && !typeName.EndsWith("?"))
-                    {
-                        subIndex += typeMatch.Length;
-                        typeName += $"{typeMatch.Groups["name"].Value}{((i + subIndex < expression.Length && expression.Substring(i + subIndex)[0] == '?') ? "?" : "")}";
-
-                        staticType = GetTypeByFriendlyName(typeName, typeMatch.Groups["isgeneric"].Value);
-
-                        if (staticType != null)
-                        {
-                            i += subIndex;
-                        }
+                        i += subIndex;
                     }
                 }
             }
@@ -2430,9 +2164,6 @@ namespace Arc.UniInk
         /// <summary>解析字符</summary>
         private bool EvaluateChar(string expression, Stack<object> stack, ref int i)
         {
-            if (!OptionCharEvaluationActive)
-                return false;
-
             var s = expression.Substring(i, 1);
 
             if (s.Equals("'"))
@@ -2451,12 +2182,12 @@ namespace Arc.UniInk
                     }
                     else
                     {
-                        throw new SyntaxErrorException("Not known escape sequence in literal character");
+                        throw new SyntaxException("Not known escape sequence in literal character");
                     }
                 }
                 else if (expression.Substring(i, 1).Equals("'"))
                 {
-                    throw new SyntaxErrorException("Empty literal character is not valid");
+                    throw new SyntaxException("Empty literal character is not valid");
                 }
                 else
                 {
@@ -2470,13 +2201,11 @@ namespace Arc.UniInk
                 }
                 else
                 {
-                    throw new SyntaxErrorException("Too much characters in the literal character");
+                    throw new SyntaxException("Too much characters in the literal character");
                 }
             }
-            else
-            {
-                return false;
-            }
+
+            return false;
         }
 
         /// <summary>解析操作符</summary> 
@@ -2600,8 +2329,6 @@ namespace Arc.UniInk
         /// <summary>解析索引器</summary>
         private bool EvaluateIndexing(string expression, Stack<object> stack, ref int i)
         {
-            if (!OptionIndexerActive) return false;
-
             var indexingBeginningMatch = indexingBeginningRegex.Match(expression.Substring(i));
 
             if (indexingBeginningMatch.Success)
@@ -2630,7 +2357,7 @@ namespace Arc.UniInk
 
                 if (indexingPreEvaluationEventArg.CancelEvaluation)
                 {
-                    throw new SyntaxErrorException($"[{left.GetType()}] 没有索引器");
+                    throw new SyntaxException($"[{left.GetType()}] 没有索引器");
                 }
 
                 if (indexingPreEvaluationEventArg.HasValue)
@@ -2754,8 +2481,6 @@ namespace Arc.UniInk
         /// <summary>解析字符串</summary>
         private bool EvaluateString(string expression, Stack<object> stack, ref int i)
         {
-            if (!OptionStringEvaluationActive) return false;
-
             var stringBeginningMatch = stringBeginningRegex.Match(expression.Substring(i));
 
             if (stringBeginningMatch.Success)
@@ -2864,7 +2589,7 @@ namespace Arc.UniInk
                         }
                         else
                         {
-                            throw new SyntaxErrorException("A character '}' must be escaped in a interpolated string.");
+                            throw new SyntaxException("A character '}' must be escaped in a interpolated string.");
                         }
                     }
                     else if (expression.Substring(i, expression.Length - i)[0] == '\\')
@@ -2878,12 +2603,12 @@ namespace Arc.UniInk
                         }
                         else
                         {
-                            throw new SyntaxErrorException("There is no corresponding escaped character for \\" + expression.Substring(i, 1));
+                            throw new SyntaxException("There is no corresponding escaped character for \\" + expression.Substring(i, 1));
                         }
                     }
                 }
 
-                if (!endOfString) throw new SyntaxErrorException(@"缺少一个[ \ ]字符");
+                if (!endOfString) throw new SyntaxException(@"缺少一个[ \ ]字符");
 
                 return true;
             }
@@ -2898,7 +2623,7 @@ namespace Arc.UniInk
         public object ProcessStack(Stack<object> stack)
         {
             //如果堆栈为空，则抛出异常
-            if (stack.Count == 0) throw new SyntaxErrorException("空表达式或找不到标记");
+            if (stack.Count == 0) throw new SyntaxException("空表达式或找不到标记");
 
             //将栈中的值类型,异常,空值进行处理
             var list = stack.Select(e => e is ValueTypeNestingTrace valueTypeNestingTrace ? valueTypeNestingTrace.Value : e) //处理值类型
@@ -3048,7 +2773,7 @@ namespace Arc.UniInk
                     }
                 }
 
-                throw new SyntaxErrorException("语法错误.检查没有操作符丢失");
+                throw new SyntaxException("语法错误.检查没有操作符丢失");
             }
             else if (evaluationStackCount == 1 && stack.Peek() is BubbleExceptionContainer bubbleExceptionContainer)
             {
@@ -3073,13 +2798,13 @@ namespace Arc.UniInk
         /// <summary>管理分配类型</summary>
         private object ManageKindOfAssignation(string expression, ref int index, Match match, Func<object> getCurrentValue, Stack<object> stack = null)
         {
-            if (stack?.Count > 1) throw new SyntaxErrorException($"{expression}赋值的左边部分必须是变量,属性或索引器");
+            if (stack?.Count > 1) throw new SyntaxException($"{expression}赋值的左边部分必须是变量,属性或索引器");
 
             object result;
             var rightExpression = expression.Substring(index);
             index = expression.Length;
 
-            if (rightExpression.Trim().Equals(string.Empty)) throw new SyntaxErrorException("分配中缺少右部分");
+            if (rightExpression.Trim().Equals(string.Empty)) throw new SyntaxException("分配中缺少右部分");
 
             if (match.Groups["assignmentPrefix"].Success)
             {
@@ -3110,7 +2835,7 @@ namespace Arc.UniInk
             {
                 if (value == null && stronglyTypedVariable.Type.IsValueType && Nullable.GetUnderlyingType(stronglyTypedVariable.Type) == null)
                 {
-                    throw new SyntaxErrorException($"Can not cast null to {stronglyTypedVariable.Type} because it's not a nullable valueType");
+                    throw new SyntaxException($"Can not cast null to {stronglyTypedVariable.Type} because it's not a nullable valueType");
                 }
 
                 var typeToAssign = value?.GetType();
@@ -3596,13 +3321,13 @@ namespace Arc.UniInk
                 var internalStringMatch = stringBeginningRegex.Match(subExpr);
                 var internalCharMatch = internalCharRegex.Match(subExpr);
 
-                if (OptionStringEvaluationActive && internalStringMatch.Success)
+                if (internalStringMatch.Success)
                 {
                     var innerString = internalStringMatch.Value + GetCodeUntilEndOfString(expression.Substring(i + internalStringMatch.Length), internalStringMatch);
                     currentExpression += innerString;
                     i += innerString.Length - 1;
                 }
-                else if (OptionCharEvaluationActive && internalCharMatch.Success)
+                else if (internalCharMatch.Success)
                 {
                     currentExpression += internalCharMatch.Value;
                     i += internalCharMatch.Length - 1;
@@ -3742,14 +3467,14 @@ namespace Arc.UniInk
             }
             catch
             {
-                throw new SyntaxErrorException($"类型或类获取失败 : {typeName}{genericTypes}");
+                throw new SyntaxException($"类型或类获取失败 : {typeName}{genericTypes}");
             }
 
             if (result != null && TypesToBlock.Contains(result))
                 result = null;
 
             if (result == null && throwExceptionIfNotFound)
-                throw new SyntaxErrorException($"未知的类型或类 : {typeName}{genericTypes}");
+                throw new SyntaxException($"未知的类型或类 : {typeName}{genericTypes}");
 
             if (result != null && !isCached)
                 CachedTypesDic[typeName + genericTypes] = result;
@@ -4245,37 +3970,6 @@ namespace Arc.UniInk
 
     #endregion
 
-    #region Enums
-
-    /// <summary>用于定义当<see cref="UniInk.ScriptEvaluate"/>没有找到<c>return</c>关键字时的行为</summary>
-    /// <remarks>用于<see cref="UniInk.NoReturnKeywordMode"/></remarks>
-    public enum EOnNoReturnKeywordMode
-    {
-        /// <summary>自动返回最后一个计算的表达式</summary>
-        ReturnLastResult,
-
-        /// <summary>返回<c>null</c></summary>
-        ReturnNull,
-
-        /// <summary>抛出SyntaxException异常</summary>
-        ThrowSyntaxException
-    }
-
-    /// <summary>内联命名空间的解释规则</summary>
-    /// <remarks>用于<see cref="UniInk.OptionEInlineNamespacesRule"/></remarks>
-    public enum EInlineNamespacesRule
-    {
-        /// <summary>允许使用内存中的任何内联命名空间</summary>
-        AllowAll,
-
-        /// <summary>只允许使用在<see cref="UniInk.InlineNamespacesList"/>中定义的内联命名空间</summary>
-        AllowOnlyInlineNamespacesList,
-
-        /// <summary>禁止使用任何内联命名空间</summary>
-        BlockAll
-    }
-
-    #endregion
 
     #region Exceptions
 
@@ -4299,11 +3993,11 @@ namespace Arc.UniInk
     }
 
     /// <summary>解释器执行时语法错误的异常</summary>
-    public class SyntaxErrorException : Exception
+    public class SyntaxException : Exception
     {
-        public SyntaxErrorException(string message) : base(message) { }
+        public SyntaxException(string message) : base(message) { }
 
-        public SyntaxErrorException(string message, Exception innerException) : base(message, innerException) { }
+        public SyntaxException(string message, Exception innerException) : base(message, innerException) { }
     }
 
     /// <summary>解释器执行时安全性的异常</summary>
@@ -4668,10 +4362,11 @@ namespace Arc.UniInk
 
     #endregion
 
-    #region Helper
 
-    public static class ExpressionEvaluatorHelper
+    public static class UniInkHelper
     {
+        //基于 : https://stackoverflow.com/questions/3524317/regex-to-strip-line-comments-from-c-sharp/3524689#3524689
+
         #region Remove comments
 
         private static readonly Regex removeCommentsRegex = new($"{blockComments}|{lineComments}|{stringsIgnore}|{verbatimStringsIgnore}", RegexOptions.Singleline | RegexOptions.Compiled);
@@ -4685,7 +4380,6 @@ namespace Arc.UniInk
 
         /// <summary>移除指定C#脚本的所有行和块注释</summary>
         /// <param name="scriptWithComments">含有注释的C#代码</param>
-        /// <remarks>基于 : https://stackoverflow.com/questions/3524317/regex-to-strip-line-comments-from-c-sharp/3524689#3524689</remarks>
         /// <returns> 移除掉注释的C#代码 </returns>
         public static string RemoveComments(string scriptWithComments)
         {
@@ -4706,6 +4400,6 @@ namespace Arc.UniInk
 
         #endregion
     }
-
-    #endregion
 }
+//4404行
+//4562行
