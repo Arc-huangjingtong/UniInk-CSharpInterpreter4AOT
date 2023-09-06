@@ -1153,7 +1153,6 @@ namespace Arc.UniInk
 
         /// <summary>解析数字:只能是十进制类型</summary>
         /// <remarks>可以识别<code>int a=666_666</code>这种分隔符</remarks>
-        /// 所有的数字会被转换为double类型或者int类型
         private bool EvaluateNumber(string expression, Stack<object> stack, ref int i)
         {
             var numberMatch = numberRegex.Match(expression.Substring(i));
@@ -1164,7 +1163,7 @@ namespace Arc.UniInk
                 i += numberMatch.Length;
                 i--;
 
-                if (numberMatch.Groups["type"].Success)
+                if (numberMatch.Groups["type"].Success) //有后缀的情况下,直接解析对应类型
                 {
                     var type = numberMatch.Groups["type"].Value;
                     var numberNoType = numberMatch.Value.Replace(type, string.Empty).Replace("_", "");
@@ -1174,11 +1173,11 @@ namespace Arc.UniInk
                         stack.Push(parseFunc(numberNoType));
                     }
                 }
-                else if (numberMatch.Groups["hasdecimal"].Success) //只要有小数点就被解析为double类型
+                else if (numberMatch.Groups["hasdecimal"].Success) //无后缀情况下,只要有小数点就被解析为double类型
                 {
                     stack.Push(double.Parse(numberMatch.Value.Replace("_", "")));
                 }
-                else
+                else //否则默认为int类型
                 {
                     stack.Push(int.Parse(numberMatch.Value.Replace("_", "")));
                 }
@@ -1196,29 +1195,6 @@ namespace Arc.UniInk
 
             if (instanceCreationMatch.Success && (stack.Count == 0 || stack.Peek() is ExpressionOperator))
             {
-                void InitSimpleObjet(object element, List<string> initArgs)
-                {
-                    var variable = "V" + Guid.NewGuid().ToString().Replace("-", "");
-
-                    Variables[variable] = element;
-
-                    initArgs.ForEach(subExpr =>
-                    {
-                        if (subExpr.Contains("="))
-                        {
-                            var trimmedSubExpr = subExpr.TrimStart();
-
-                            Evaluate($"{variable}{(trimmedSubExpr.StartsWith("[") ? string.Empty : ".")}{trimmedSubExpr}");
-                        }
-                        else
-                        {
-                            throw new SyntaxException($" [{subExpr}]中的 '=' 字符缺失,它在对象初始化器中。它必须包含一个。");
-                        }
-                    });
-
-                    Variables.Remove(variable);
-                }
-
                 i += instanceCreationMatch.Length;
 
                 if (instanceCreationMatch.Groups["isAnonymous"].Success)
@@ -1240,7 +1216,7 @@ namespace Arc.UniInk
                     var type = EvaluateType(completeName + genericTypes, ref typeIndex);
 
                     if (type == null || (typeIndex > 0 && typeIndex < completeName.Length))
-                        throw new SyntaxException($"Type or class {completeName}{genericTypes} is unknown");
+                        throw new SyntaxException($"位置的类型或类: {completeName}{genericTypes}");
 
                     void Init(object element, List<string> initArgs)
                     {
@@ -1304,7 +1280,7 @@ namespace Arc.UniInk
                     }
                     else if (instanceCreationMatch.Groups["isInit"].Success)
                     {
-                        var element = Activator.CreateInstance(type, new object[0]);
+                        var element = Activator.CreateInstance(type, Array.Empty<object>());
 
                         var initArgs = GetExpressionsParenthesized(expression, ref i, true, ",", "{", "}");
 
@@ -1331,8 +1307,7 @@ namespace Arc.UniInk
 
                             var arrayElements = GetExpressionsParenthesized(expression, ref i, true, ",", "{", "}");
 
-                            if (array == null)
-                                array = Array.CreateInstance(type, arrayElements.Count);
+                            array ??= Array.CreateInstance(type, arrayElements.Count);
 
                             Array.Copy(arrayElements.ConvertAll(Evaluate).ToArray(), array, arrayElements.Count);
                         }
@@ -1341,16 +1316,37 @@ namespace Arc.UniInk
                     }
                     else
                     {
-                        throw new SyntaxException($"A new expression requires that type be followed by (), [] or {{}}(Check : {instanceCreationMatch.Value})");
+                        throw new SyntaxException($"new 关键词后的类型要跟随(),[],{{}}(请检查 : {instanceCreationMatch.Value})");
                     }
                 }
 
                 return true;
+
+                void InitSimpleObjet(object element, List<string> initArgs)
+                {
+                    var variable = "V" + Guid.NewGuid().ToString().Replace("-", "");
+
+                    Variables[variable] = element;
+
+                    initArgs.ForEach(subExpr =>
+                    {
+                        if (subExpr.Contains("="))
+                        {
+                            var trimmedSubExpr = subExpr.TrimStart();
+
+                            Evaluate($"{variable}{(trimmedSubExpr.StartsWith("[") ? string.Empty : ".")}{trimmedSubExpr}");
+                        }
+                        else
+                        {
+                            throw new SyntaxException($" [{subExpr}]中的 '=' 字符缺失,它在对象初始化器中。它必须包含一个。");
+                        }
+                    });
+
+                    Variables.Remove(variable);
+                }
             }
-            else
-            {
-                return false;
-            }
+
+            return false;
         }
 
         /// <summary>解析变量或函数</summary>
@@ -1971,33 +1967,30 @@ namespace Arc.UniInk
             return staticType;
         }
 
-        /// <summary>解析字符</summary>
+        /// <summary>解析字符Char</summary>
         private bool EvaluateChar(string expression, Stack<object> stack, ref int i)
         {
-            var s = expression.Substring(i, 1);
-
-            if (s.Equals("'"))
+            if (expression[i].Equals('\''))
             {
                 i++;
-
-                if (expression.Substring(i, 1).Equals(@"\"))
+                if (expression[i].Equals('\\')) //后一个字符只要是\就被是为转义字符
                 {
-                    i++;
+                    i++; //然后查看再后一个字符
                     var escapedChar = expression[i];
 
-                    if (charEscapedCharDict.ContainsKey(escapedChar))
+                    if (charEscapedCharDict.TryGetValue(escapedChar, out var value))
                     {
-                        stack.Push(charEscapedCharDict[escapedChar]);
+                        stack.Push(value);
                         i++;
                     }
                     else
                     {
-                        throw new SyntaxException("Not known escape sequence in literal character");
+                        throw new SyntaxException("未知的转义方式");
                     }
                 }
-                else if (expression.Substring(i, 1).Equals("'"))
+                else if (expression[i].Equals('\''))
                 {
-                    throw new SyntaxException("Empty literal character is not valid");
+                    throw new SyntaxException("空字符''是非法的");
                 }
                 else
                 {
@@ -2005,14 +1998,12 @@ namespace Arc.UniInk
                     i++;
                 }
 
-                if (expression.Substring(i, 1).Equals("'"))
+                if (expression[i].Equals('\''))
                 {
                     return true;
                 }
-                else
-                {
-                    throw new SyntaxException("Too much characters in the literal character");
-                }
+
+                throw new SyntaxException("字符不合法,可能包含太多字符");
             }
 
             return false;
