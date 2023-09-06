@@ -44,19 +44,10 @@ namespace Arc.UniInk
         ///sign: 匹配数字字面量前面的符号，可以是加号或减号。
         ///hasDecimal: 匹配数字字面量是否包含小数点。
         ///type: 匹配数字字面量的类型后缀，可以是u、l、d、f、m等。
-        private const string numberRegexPattern = @"^(?<sign>[+-])?([0-9][0-9_{1}]*[0-9]|\d)(?<hasdecimal>\.?([0-9][0-9_]*[0-9]|\d)(e[+-]?([0-9][0-9_]*[0-9]|\d))?)?(?<type>ul|[fdulm])?";
-
-        ///匹配C#代码中的数字
-        //private string numberRegexPattern;
-
-        //匹配C#代码中的二进制和十六进制数字字面量
-        ///sign : 匹配数字字面量前面的符号，可以是加号或减号。
-        ///value: 匹配数字字面量的值，可以包含下划线以提高可读性。
-        ///type : 匹配数字字面量的进制类型，可以是x（十六进制）或b（二进制）。
-        protected static readonly Regex otherBasesNumberRegex = new("^(?<sign>[+-])?(?<value>0(?<type>x)([0-9a-f][0-9a-f_]*[0-9a-f]|[0-9a-f])|0(?<type>b)([01][01_]*[01]|[01]))", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        protected static readonly Regex numberRegex = new(@"^(?<sign>[+-])?([0-9][0-9_{1}]*[0-9]|\d)(?<hasdecimal>\.?([0-9][0-9_]*[0-9]|\d)(e[+-]?([0-9][0-9_]*[0-9]|\d))?)?(?<type>ul|[fdulm])?", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
         //匹配 字符串前面的$或者@符号或者“双引号
-        protected static readonly Regex stringBeginningRegex = new("^(?<interpolated>[$])?(?<escaped>[@])?[\"]", RegexOptions.Compiled);
+        protected static readonly Regex stringBeginRegex = new("^(?<interpolated>[$])?(?<escaped>[@])?[\"]", RegexOptions.Compiled);
 
         //匹配 单字符中的转义和非转移字符
         private static readonly Regex internalCharRegex = new(@"^['](\\[\\'0abfnrtv]|[^'])[']", RegexOptions.Compiled);
@@ -92,21 +83,21 @@ namespace Arc.UniInk
 
         protected static readonly Regex instanceCreationWithNewKeywordRegex = new(@"^new(?=\w)\s*((?<isAnonymous>[{])|((?<name>[\p{L}_][\p{L}_0-9]*)(?>\s*)(?<isgeneric>[<](?>[^<>]+|(?<gentag>[<])|(?<-gentag>[>]))*(?(gentag)(?!))[>])?(?>\s*)((?<isfunction>[(])|(?<isArray>\[)|(?<isInit>[{{]))?))", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
-        protected const string CastRegexPattern = @"^\((?>\s*)(?<typeName>[\p{L}_][\p{L}_0-9\.\[\]<>]*[?]?)(?>\s*)\)";
+        protected static readonly Regex castRegex = new(@"^\((?>\s*)(?<typeName>[\p{L}_][\p{L}_0-9\.\[\]<>]*[?]?)(?>\s*)\)", RegexOptions.Compiled);
 
 
         // 仅限于脚本模式下
-        /// 匹配部分语法代码快的开始
-        private static readonly Regex blockKeywordsBeginningRegex = new(@"^(?>\s*)(?<keyword>while|for|foreach|if|else(?>\s*)if|catch)(?>\s*)[(]", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        /// 匹配while||for||foreach||if||else||catch(后面跟括号的)关键字
+        private static readonly Regex blockKeywordBeginRegex = new(@"^(?>\s*)(?<keyword>while|for|foreach|if|else(?>\s*)if|catch)(?>\s*)[(]", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
-        /// 匹配foreach语法
-        private static readonly Regex foreachParenThisEvaluationRegex = new(@"^(?>\s*)(?<variableName>[\p{L}_](?>[\p{L}_0-9]*))(?>\s*)(?<in>in)(?>\s*)(?<collection>.*)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
-
-        /// 匹配if语法的开始
-        private static readonly Regex blockKeywordsWithoutParenthesesBeginningRegex = new(@"^(?>\s*)(?<keyword>else|do|try|finally)(?![\p{L}_0-9])", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        /// 匹配else||do||try||finally(后面不更括号的)关键字
+        private static readonly Regex blockKeywordBeginRegex_NoParentheses = new(@"^(?>\s*)(?<keyword>else|do|try|finally)(?![\p{L}_0-9])", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
         /// 匹配花括号的开始
-        private static readonly Regex blockBeginningRegex = new(@"^(?>\s*)[{]", RegexOptions.Compiled);
+        private static readonly Regex blockBeginRegex = new(@"^(?>\s*)[{]", RegexOptions.Compiled);
+
+        /// 匹配foreach后的括号中的内容 xx in xx
+        private static readonly Regex foreachParenThisEvaluationRegex = new(@"^(?>\s*)(?<variableName>[\p{L}_](?>[\p{L}_0-9]*))(?>\s*)(?<in>in)(?>\s*)(?<collection>.*)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
         /// 匹配return关键字
         private static readonly Regex returnKeywordRegex = new(@"^return((?>\s*)|\()", RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled);
@@ -176,14 +167,14 @@ namespace Arc.UniInk
         };
 
         /// 数字后缀字典  Always Case insensitive, like in C#
-        private static readonly Dictionary<string, Func<string, CultureInfo, object>> numberSuffixToParse = new(StringComparer.OrdinalIgnoreCase)
+        private static readonly Dictionary<string, Func<string, object>> numberSuffixToParse = new()
         {
-            { "f", (number, culture) => float.Parse(number, NumberStyles.Any, culture) },
-            { "d", (number, culture) => double.Parse(number, NumberStyles.Any, culture) },
-            { "u", (number, culture) => uint.Parse(number, NumberStyles.Any, culture) },
-            { "l", (number, culture) => long.Parse(number, NumberStyles.Any, culture) },
-            { "ul", (number, culture) => ulong.Parse(number, NumberStyles.Any, culture) },
-            { "m", (number, culture) => decimal.Parse(number, NumberStyles.Any, culture) }
+            { "f", (number) => float.Parse(number) },
+            { "d", (number) => double.Parse(number) },
+            { "u", (number) => uint.Parse(number) },
+            { "l", (number) => long.Parse(number) },
+            { "ul", (number) => ulong.Parse(number) },
+            { "m", (number) => decimal.Parse(number) }
         };
 
         /// 转义字符串字典
@@ -399,8 +390,8 @@ namespace Arc.UniInk
 
                     if (argValue is ClassOrEnumType classOrTypeName)
                         return Activator.CreateInstance(classOrTypeName.Type);
-                    else
-                        return null;
+
+                    return null;
                 }
             },
             { "in", (self, args) => args.Skip(1).ToList().ConvertAll(self.Evaluate).Contains(self.Evaluate(args[0])) },
@@ -438,7 +429,8 @@ namespace Arc.UniInk
                     {
                         return Math.Round(Convert.ToDouble(self.Evaluate(args[0])), Convert.ToInt32(self.Evaluate(args[1])), (MidpointRounding)self.Evaluate(args[2]));
                     }
-                    else if (args.Count == 2)
+
+                    if (args.Count == 2)
                     {
                         var arg2 = self.Evaluate(args[1]);
 
@@ -447,9 +439,10 @@ namespace Arc.UniInk
                         else
                             return Math.Round(Convert.ToDouble(self.Evaluate(args[0])), Convert.ToInt32(arg2));
                     }
-                    else if (args.Count == 1) { return Math.Round(Convert.ToDouble(self.Evaluate(args[0]))); }
 
-                    else throw new ArgumentException();
+                    if (args.Count == 1) { return Math.Round(Convert.ToDouble(self.Evaluate(args[0]))); }
+
+                    throw new ArgumentException();
                 }
             },
             { "Sign", (self, args) => Math.Sign(Convert.ToDouble(self.Evaluate(args[0]))) },
@@ -511,145 +504,14 @@ namespace Arc.UniInk
 
         #endregion
 
-        #region Options
-
-        /// <summary>是否区分大小写:默认为真</summary>
-        public bool OptionCaseSensitiveEvaluationActive
-        {
-            get => optionCaseSensitiveEvaluationActive;
-            set
-            {
-                optionCaseSensitiveEvaluationActive = value;
-                Variables = Variables;
-                operatorsDictionary = new Dictionary<string, ExpressionOperator>(operatorsDictionary, StringComparerForCasing);
-                defaultVariables = new Dictionary<string, object>(defaultVariables, StringComparerForCasing);
-                simpleDoubleMathFuncDictionary = new Dictionary<string, Func<double, double>>(simpleDoubleMathFuncDictionary, StringComparerForCasing);
-                doubleDoubleMathFuncDictionary = new Dictionary<string, Func<double, double, double>>(doubleDoubleMathFuncDictionary, StringComparerForCasing);
-                complexStandardFuncDictionary = new Dictionary<string, Func<UniInk, List<string>, object>>(complexStandardFuncDictionary, StringComparerForCasing);
-                primaryTypesDic = new Dictionary<string, Type>(primaryTypesDic, StringComparerForCasing);
-            }
-        }
-
-
-        /// <summary>是否区分大小写</summary>
-        private bool optionCaseSensitiveEvaluationActive = true;
-
-        /// <summary>是否区分大小写:导致的通配符规则</summary>
-        private RegexOptions regexOption => optionCaseSensitiveEvaluationActive ? RegexOptions.None : RegexOptions.IgnoreCase;
-
-        /// <summary>是否区分大小写:导致的字符串比较器规则</summary>
-        private StringComparison StringComparisonForCasing => optionCaseSensitiveEvaluationActive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
-
-        /// <summary>是否区分大小写:导致的字符串比较器规则</summary>
-        private StringComparer StringComparerForCasing => OptionCaseSensitiveEvaluationActive ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase;
-
-        /// <summary>
-        /// 真: 所有不带小数和精度后缀的数都被视为double类型 <para/>
-        /// 假: 所有不带小数和精度后缀的数都被视为int类型 (警告:部分操作会导致四舍五入<para/>
-        /// 默认:假
-        /// </summary>
-        public bool OptionForceIntegerNumbersEvaluationsAsDoubleByDefault { get; set; }
-
-
-        /// <summary>
-        /// 用来求值的数字的文化信息.<para/>
-        /// 与OptionNumberParsingDecimalSeparator和OptionNumberParsingThousandSeparator同步。<para/>
-        /// 所以总是设置一个完整的CultureInfo对象，不要直接改变CultureInfoForNumberParsing.NumberFormat.NumberDecimalSeparator和CultureInfoForNumberParsing.NumberFormat.NumberGroupSeparator属性。<para/>
-        /// 警告，如果在分隔符中使用逗号，也要更改OptionFunctionArgumentsSeparator和OptionInitializersSeparator，否则会产生冲突
-        /// </summary>
-        public CultureInfo CultureInfoForNumberParsing
-        {
-            get => cultureInfoForNumberParsing;
-
-            set
-            {
-                cultureInfoForNumberParsing = value;
-
-                OptionNumberParsingDecimalSeparator = cultureInfoForNumberParsing.NumberFormat.NumberDecimalSeparator;
-                OptionNumberParsingThousandSeparator = cultureInfoForNumberParsing.NumberFormat.NumberGroupSeparator;
-            }
-        }
-
-        private CultureInfo cultureInfoForNumberParsing = CultureInfo.InvariantCulture.Clone() as CultureInfo;
-
-        private string optionNumberParsingDecimalSeparator = ".";
-
-        /// <summary>
-        /// 设置解释器数字的小数分隔符(默认: ".")<para/>
-        /// 警告：如果同时使用逗号更改OptionFunctionArgumentsSeparator和OptionInitializersSeparator，则会产生冲突。<para/>
-        /// 修改CultureInfoForNumberParsing
-        /// </summary>
-        public string OptionNumberParsingDecimalSeparator
-        {
-            get => optionNumberParsingDecimalSeparator;
-            set
-            {
-                optionNumberParsingDecimalSeparator = value ?? ".";
-                CultureInfoForNumberParsing.NumberFormat.NumberDecimalSeparator = optionNumberParsingDecimalSeparator;
-            }
-        }
-
-        private string optionNumberParsingThousandSeparator = string.Empty;
-
-        /// <summary>
-        /// 允许在解析表达式时更改数字的千位分隔符<para/>
-        /// 默认为 string.Empty<para/>
-        /// 警告，如果使用逗号，也改变OptionFunctionArgumentsSeparator和OptionInitializersSeparator，否则会产生冲突。<para/>
-        /// 修改 CultureInfoForNumberParsing。
-        /// </summary>
-        public string OptionNumberParsingThousandSeparator
-        {
-            get => optionNumberParsingThousandSeparator;
-
-            set
-            {
-                optionNumberParsingThousandSeparator = value ?? string.Empty;
-                CultureInfoForNumberParsing.NumberFormat.NumberGroupSeparator = value ?? string.Empty;
-            }
-        }
-
-        /// <summary>设置函数参数的分隔符 (默认: “,”)</summary>
-        /// <remarks>警告:设置为空格会产生冲突</remarks>
-        public string OptionFunctionArgumentsSeparator { get; set; } = ",";
-
-        /// <summary>设置关键字new之后的“{”和“}”之间的对象和集合初始化的分隔符 (默认: “,”)</summary>
-        /// <remarks>警告:OptionNumberParsingDecimalSeparator设置为逗号","会和此产生冲突</remarks>
-        public string OptionInitializersSeparator { get; set; } = ",";
-
-
-        private Func<UniInk, List<string>, object> newMethodMem;
-
-
-        /// <summary>
-        /// T:(默认)则在每个表达式之后，ScriptEvaluate需要有一个分号[;]<para/>
-        /// F:则允许在脚本的最后一个表达式省略分号<para/>
-        /// </summary>
-        public bool OptionNeedScriptEndSemicolon { get; set; } = true;
-
-        /// <summary>
-        /// T:(默认)则在调用扩展方法失败时，将检测所有定义的该方法的重载，以确定是使用了错误的参数定义和调用方法，还是方法未定义。<para/>
-        /// F:则不成功的扩展方法调用将始终导致"Method {name} is not defined on type {type}"（方法{name}在类型{type}上未定义）<para/>
-        /// </summary>
-        public bool OptionDetectExtensionMethodsOverloadsOnExtensionMethodNotFound { get; set; } = true;
-
-        /// <summary>
-        /// T:(默认)则允许在表达式中定义多表达式lambda（而不是在脚本中）<para/>
-        /// F:则如果不在脚本中，只能定义简单的表达式lambda<para/>
-        /// </summary>
-        public bool OptionCanDeclareMultiExpressionsLambdaInSimpleExpressionEvaluate { get; set; } = true;
-
-        #endregion
-
         #region Reflection Flags
 
-        private BindingFlags InstanceBindingFlag => BindingFlags.Public | BindingFlags.Instance | BindingFlags.GetProperty | BindingFlags.Static | (OptionCaseSensitiveEvaluationActive ? 0 : BindingFlags.IgnoreCase);
-        private BindingFlags StaticBindingFlag => BindingFlags.Public | BindingFlags.Static | (OptionCaseSensitiveEvaluationActive ? 0 : BindingFlags.IgnoreCase);
+        private static BindingFlags InstanceBindingFlag => BindingFlags.Public | BindingFlags.Instance | BindingFlags.GetProperty | BindingFlags.Static;
+        private static BindingFlags StaticBindingFlag => BindingFlags.Public | BindingFlags.Static;
 
         #endregion
 
         #region 自定义和动态求值
-
-        private Dictionary<string, object> variables = new(StringComparer.Ordinal);
 
         /// <summary>计算堆栈初始化次数，以确定是否到达了表达式入口点。在这种情况下，应该抛出传输的异常。</summary>
         private int evaluationStackCount;
@@ -665,15 +527,7 @@ namespace Arc.UniInk
         /// 的当前实例计算的表达式和脚本中可以使用的变量名/值字典 <see cref="UniInk"/><para/>
         /// 警告:复制给定的字典以管理大小写。
         /// </summary>
-        public Dictionary<string, object> Variables
-        {
-            get => variables;
-            set
-            {
-                if (value == null) return;
-                variables = new Dictionary<string, object>(value, StringComparerForCasing);
-            }
-        }
+        public Dictionary<string, object> Variables { get; set; } = new();
 
         /// <summary>在解释脚本前触发</summary>
         public event EventHandler<ExpressionEvaluationEventArg> OnEvaluatScript;
@@ -771,9 +625,8 @@ namespace Arc.UniInk
             var isReturn = valueReturned;
             var isBreak = breakCalled;
             var isContinue = continueCalled;
-            var startOfExpression = 0;
-            var ifBlockEvaluatedState = EBlockState_If.NoBlock;
-            var tryBlockEvaluatedState = EBlockState_Try.NoBlock;
+            var BlockState_If = EBlockState_If.NoBlock;
+            var BlockState_Try = EBlockState_Try.NoBlock;
             var ifElseStatementsList = new List<List<string>>();
             var tryStatementsList = new List<List<string>>();
 
@@ -781,129 +634,125 @@ namespace Arc.UniInk
 
             var result = (object)null;
 
-            var i = 0;
+            var startIndex = 0;
+            var endIndex = 0;
 
-            while (!isReturn && !isBreak && !isContinue && i < script.Length)
+            //处理代码块关键字,直到遇到第一个表达式
+            while (!isReturn && !isBreak && !isContinue && endIndex < script.Length)
             {
-                var blockKeywordsWithoutParenthesesBeginningMatch = blockKeywordsWithoutParenthesesBeginningRegex.Match(script.Substring(i));
-                var blockKeywordsBeginMatch = blockKeywordsBeginningRegex.Match(script.Substring(i));
-                var str = script.Substring(startOfExpression, i - startOfExpression);
+                var blockKeywordsBeginMatch_NoParentheses = blockKeywordBeginRegex_NoParentheses.Match(script.Substring(endIndex));
+                var blockKeywordsBeginMatch = blockKeywordBeginRegex.Match(script.Substring(endIndex));
+                var str = script.Substring(startIndex, endIndex - startIndex);
 
 
-                if (string.IsNullOrWhiteSpace(str) && (blockKeywordsBeginMatch.Success || blockKeywordsWithoutParenthesesBeginningMatch.Success))
+                if (string.IsNullOrWhiteSpace(str) && (blockKeywordsBeginMatch.Success || blockKeywordsBeginMatch_NoParentheses.Success))
                 {
-                    i += blockKeywordsBeginMatch.Success ? blockKeywordsBeginMatch.Length : blockKeywordsWithoutParenthesesBeginningMatch.Length;
-                    var keyword = blockKeywordsBeginMatch.Success ? blockKeywordsBeginMatch.Groups["keyword"].Value.Replace(" ", "").Replace("\t", "") : (blockKeywordsWithoutParenthesesBeginningMatch?.Groups["keyword"].Value ?? string.Empty);
-                    var keywordAttributes = blockKeywordsBeginMatch.Success ? GetExpressionsParenthesized(script, ref i, true, ";") : null;
+                    endIndex += blockKeywordsBeginMatch.Success ? blockKeywordsBeginMatch.Length : blockKeywordsBeginMatch_NoParentheses.Length;
+                    var keyword = blockKeywordsBeginMatch.Success ? blockKeywordsBeginMatch.Groups["keyword"].Value.Replace(" ", "").Replace("\t", "") : (blockKeywordsBeginMatch_NoParentheses?.Groups["keyword"].Value ?? string.Empty);
+                    var keywordAttributes = blockKeywordsBeginMatch.Success ? GetExpressionsParenthesized(script, ref endIndex, true, ";") : null;
 
-                    if (blockKeywordsBeginMatch.Success) i++;
+                    if (blockKeywordsBeginMatch.Success) endIndex++;
 
-                    var blockBeginningMatch = blockBeginningRegex.Match(script.Substring(i));
+                    var blockBeginningMatch = blockBeginRegex.Match(script.Substring(endIndex));
 
                     var subScript = string.Empty;
 
                     if (blockBeginningMatch.Success)
                     {
-                        i += blockBeginningMatch.Length;
+                        endIndex += blockBeginningMatch.Length;
 
-                        subScript = GetScriptBetweenCurlyBrackets(script, ref i);
+                        subScript = GetScriptBetweenCurlyBrackets(script, ref endIndex);
 
-                        i++;
+                        endIndex++;
                     }
                     else
                     {
                         var continueExpressionParsing = true;
-                        startOfExpression = i;
+                        startIndex = endIndex;
 
-                        while (i < script.Length && continueExpressionParsing)
+                        while (endIndex < script.Length && continueExpressionParsing)
                         {
-                            if (TryParseStringAndParenthisAndCurlyBrackets(ref i)) { }
-                            else if (script.Length - i > 2 && script.Substring(i, 3).Equals("';'"))
+                            if (TryParseStringAndParenthisAndCurlyBrackets(ref endIndex)) { }
+                            else if (script.Length - endIndex > 2 && script.Substring(endIndex, 3).Equals("';'"))
                             {
-                                i += 2;
+                                endIndex += 2;
                             }
-                            else if (script[i] == ';')
+                            else if (script[endIndex] == ';')
                             {
-                                subScript = script.Substring(startOfExpression, i + 1 - startOfExpression);
+                                subScript = script.Substring(startIndex, endIndex + 1 - startIndex);
                                 continueExpressionParsing = false;
                             }
 
-                            i++;
+                            endIndex++;
                         }
 
                         if (string.IsNullOrWhiteSpace(subScript)) throw new SyntaxException($"[{keyword}] 语句后无指令");
                     }
 
-                    if (keyword.Equals("elseif", StringComparisonForCasing))
+                    if (keyword.Equals("elseif"))
                     {
-                        if (ifBlockEvaluatedState == EBlockState_If.NoBlock)
-                        {
+                        if (BlockState_If == EBlockState_If.NoBlock)
                             throw new SyntaxException("[else if] 没有对应的 [if]");
-                        }
-                        else
-                        {
-                            ifElseStatementsList.Add(new List<string> { keywordAttributes[0], subScript });
-                            ifBlockEvaluatedState = EBlockState_If.ElseIf;
-                        }
+
+                        ifElseStatementsList.Add(new List<string> { keywordAttributes[0], subScript });
+                        BlockState_If = EBlockState_If.ElseIf;
                     }
-                    else if (keyword.Equals("else", StringComparisonForCasing))
+                    else if (keyword.Equals("else"))
                     {
-                        if (ifBlockEvaluatedState == EBlockState_If.NoBlock)
-                        {
+                        if (BlockState_If == EBlockState_If.NoBlock)
                             throw new SyntaxException("[else] 没有对应的 [if]");
-                        }
-                        else
-                        {
-                            ifElseStatementsList.Add(new List<string> { "true", subScript });
-                            ifBlockEvaluatedState = EBlockState_If.NoBlock;
-                        }
+
+
+                        ifElseStatementsList.Add(new List<string> { "true", subScript });
+                        BlockState_If = EBlockState_If.NoBlock;
                     }
-                    else if (keyword.Equals("catch", StringComparisonForCasing))
+                    else if (keyword.Equals("catch"))
                     {
-                        if (tryBlockEvaluatedState == EBlockState_Try.NoBlock)
+                        if (BlockState_Try == EBlockState_Try.NoBlock)
                             throw new SyntaxException(" [catch] 没有对应的  [try] ");
 
                         tryStatementsList.Add(new List<string> { "catch", keywordAttributes.Count > 0 ? keywordAttributes[0] : null, subScript });
-                        tryBlockEvaluatedState = EBlockState_Try.Catch;
+                        BlockState_Try = EBlockState_Try.Catch;
                     }
-                    else if (keyword.Equals("finally", StringComparisonForCasing))
+                    else if (keyword.Equals("finally"))
                     {
-                        if (tryBlockEvaluatedState == EBlockState_Try.NoBlock)
+                        if (BlockState_Try == EBlockState_Try.NoBlock)
                             throw new SyntaxException(" [finally] 没有对应的  [try]");
 
                         tryStatementsList.Add(new List<string> { "finally", subScript });
-                        tryBlockEvaluatedState = EBlockState_Try.NoBlock;
+                        BlockState_Try = EBlockState_Try.NoBlock;
                     }
                     else
                     {
-                        ExecuteBlocksStacks();
+                        ExecuteTryList();
+                        ExecuteIfList();
 
-                        if (keyword.Equals("if", StringComparisonForCasing))
+                        if (keyword.Equals("if"))
                         {
                             ifElseStatementsList.Add(new List<string> { keywordAttributes[0], subScript });
-                            ifBlockEvaluatedState = EBlockState_If.If;
-                            tryBlockEvaluatedState = EBlockState_Try.NoBlock;
+                            BlockState_If = EBlockState_If.If;
+                            BlockState_Try = EBlockState_Try.NoBlock;
                         }
-                        else if (keyword.Equals("try", StringComparisonForCasing))
+                        else if (keyword.Equals("try"))
                         {
                             tryStatementsList.Add(new List<string> { subScript });
-                            ifBlockEvaluatedState = EBlockState_If.NoBlock;
-                            tryBlockEvaluatedState = EBlockState_Try.Try;
+                            BlockState_If = EBlockState_If.NoBlock;
+                            BlockState_Try = EBlockState_Try.Try;
                         }
-                        else if (keyword.Equals("do", StringComparisonForCasing))
+                        else if (keyword.Equals("do"))
                         {
-                            if ((blockKeywordsBeginMatch = blockKeywordsBeginningRegex.Match(script.Substring(i))).Success && blockKeywordsBeginMatch.Groups["keyword"].Value.Equals("while", StringComparisonForCasing))
+                            if ((blockKeywordsBeginMatch = blockKeywordBeginRegex.Match(script.Substring(endIndex))).Success && blockKeywordsBeginMatch.Groups["keyword"].Value.Equals("while"))
                             {
-                                i += blockKeywordsBeginMatch.Length;
-                                keywordAttributes = GetExpressionsParenthesized(script, ref i, true, ";");
+                                endIndex += blockKeywordsBeginMatch.Length;
+                                keywordAttributes = GetExpressionsParenthesized(script, ref endIndex, true, ";");
 
-                                i++;
+                                endIndex++;
 
                                 Match nextIsEndOfExpressionMatch;
 
-                                if ((nextIsEndOfExpressionMatch = nextIsEndOfExpressionRegex.Match(script.Substring(i))).Success)
+                                if ((nextIsEndOfExpressionMatch = nextIsEndOfExpressionRegex.Match(script.Substring(endIndex))).Success)
                                 {
-                                    i += nextIsEndOfExpressionMatch.Length;
+                                    endIndex += nextIsEndOfExpressionMatch.Length;
 
                                     do
                                     {
@@ -931,7 +780,7 @@ namespace Arc.UniInk
                                 throw new SyntaxException("No [while] keyword after the [do] keyword and block");
                             }
                         }
-                        else if (keyword.Equals("while", StringComparisonForCasing))
+                        else if (keyword.Equals("while"))
                         {
                             while (!isReturn && (bool)ManageJumpStatementsOrExpressionEval(keywordAttributes[0]))
                             {
@@ -949,7 +798,7 @@ namespace Arc.UniInk
                                 }
                             }
                         }
-                        else if (keyword.Equals("for", StringComparisonForCasing))
+                        else if (keyword.Equals("for"))
                         {
                             void forAction(int index)
                             {
@@ -973,7 +822,7 @@ namespace Arc.UniInk
                                 }
                             }
                         }
-                        else if (keyword.Equals("foreach", StringComparisonForCasing))
+                        else if (keyword.Equals("foreach"))
                         {
                             var foreachParenthisEvaluationMatch = foreachParenThisEvaluationRegex.Match(keywordAttributes[0]);
 
@@ -981,7 +830,7 @@ namespace Arc.UniInk
                             {
                                 throw new SyntaxException("wrong foreach syntax");
                             }
-                            else if (!foreachParenthisEvaluationMatch.Groups["in"].Value.Equals("in", StringComparisonForCasing))
+                            else if (!foreachParenthisEvaluationMatch.Groups["in"].Value.Equals("in"))
                             {
                                 throw new SyntaxException("no [in] keyword found in foreach");
                             }
@@ -1008,55 +857,41 @@ namespace Arc.UniInk
                         }
                     }
 
-                    startOfExpression = i;
+                    startIndex = endIndex;
                 }
                 else
                 {
-                    ExecuteBlocksStacks();
+                    ExecuteTryList();
+                    ExecuteIfList();
 
-                    var executed = false;
-
-                    if (TryParseStringAndParenthisAndCurlyBrackets(ref i)) { }
-                    else if (script.Length - i > 2 && script.Substring(i, 3).Equals("';'"))
+                    if (TryParseStringAndParenthisAndCurlyBrackets(ref endIndex)) { }
+                    else if (script.Length - endIndex > 2 && script.Substring(endIndex, 3).Equals("';'"))
                     {
-                        i += 2;
+                        endIndex += 2;
                     }
-                    else if (script[i] == ';')
+                    else if (script[endIndex] == ';')
                     {
-                        lastResult = ScriptExpressionEvaluate(ref i);
-                        executed = true;
+                        lastResult = ScriptExpressionEvaluate(ref endIndex);
                     }
 
-                    if (!OptionNeedScriptEndSemicolon && i == script.Length - 1 && !executed)
-                    {
-                        i++;
-                        lastResult = ScriptExpressionEvaluate(ref i);
-                        startOfExpression--;
-                    }
+                    BlockState_If = EBlockState_If.NoBlock;
+                    BlockState_Try = EBlockState_Try.NoBlock;
 
-                    ifBlockEvaluatedState = EBlockState_If.NoBlock;
-                    tryBlockEvaluatedState = EBlockState_Try.NoBlock;
-
-                    if (OptionNeedScriptEndSemicolon || i < script.Length) i++;
+                    endIndex++;
                 }
             }
 
-            if (!script.Substring(startOfExpression).Trim().Equals(string.Empty) && !isReturn && !isBreak && !isContinue && OptionNeedScriptEndSemicolon)
+            if (!script.Substring(startIndex).Trim().Equals(string.Empty) && !isReturn && !isBreak && !isContinue)
                 throw new SyntaxException($"{script} 中缺少 [;] 字符");
 
-            ExecuteBlocksStacks();
+            ExecuteTryList();
+            ExecuteIfList();
 
             valueReturned = isReturn;
             breakCalled = isBreak;
             continueCalled = isContinue;
 
             return lastResult;
-
-            void ExecuteBlocksStacks()
-            {
-                ExecuteTryList();
-                ExecuteIfList();
-            }
 
             void ExecuteTryList()
             {
@@ -1130,7 +965,7 @@ namespace Arc.UniInk
             bool TryParseStringAndParenthisAndCurlyBrackets(ref int index)
             {
                 var parsed = true;
-                var internalStringMatch = stringBeginningRegex.Match(script.Substring(index));
+                var internalStringMatch = stringBeginRegex.Match(script.Substring(index));
 
                 if (internalStringMatch.Success)
                 {
@@ -1163,9 +998,9 @@ namespace Arc.UniInk
             //依次解释指定段落的脚本
             object ScriptExpressionEvaluate(ref int index)
             {
-                var expression = script.Substring(startOfExpression, index - startOfExpression);
+                var expression = script.Substring(startIndex, index - startIndex);
 
-                startOfExpression = index + 1;
+                startIndex = index + 1;
 
                 return ManageJumpStatementsOrExpressionEval(expression);
             }
@@ -1175,19 +1010,19 @@ namespace Arc.UniInk
             {
                 expression = expression.Trim(); //修剪空字符串
 
-                if (expression.Equals("break", StringComparisonForCasing))
+                if (expression.Equals("break"))
                 {
                     isBreak = true;
                     return result;
                 }
 
-                if (expression.Equals("continue", StringComparisonForCasing))
+                if (expression.Equals("continue"))
                 {
                     isContinue = true;
                     return result;
                 }
 
-                if (expression.StartsWith("throw ", StringComparisonForCasing))
+                if (expression.StartsWith("throw "))
                 {
                     if (Evaluate(expression.Remove(0, 6)) is Exception exception) //移除throw 关键字
                     {
@@ -1201,7 +1036,7 @@ namespace Arc.UniInk
 
                 expression = returnKeywordRegex.Replace(expression, match =>
                 {
-                    if (OptionCaseSensitiveEvaluationActive && !match.Value.StartsWith("return"))
+                    if (!match.Value.StartsWith("return"))
                         return match.Value;
 
                     isReturn = true;
@@ -1292,10 +1127,10 @@ namespace Arc.UniInk
 
         #region 子部分求值方法(protected virtual)
 
-        /// <summary>解析强转</summary>
+        /// <summary>解析强转:(int)</summary>
         private bool EvaluateCast(string expression, Stack<object> stack, ref int i)
         {
-            var castMatch = Regex.Match(expression.Substring(i), CastRegexPattern, regexOption);
+            var castMatch = castRegex.Match(expression.Substring(i));
 
             if (castMatch.Success)
             {
@@ -1316,34 +1151,12 @@ namespace Arc.UniInk
             return false;
         }
 
-        /// <summary>解析数字</summary>
+        /// <summary>解析数字:只能是十进制类型</summary>
         /// <remarks>可以识别<code>int a=666_666</code>这种分隔符</remarks>
         /// 所有的数字会被转换为double类型或者int类型
         private bool EvaluateNumber(string expression, Stack<object> stack, ref int i)
         {
-            var restOfExpression = expression.Substring(i);
-            var numberMatch = Regex.Match(restOfExpression, numberRegexPattern, RegexOptions.IgnoreCase);
-            var otherBaseMatch = otherBasesNumberRegex.Match(restOfExpression);
-            //匹配进制类型成功 && ( 前面无符号 || 栈为空 || 栈顶为运算符 )
-            if (otherBaseMatch.Success && (!otherBaseMatch.Groups["sign"].Success || stack.Count == 0 || stack.Peek() is ExpressionOperator))
-            {
-                i += otherBaseMatch.Length;
-                i--;
-
-                var baseValue = otherBaseMatch.Groups["type"].Value.Equals("b") ? 2 : 16;
-
-                if (otherBaseMatch.Groups["sign"].Success)
-                {
-                    var value = otherBaseMatch.Groups["value"].Value.Replace("_", "").Substring(2);
-                    stack.Push(otherBaseMatch.Groups["sign"].Value.Equals("-") ? -Convert.ToInt32(value, baseValue) : Convert.ToInt32(value, baseValue));
-                }
-                else
-                {
-                    stack.Push(Convert.ToInt32(otherBaseMatch.Value.Replace("_", "").Substring(2), baseValue));
-                }
-
-                return true;
-            }
+            var numberMatch = numberRegex.Match(expression.Substring(i));
 
             //匹配成功 && ( 前面无符号 || 栈为空 || 栈顶为运算符 )
             if (numberMatch.Success && (!numberMatch.Groups["sign"].Success || stack.Count == 0 || stack.Peek() is ExpressionOperator))
@@ -1358,22 +1171,21 @@ namespace Arc.UniInk
 
                     if (numberSuffixToParse.TryGetValue(type, out var parseFunc))
                     {
-                        stack.Push(parseFunc(numberNoType, CultureInfoForNumberParsing));
+                        stack.Push(parseFunc(numberNoType));
                     }
                 }
-                else if (OptionForceIntegerNumbersEvaluationsAsDoubleByDefault || numberMatch.Groups["hasdecimal"].Success)
+                else if (numberMatch.Groups["hasdecimal"].Success) //只要有小数点就被解析为double类型
                 {
-                    stack.Push(double.Parse(numberMatch.Value.Replace("_", ""), NumberStyles.Any, CultureInfoForNumberParsing));
+                    stack.Push(double.Parse(numberMatch.Value.Replace("_", "")));
                 }
                 else
                 {
-                    stack.Push(int.Parse(numberMatch.Value.Replace("_", ""), NumberStyles.Any, CultureInfoForNumberParsing));
+                    stack.Push(int.Parse(numberMatch.Value.Replace("_", "")));
                 }
 
                 return true;
             }
 
-            //匹配失败
             return false;
         }
 
@@ -1413,7 +1225,7 @@ namespace Arc.UniInk
                 {
                     object element = null;
 
-                    var initArgs = GetExpressionsParenthesized(expression, ref i, true, OptionInitializersSeparator, "{", "}");
+                    var initArgs = GetExpressionsParenthesized(expression, ref i, true, ",", "{", "}");
 
                     InitSimpleObjet(element, initArgs);
 
@@ -1444,7 +1256,7 @@ namespace Arc.UniInk
                             {
                                 var subIndex = subExpr.IndexOf("{", StringComparison.Ordinal) + 1;
 
-                                var subArgs = GetExpressionsParenthesized(subExpr, ref subIndex, true, OptionInitializersSeparator, "{", "}");
+                                var subArgs = GetExpressionsParenthesized(subExpr, ref subIndex, true, ",", "{", "}");
 
                                 if (subArgs.Count == 2)
                                 {
@@ -1466,20 +1278,20 @@ namespace Arc.UniInk
 
                     if (instanceCreationMatch.Groups["isfunction"].Success)
                     {
-                        var constructorArgs = GetExpressionsParenthesized(expression, ref i, true, OptionFunctionArgumentsSeparator);
+                        var constructorArgs = GetExpressionsParenthesized(expression, ref i, true);
                         i++;
 
                         var cArgs = constructorArgs.ConvertAll(Evaluate);
 
                         var element = Activator.CreateInstance(type, cArgs.ToArray());
 
-                        var blockBeginningMatch = blockBeginningRegex.Match(expression.Substring(i));
+                        var blockBeginningMatch = blockBeginRegex.Match(expression.Substring(i));
 
                         if (blockBeginningMatch.Success)
                         {
                             i += blockBeginningMatch.Length;
 
-                            var initArgs = GetExpressionsParenthesized(expression, ref i, true, OptionInitializersSeparator, "{", "}");
+                            var initArgs = GetExpressionsParenthesized(expression, ref i, true, ",", "{", "}");
 
                             Init(element, initArgs);
                         }
@@ -1494,7 +1306,7 @@ namespace Arc.UniInk
                     {
                         var element = Activator.CreateInstance(type, new object[0]);
 
-                        var initArgs = GetExpressionsParenthesized(expression, ref i, true, OptionInitializersSeparator, "{", "}");
+                        var initArgs = GetExpressionsParenthesized(expression, ref i, true, ",", "{", "}");
 
                         Init(element, initArgs);
 
@@ -1502,7 +1314,7 @@ namespace Arc.UniInk
                     }
                     else if (instanceCreationMatch.Groups["isArray"].Success)
                     {
-                        var arrayArgs = GetExpressionsParenthesized(expression, ref i, true, OptionInitializersSeparator, "[", "]");
+                        var arrayArgs = GetExpressionsParenthesized(expression, ref i, true, ",", "[", "]");
                         i++;
                         Array array = null;
 
@@ -1517,7 +1329,7 @@ namespace Arc.UniInk
                         {
                             i += initInNewBeginningMatch.Length;
 
-                            var arrayElements = GetExpressionsParenthesized(expression, ref i, true, OptionInitializersSeparator, "{", "}");
+                            var arrayElements = GetExpressionsParenthesized(expression, ref i, true, ",", "{", "}");
 
                             if (array == null)
                                 array = Array.CreateInstance(type, arrayElements.Count);
@@ -1565,10 +1377,10 @@ namespace Arc.UniInk
                 if (varFuncMatch.Groups["isfunction"].Success)
                 {
                     //找到括号包裹的部分(参数)
-                    var funcArgs = GetExpressionsParenthesized(expression, ref i, true, OptionFunctionArgumentsSeparator);
+                    var funcArgs = GetExpressionsParenthesized(expression, ref i, true);
 
                     //如果是对象的方法,或者是this的方法
-                    if (inObject || (Context?.GetType().GetMethods(InstanceBindingFlag).Any(methodInfo => methodInfo.Name.Equals(varFuncName, StringComparisonForCasing)) ?? false))
+                    if (inObject || (Context?.GetType().GetMethods(InstanceBindingFlag).Any(methodInfo => methodInfo.Name.Equals(varFuncName)) ?? false))
                     {
                         if (inObject && (stack.Count == 0 || stack.Peek() is ExpressionOperator))
                             throw new SyntaxException($"[{varFuncMatch.Value})] 必须紧跟一个对象"); //只有点
@@ -1632,11 +1444,11 @@ namespace Arc.UniInk
                                             {
                                                 var fixedType = ((ClassOrEnumType)Evaluate(functionArgKeywordsMatch.Groups["typeName"].Value)).Type;
 
-                                                variables[argKeywordEncaps.VariableName] = new StronglyTypedVariable { Type = fixedType, Value = GetDefaultValueOfType(fixedType) };
+                                                Variables[argKeywordEncaps.VariableName] = new StronglyTypedVariable { Type = fixedType, Value = GetDefaultValueOfType(fixedType) };
                                             }
-                                            else if (!variables.ContainsKey(argKeywordEncaps.VariableName))
+                                            else if (!Variables.ContainsKey(argKeywordEncaps.VariableName))
                                             {
-                                                variables[argKeywordEncaps.VariableName] = null;
+                                                Variables[argKeywordEncaps.VariableName] = null;
                                             }
 
                                             argValue = Evaluate(functionArgKeywordsMatch.Groups["toEval"].Value);
@@ -1690,7 +1502,7 @@ namespace Arc.UniInk
                                         {
                                             var argsArray = oArgs.ToArray();
                                             stack.Push(methodInfo.Invoke(isExtention ? null : obj, argsArray));
-                                            argsWithKeywords.FindAll(argWithKeyword => argWithKeyword.Keyword.Equals("out", StringComparisonForCasing) || argWithKeyword.Keyword.Equals("ref", StringComparisonForCasing)).ForEach(outOrRefArg => AssignVariable(outOrRefArg.VariableName, argsArray[outOrRefArg.Index + (isExtention ? 1 : 0)]));
+                                            argsWithKeywords.FindAll(argWithKeyword => argWithKeyword.Keyword.Equals("out") || argWithKeyword.Keyword.Equals("ref")).ForEach(outOrRefArg => AssignVariable(outOrRefArg.VariableName, argsArray[outOrRefArg.Index + (isExtention ? 1 : 0)]));
                                         }
                                         else if (objType.GetProperty(varFuncName, StaticBindingFlag) is PropertyInfo staticPropertyInfo && (staticPropertyInfo.PropertyType.IsSubclassOf(typeof(Delegate)) || staticPropertyInfo.PropertyType == typeof(Delegate)) && staticPropertyInfo.GetValue(obj) is Delegate del2)
                                         {
@@ -1708,29 +1520,27 @@ namespace Arc.UniInk
                                             }
                                             else
                                             {
-                                                if (OptionDetectExtensionMethodsOverloadsOnExtensionMethodNotFound)
+                                                var query = from type in StaticTypesForExtensionsMethods
+                                                    where !type.IsGenericType && type.IsSealed && !type.IsNested
+                                                    from method in type.GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)
+                                                    where method.IsDefined(typeof(ExtensionAttribute), false)
+                                                    where method.GetParameters()[0].ParameterType == objType // static extMethod(this outType, ...)
+                                                    select method;
+
+                                                if (query.Any())
                                                 {
-                                                    var query = from type in StaticTypesForExtensionsMethods
-                                                        where !type.IsGenericType && type.IsSealed && !type.IsNested
-                                                        from method in type.GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)
-                                                        where method.IsDefined(typeof(ExtensionAttribute), false)
-                                                        where method.GetParameters()[0].ParameterType == objType // static extMethod(this outType, ...)
-                                                        select method;
+                                                    var fnArgsPrint = string.Join(",", funcArgs);
+                                                    var fnOverloadsPrint = "";
 
-                                                    if (query.Any())
+                                                    foreach (var mi in query)
                                                     {
-                                                        var fnArgsPrint = string.Join(",", funcArgs);
-                                                        var fnOverloadsPrint = "";
-
-                                                        foreach (var mi in query)
-                                                        {
-                                                            var parInfo = mi.GetParameters();
-                                                            fnOverloadsPrint += string.Join(",", parInfo.Select(x => x.ParameterType.FullName ?? x.ParameterType.Name)) + "\n";
-                                                        }
-
-                                                        throw new SyntaxException($"[{objType}] extension method \"{varFuncName}\" has no overload for arguments: {fnArgsPrint}. Candidates: {fnOverloadsPrint}");
+                                                        var parInfo = mi.GetParameters();
+                                                        fnOverloadsPrint += string.Join(",", parInfo.Select(x => x.ParameterType.FullName ?? x.ParameterType.Name)) + "\n";
                                                     }
+
+                                                    throw new SyntaxException($"[{objType}] extension method \"{varFuncName}\" has no overload for arguments: {fnArgsPrint}. Candidates: {fnOverloadsPrint}");
                                                 }
+
 
                                                 throw new SyntaxException($"[{objType}] 对象方法  [{varFuncName}] ");
                                             }
@@ -1817,7 +1627,7 @@ namespace Arc.UniInk
                 //是变量，对象的情况
                 else
                 {
-                    if (inObject || Context?.GetType().GetProperties(InstanceBindingFlag).Any(propInfo => propInfo.Name.Equals(varFuncName, StringComparisonForCasing)) == true || Context?.GetType().GetFields(InstanceBindingFlag).Any(fieldInfo => fieldInfo.Name.Equals(varFuncName, StringComparisonForCasing)) == true)
+                    if (inObject || Context?.GetType().GetProperties(InstanceBindingFlag).Any(propInfo => propInfo.Name.Equals(varFuncName)) == true || Context?.GetType().GetFields(InstanceBindingFlag).Any(fieldInfo => fieldInfo.Name.Equals(varFuncName)) == true)
                     {
                         if (inObject && (stack.Count == 0 || stack.Peek() is ExpressionOperator))
                             throw new SyntaxException($"[{varFuncMatch.Value}] 后面必须有一个对象");
@@ -2213,7 +2023,7 @@ namespace Arc.UniInk
         {
             var regexPattern = "^(" + string.Join("|", operatorsDictionary.Keys.OrderByDescending(key => key.Length).Select(Regex.Escape)) + ")";
 
-            var match = Regex.Match(expression.Substring(i), regexPattern, optionCaseSensitiveEvaluationActive ? RegexOptions.None : RegexOptions.IgnoreCase);
+            var match = Regex.Match(expression.Substring(i), regexPattern, RegexOptions.None);
 
             if (match.Success)
             {
@@ -2245,7 +2055,7 @@ namespace Arc.UniInk
                 {
                     var s2 = restOfExpression.Substring(j, 1);
 
-                    var internalStringMatch = stringBeginningRegex.Match(restOfExpression.Substring(j));
+                    var internalStringMatch = stringBeginRegex.Match(restOfExpression.Substring(j));
 
                     if (internalStringMatch.Success)
                     {
@@ -2481,7 +2291,7 @@ namespace Arc.UniInk
         /// <summary>解析字符串</summary>
         private bool EvaluateString(string expression, Stack<object> stack, ref int i)
         {
-            var stringBeginningMatch = stringBeginningRegex.Match(expression.Substring(i));
+            var stringBeginningMatch = stringBeginRegex.Match(expression.Substring(i));
 
             if (stringBeginningMatch.Success)
             {
@@ -2538,7 +2348,7 @@ namespace Arc.UniInk
                                 }
                                 else
                                 {
-                                    var internalStringMatch = stringBeginningRegex.Match(expression.Substring(i));
+                                    var internalStringMatch = stringBeginRegex.Match(expression.Substring(i));
 
                                     if (internalStringMatch.Success)
                                     {
@@ -2875,21 +2685,21 @@ namespace Arc.UniInk
 
             stack.Push(new InternalDelegate((object[] args) =>
             {
-                var vars = new Dictionary<string, object>(variables);
+                var vars = new Dictionary<string, object>(Variables);
 
                 for (var a = 0; a < argsNames.Count || a < args.Length; a++)
                 {
                     vars[argsNames[a].Value] = args[a];
                 }
 
-                var savedVars = variables;
+                var savedVars = Variables;
                 Variables = vars;
 
                 var lambdaBody = lambdaExpressionMatch.Groups["expression"].Value.Trim();
 
                 object result = null;
 
-                if (OptionCanDeclareMultiExpressionsLambdaInSimpleExpressionEvaluate && lambdaBody.StartsWith("{") && lambdaBody.EndsWith("}"))
+                if (lambdaBody.StartsWith("{") && lambdaBody.EndsWith("}"))
                 {
                     result = ScriptEvaluate(lambdaBody.Substring(1, lambdaBody.Length - 2));
                 }
@@ -2898,7 +2708,7 @@ namespace Arc.UniInk
                     result = Evaluate(lambdaExpressionMatch.Groups["expression"].Value);
                 }
 
-                variables = savedVars;
+                Variables = savedVars;
 
                 return result;
             }));
@@ -2915,7 +2725,7 @@ namespace Arc.UniInk
 
             bool parameterValidate(ParameterInfo p) => p.Position >= modifiedArgs.Count || (testForExtension && p.Position == 0) || modifiedArgs[p.Position] == null || IsCastable(modifiedArgs[p.Position].GetType(), p.ParameterType) || typeof(Delegate).IsAssignableFrom(p.ParameterType) || p.IsDefined(typeof(ParamArrayAttribute)) || (p.ParameterType.IsByRef && argsWithKeywords.Any(a => a.Index == p.Position + (testForExtension ? 1 : 0)));
 
-            bool methodByNameFilter(MethodInfo m) => m.Name.Equals(func, StringComparisonForCasing) && (m.GetParameters().Length == modifiedArgs.Count || (m.GetParameters().Length > modifiedArgs.Count && m.GetParameters().Take(modifiedArgs.Count).All(p => modifiedArgs[p.Position] == null || IsCastable(modifiedArgs[p.Position].GetType(), p.ParameterType)) && m.GetParameters().Skip(modifiedArgs.Count).All(p => p.HasDefaultValue)) || (m.GetParameters().Length > 0 && m.GetParameters().Last().IsDefined(typeof(ParamArrayAttribute), false) && m.GetParameters().All(parameterValidate)));
+            bool methodByNameFilter(MethodInfo m) => m.Name.Equals(func) && (m.GetParameters().Length == modifiedArgs.Count || (m.GetParameters().Length > modifiedArgs.Count && m.GetParameters().Take(modifiedArgs.Count).All(p => modifiedArgs[p.Position] == null || IsCastable(modifiedArgs[p.Position].GetType(), p.ParameterType)) && m.GetParameters().Skip(modifiedArgs.Count).All(p => p.HasDefaultValue)) || (m.GetParameters().Length > 0 && m.GetParameters().Last().IsDefined(typeof(ParamArrayAttribute), false) && m.GetParameters().All(parameterValidate)));
 
             var methodInfos = type.GetMethods(flag).Where(methodByNameFilter).OrderByDescending(m => m.GetParameters().Length).ToList();
 
@@ -3270,7 +3080,7 @@ namespace Arc.UniInk
             var bracketCount = 1;
             for (; index < parentScript.Length; index++)
             {
-                var internalStringMatch = stringBeginningRegex.Match(parentScript.Substring(index));
+                var internalStringMatch = stringBeginRegex.Match(parentScript.Substring(index));
                 var internalCharMatch = internalCharRegex.Match(parentScript.Substring(index));
 
                 if (internalStringMatch.Success)
@@ -3288,7 +3098,10 @@ namespace Arc.UniInk
                 {
                     var s = parentScript.Substring(index, 1);
 
-                    if (s.Equals("{")) bracketCount++;
+                    if (s.Equals("{"))
+                    {
+                        bracketCount++;
+                    }
 
                     if (s.Equals("}"))
                     {
@@ -3308,7 +3121,7 @@ namespace Arc.UniInk
             return currentScript;
         }
 
-        /// <summary>获取圆括号或其他不可混淆的括号之间的表达式列表</summary>
+        /// <summary>获取指定括号之间的表达式列表</summary>
         private List<string> GetExpressionsParenthesized(string expression, ref int i, bool checkSeparator, string separator = ",", string startChar = "(", string endChar = ")")
         {
             var expressionsList = new List<string>();
@@ -3318,7 +3131,7 @@ namespace Arc.UniInk
             for (; i < expression.Length; i++)
             {
                 var subExpr = expression.Substring(i);
-                var internalStringMatch = stringBeginningRegex.Match(subExpr);
+                var internalStringMatch = stringBeginRegex.Match(subExpr);
                 var internalCharMatch = internalCharRegex.Match(subExpr);
 
                 if (internalStringMatch.Success)
@@ -3340,23 +3153,28 @@ namespace Arc.UniInk
                     {
                         bracketCount++;
                     }
-                    else if (s.Equals("("))
+                    else
                     {
-                        i++;
-                        currentExpression += "(" + GetExpressionsParenthesized(expression, ref i, false, ",", "(", ")").SingleOrDefault() + ")";
-                        continue;
-                    }
-                    else if (s.Equals("{"))
-                    {
-                        i++;
-                        currentExpression += "{" + GetExpressionsParenthesized(expression, ref i, false, ",", "{", "}").SingleOrDefault() + "}";
-                        continue;
-                    }
-                    else if (s.Equals("["))
-                    {
-                        i++;
-                        currentExpression += "[" + GetExpressionsParenthesized(expression, ref i, false, ",", "[", "]").SingleOrDefault() + "]";
-                        continue;
+                        if (s == "(")
+                        {
+                            i++;
+                            currentExpression += $"({GetExpressionsParenthesized(expression, ref i, false, ",", "(", ")").SingleOrDefault()})";
+                            continue;
+                        }
+
+                        if (s == "{")
+                        {
+                            i++;
+                            currentExpression += $"{{{GetExpressionsParenthesized(expression, ref i, false, ",", "{", "}").SingleOrDefault()}}}";
+                            continue;
+                        }
+
+                        if (s == "[")
+                        {
+                            i++;
+                            currentExpression += $"[{GetExpressionsParenthesized(expression, ref i, false, ",", "[", "]").SingleOrDefault()}]";
+                            continue;
+                        }
                     }
 
                     if (s.Equals(endChar))
@@ -3364,7 +3182,7 @@ namespace Arc.UniInk
                         bracketCount--;
                         if (bracketCount == 0)
                         {
-                            if (!currentExpression.Trim().Equals(string.Empty))
+                            if (!string.IsNullOrWhiteSpace(currentExpression))
                                 expressionsList.Add(currentExpression);
                             break;
                         }
@@ -3443,24 +3261,24 @@ namespace Arc.UniInk
                         formattedGenericTypes = $"`{types.Length}[{string.Join(", ", types.Select(type => $"[{type.AssemblyQualifiedName}]"))}]";
                     }
 
-                    result = Type.GetType(typeName + formattedGenericTypes, false, !OptionCaseSensitiveEvaluationActive);
+                    result = Type.GetType(typeName + formattedGenericTypes, false, false);
                 }
 
 
-                result ??= Types.Find(_type => _type.Name.Equals(typeName, StringComparisonForCasing));
+                result ??= Types.Find(_type => _type.Name.Equals(typeName));
 
 
                 for (var a = 0; a < Assemblies.Count && result == null; a++)
                 {
                     if (typeName.Contains("."))
                     {
-                        result = Type.GetType($"{typeName}{formattedGenericTypes},{Assemblies[a].FullName}", false, !OptionCaseSensitiveEvaluationActive);
+                        result = Type.GetType($"{typeName}{formattedGenericTypes},{Assemblies[a].FullName}", false, false);
                     }
                     else
                     {
                         for (var i = 0; i < Namespaces.Count && result == null; i++)
                         {
-                            result = Type.GetType($"{Namespaces[i]}.{typeName}{formattedGenericTypes},{Assemblies[a].FullName}", false, !OptionCaseSensitiveEvaluationActive);
+                            result = Type.GetType($"{Namespaces[i]}.{typeName}{formattedGenericTypes},{Assemblies[a].FullName}", false, false);
                         }
                     }
                 }
@@ -3752,51 +3570,6 @@ namespace Arc.UniInk
                 lambda(arg1, arg2, arg3, arg4, arg5, arg6, arg7);
             }
 
-            public void Action8<T1, T2, T3, T4, T5, T6, T7, T8>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8)
-            {
-                lambda(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
-            }
-
-            public void Action9<T1, T2, T3, T4, T5, T6, T7, T8, T9>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9)
-            {
-                lambda(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
-            }
-
-            public void Action10<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10)
-            {
-                lambda(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10);
-            }
-
-            public void Action11<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11)
-            {
-                lambda(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11);
-            }
-
-            public void Action12<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12)
-            {
-                lambda(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12);
-            }
-
-            public void Action13<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, T13 arg13)
-            {
-                lambda(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13);
-            }
-
-            public void Action14<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, T13 arg13, T14 arg14)
-            {
-                lambda(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14);
-            }
-
-            public void Action15<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, T13 arg13, T14 arg14, T15 arg15)
-            {
-                lambda(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15);
-            }
-
-            public void Action16<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, T13 arg13, T14 arg14, T15 arg15, T16 arg16)
-            {
-                lambda(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16);
-            }
-
             public TResult Func0<TResult>() => (TResult)lambda();
 
             public TResult Func1<T, TResult>(T arg) => (TResult)lambda(arg);
@@ -3829,51 +3602,6 @@ namespace Arc.UniInk
             public TResult Func7<T1, T2, T3, T4, T5, T6, T7, TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7)
             {
                 return (TResult)lambda(arg1, arg2, arg3, arg4, arg5, arg6, arg7);
-            }
-
-            public TResult Func8<T1, T2, T3, T4, T5, T6, T7, T8, TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8)
-            {
-                return (TResult)lambda(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
-            }
-
-            public TResult Func9<T1, T2, T3, T4, T5, T6, T7, T8, T9, TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9)
-            {
-                return (TResult)lambda(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
-            }
-
-            public TResult Func10<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10)
-            {
-                return (TResult)lambda(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10);
-            }
-
-            public TResult Func11<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11)
-            {
-                return (TResult)lambda(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11);
-            }
-
-            public TResult Func12<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12)
-            {
-                return (TResult)lambda(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12);
-            }
-
-            public TResult Func13<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, T13 arg13)
-            {
-                return (TResult)lambda(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13);
-            }
-
-            public TResult Func14<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, T13 arg13, T14 arg14)
-            {
-                return (TResult)lambda(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14);
-            }
-
-            public TResult Func15<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, T13 arg13, T14 arg14, T15 arg15)
-            {
-                return (TResult)lambda(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15);
-            }
-
-            public TResult Func16<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, T13 arg13, T14 arg14, T15 arg15, T16 arg16)
-            {
-                return (TResult)lambda(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16);
             }
         }
 
@@ -4401,5 +4129,7 @@ namespace Arc.UniInk
         #endregion
     }
 }
+//4132行
+//4225行
 //4404行
 //4562行

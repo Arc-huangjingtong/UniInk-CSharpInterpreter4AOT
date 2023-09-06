@@ -35,13 +35,14 @@ namespace Arc.UniInk.Test
         }
 
         [Test]
-        [TestCase("var a = 2+4;return a;")]//测试四种返回时的行为
+        [TestCase("var a = 2+4;return a;")] //测试四种返回时的行为
         [TestCase("var a = 4-2;a;")]
         [TestCase("var a = 4-2;")]
         [TestCase("4/2;")]
+        [TestCase("Test();")]
+        [TestCase("Test(@\"aaa\");")]
         public void Test_02(string script)
         {
-         
             var test = new HelperClass();
             var Ink = new UniInk(test);
             var ans = Ink.ScriptEvaluate($"{script}");
@@ -55,5 +56,21 @@ namespace Arc.UniInk.Test
     public class HelperClass
     {
         public int Id = 233;
+
+        public string aaa = "2222";
+
+        ///无参数的测试函数
+        public static int Test()
+        {
+            Console.WriteLine("test");
+            return 1;
+        }
+
+        ///有参数的测试函数
+        public static string Test(string str)
+        {
+            Console.WriteLine(str);
+            return str;
+        }
     }
 }
