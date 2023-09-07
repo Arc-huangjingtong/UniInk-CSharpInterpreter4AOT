@@ -11,7 +11,6 @@ namespace Arc.UniInk
     using System;
     using System.Collections;
     using System.Collections.Generic;
-    using System.Globalization;
     using System.Linq;
     using System.Reflection;
     using System.Runtime.CompilerServices;
@@ -260,6 +259,11 @@ namespace Arc.UniInk
             {
                 ExpressionOperator.Plus, (left, right) =>
                 {
+                    if ((right is String) && (left is String))
+                    {
+                        return (String)left + (String)right;
+                    }
+
                     if (!left.GetType().IsValueType || !right.GetType().IsValueType) return null;
                     if (left is IConvertible leftConvertible)
                     {
@@ -270,6 +274,7 @@ namespace Arc.UniInk
                     {
                         right = rightConvertible.ToInt32(null);
                     }
+
 
                     return (int)left + (int)right; //报错InvalidCastException: Specified cast is not valid.
                 }
@@ -331,7 +336,7 @@ namespace Arc.UniInk
         };
 
         /// <summary>默认变量</summary>
-        private Dictionary<string, object> defaultVariables = new(StringComparer.Ordinal)
+        private readonly Dictionary<string, object> defaultVariables = new()
         {
             { "Pi", Math.PI },
             { "E", Math.E },
@@ -342,7 +347,7 @@ namespace Arc.UniInk
         };
 
         ///简单的浮点数计算函数
-        private Dictionary<string, Func<double, double>> simpleDoubleMathFuncDictionary = new(StringComparer.Ordinal)
+        private readonly Dictionary<string, Func<double, double>> simpleDoubleMathFuncDictionary = new()
         {
             { "Abs", Math.Abs },
             { "Acos", Math.Acos },
@@ -363,13 +368,13 @@ namespace Arc.UniInk
         };
 
         ///复杂的双参数计算函数
-        private Dictionary<string, Func<double, double, double>> doubleDoubleMathFuncDictionary = new(StringComparer.Ordinal)
+        private readonly Dictionary<string, Func<double, double, double>> doubleDoubleMathFuncDictionary = new()
         {
             { "Atan2", Math.Atan2 }, { "IEEERemainder", Math.IEEERemainder }, { "Log", Math.Log }, { "Pow", Math.Pow },
         };
 
         ///复杂的基本函数
-        private Dictionary<string, Func<UniInk, List<string>, object>> complexStandardFuncDictionary = new(StringComparer.Ordinal)
+        private readonly Dictionary<string, Func<UniInk, List<string>, object>> complexStandardFuncDictionary = new()
         {
             { "Array", (self, args) => args.ConvertAll(self.Evaluate).ToArray() },
             {
@@ -549,11 +554,6 @@ namespace Arc.UniInk
         /// 允许动态定义函数或方法及其对应的值。<para/>
         /// 允许取消对该函数的评估（将其视为不存在）。<para/>
         public event EventHandler<FunctionPreEvaluationEventArg> PreEvaluateFunction;
-
-        /// <summary>在索引解析之前触发。</summary>
-        /// 允许动态定义索引和对应的值。<para/>
-        /// 允许取消对该索引的评估（将其视为不存在）。
-        public event EventHandler<IndexingPreEvaluationEventArg> PreEvaluateIndexing;
 
         /// <summary>如果未找到变量、字段或属性，则触发。</summary>
         /// 允许动态定义变量及其对应的值。<para/>
@@ -1066,12 +1066,11 @@ namespace Arc.UniInk
             {
                 EvaluateCast,
                 EvaluateNumber,
-                EvaluateInstanceCreationWithNewKeyword,
+                EvaluateInstanceCreation,
                 EvaluateVarOrFunc,
                 EvaluateOperators,
                 EvaluateChar,
                 EvaluateParenthis,
-                EvaluateIndexing,
                 EvaluateString,
                 EvaluateTernaryConditionalOperator,
             };
@@ -1189,7 +1188,7 @@ namespace Arc.UniInk
         }
 
         /// <summary>解析实例化</summary>
-        private bool EvaluateInstanceCreationWithNewKeyword(string expression, Stack<object> stack, ref int i)
+        private bool EvaluateInstanceCreation(string expression, Stack<object> stack, ref int i)
         {
             var instanceCreationMatch = instanceCreationWithNewKeywordRegex.Match(expression.Substring(i));
 
@@ -1605,7 +1604,7 @@ namespace Arc.UniInk
                         }
                         else
                         {
-                            var functionEvaluationEventArg = new FunctionEvaluationEventArg(varFuncName, funcArgs, this, genericTypes: genericsTypes, evaluateGenericTypes: GetConcreteTypes);
+                            var functionEvaluationEventArg = new FunctionEvaluationEventArg(varFuncName, funcArgs, this, _genericTypes: genericsTypes, _evaluateGenericTypes: GetConcreteTypes);
 
                             EvaluateFunction?.Invoke(this, functionEvaluationEventArg);
 
@@ -2020,12 +2019,20 @@ namespace Arc.UniInk
             {
                 var op = match.Value;
 
-                if (op.Equals("+") && (stack.Count == 0 || (stack.Peek() is ExpressionOperator previousOp && !UnaryPrefixOperators.Contains(previousOp))))
-                    stack.Push(ExpressionOperator.UnaryPlus);
-                else if (op.Equals("-") && (stack.Count == 0 || (stack.Peek() is ExpressionOperator previousOp2 && !UnaryPrefixOperators.Contains(previousOp2))))
-                    stack.Push(ExpressionOperator.UnaryMinus);
-                else
-                    stack.Push(operatorsDictionary[op]);
+                switch (op)
+                {
+                    //排除一元运算符的可能性
+                    case "+" when (stack.Count == 0 || (stack.Peek() is ExpressionOperator previousOp && !UnaryPrefixOperators.Contains(previousOp))):
+                        stack.Push(ExpressionOperator.UnaryPlus);
+                        break;
+                    case "-" when (stack.Count == 0 || (stack.Peek() is ExpressionOperator previousOp2 && !UnaryPrefixOperators.Contains(previousOp2))):
+                        stack.Push(ExpressionOperator.UnaryMinus);
+                        break;
+                    default:
+                        stack.Push(operatorsDictionary[op]);
+                        break;
+                }
+
                 i += op.Length - 1;
                 return true;
             }
@@ -2036,7 +2043,7 @@ namespace Arc.UniInk
         /// <summary>解析三目运算符</summary>
         private bool EvaluateTernaryConditionalOperator(string expression, Stack<object> stack, ref int i)
         {
-            if (expression.Substring(i, 1).Equals("?"))
+            if (expression[i].Equals('?'))
             {
                 var condition = (bool)ProcessStack(stack);
 
@@ -2044,7 +2051,7 @@ namespace Arc.UniInk
 
                 for (var j = 0; j < restOfExpression.Length; j++)
                 {
-                    var s2 = restOfExpression.Substring(j, 1);
+                    var s2 = restOfExpression[j];
 
                     var internalStringMatch = stringBeginRegex.Match(restOfExpression.Substring(j));
 
@@ -2053,12 +2060,12 @@ namespace Arc.UniInk
                         var innerString = internalStringMatch.Value + GetCodeUntilEndOfString(restOfExpression.Substring(j + internalStringMatch.Length), internalStringMatch);
                         j += innerString.Length - 1;
                     }
-                    else if (s2.Equals("("))
+                    else if (s2.Equals('('))
                     {
                         j++;
                         GetExpressionsParenthesized(restOfExpression, ref j, false);
                     }
-                    else if (s2.Equals(":"))
+                    else if (s2.Equals(':'))
                     {
                         stack.Clear();
 
@@ -2077,12 +2084,11 @@ namespace Arc.UniInk
         /// <summary>解析圆括号</summary>
         private bool EvaluateParenthis(string expression, Stack<object> stack, ref int i)
         {
-            var s = expression.Substring(i, 1);
+            var s = expression[i];
 
-            if (s.Equals(")"))
-                throw new Exception($"To much ')' characters are defined in expression : [{expression}] : no corresponding '(' fund.");
+            if (s.Equals(')')) throw new Exception($"[)] 找不到对应的匹配 : [{expression}] ");
 
-            if (s.Equals("("))
+            if (s.Equals('('))
             {
                 i++;
 
@@ -2125,158 +2131,6 @@ namespace Arc.UniInk
                     stack.Push(op);
                 }
             }
-        }
-
-        /// <summary>解析索引器</summary>
-        private bool EvaluateIndexing(string expression, Stack<object> stack, ref int i)
-        {
-            var indexingBeginningMatch = indexingBeginningRegex.Match(expression.Substring(i));
-
-            if (indexingBeginningMatch.Success)
-            {
-                i += indexingBeginningMatch.Length;
-
-                var left = stack.Pop();
-
-                var indexingArgs = GetExpressionsParenthesized(expression, ref i, true, startChar: "[", endChar: "]");
-
-                if (left is NullConditionalNullValue or BubbleExceptionContainer)
-                {
-                    stack.Push(left);
-                    return true;
-                }
-
-                if (indexingBeginningMatch.Groups["nullConditional"].Success && left == null)
-                {
-                    stack.Push(new NullConditionalNullValue());
-                    return true;
-                }
-
-                var indexingPreEvaluationEventArg = new IndexingPreEvaluationEventArg(indexingArgs, this, left);
-
-                PreEvaluateIndexing?.Invoke(this, indexingPreEvaluationEventArg);
-
-                if (indexingPreEvaluationEventArg.CancelEvaluation)
-                {
-                    throw new SyntaxException($"[{left.GetType()}] 没有索引器");
-                }
-
-                if (indexingPreEvaluationEventArg.HasValue)
-                {
-                    stack.Push(indexingPreEvaluationEventArg.Value);
-                }
-                else
-                {
-                    throw new NotImplementedException();
-                    // Match assignationOrPostFixOperatorMatch = null;
-                    // dynamic valueToPush = null;
-                    // List<dynamic> oIndexingArgs = indexingArgs.ConvertAll(Evaluate);
-                    // PropertyInfo[] itemProperties = null;
-                    //
-                    // if (!(left is IDictionary<string, object>))
-                    // {
-                    //     var type = ((object)left).GetType();
-                    //
-                    //     if (type.IsArray && OptionForceIntegerNumbersEvaluationsAsDoubleByDefault)
-                    //     {
-                    //         oIndexingArgs = oIndexingArgs.ConvertAll(o => o is double ? (int)o : o);
-                    //     }
-                    //     else
-                    //     {
-                    //         itemProperties = type.GetProperties().Where(property => property.GetIndexParameters().Length > 0 && property.GetIndexParameters().Length == oIndexingArgs.Count && property.GetIndexParameters().All(parameter => parameter.ParameterType.IsAssignableFrom(oIndexingArgs[parameter.Position].GetType()))).ToArray();
-                    //
-                    //         if (itemProperties.Length == 0 && OptionForceIntegerNumbersEvaluationsAsDoubleByDefault)
-                    //         {
-                    //             var backupIndexedArgs = oIndexingArgs.ToList();
-                    //
-                    //             itemProperties = type.GetProperties().Where(property => property.Name.Equals("Item") && property.GetIndexParameters().Length == oIndexingArgs.Count && property.GetIndexParameters().All(parameter =>
-                    //             {
-                    //                 if (parameter.ParameterType.IsAssignableFrom(((object)oIndexingArgs[parameter.Position]).GetType()))
-                    //                 {
-                    //                     return true;
-                    //                 }
-                    //                 else if (parameter.ParameterType == typeof(int) && oIndexingArgs[parameter.Position] is double)
-                    //                 {
-                    //                     oIndexingArgs[parameter.Position] = (int)oIndexingArgs[parameter.Position];
-                    //                     return true;
-                    //                 }
-                    //                 else
-                    //                 {
-                    //                     return false;
-                    //                 }
-                    //             })).ToArray();
-                    //
-                    //             if (itemProperties.Length == 0)
-                    //                 oIndexingArgs = backupIndexedArgs;
-                    //         }
-                    //     }
-                    // }
-                    //
-                    // object GetIndexedObject()
-                    // {
-                    //     if (left is IDictionary<string, object> dictionaryLeft)
-                    //         return dictionaryLeft[oIndexingArgs[0]];
-                    //     else if (itemProperties?.Length > 0)
-                    //         return itemProperties[0].GetValue(left, oIndexingArgs.Cast<object>().ToArray());
-                    //     else
-                    //         return left[oIndexingArgs[0]];
-                    // }
-                    //
-                    // if (OptionIndexingAssignationActive && (assignationOrPostFixOperatorMatch = assignationOrPostFixOperatorRegex.Match(expression.Substring(i + 1))).Success)
-                    // {
-                    //     i += assignationOrPostFixOperatorMatch.Length + 1;
-                    //
-                    //     var postFixOperator = assignationOrPostFixOperatorMatch.Groups["postfixOperator"].Success;
-                    //     var exceptionContext = postFixOperator ? "++ or -- operator" : "an assignation";
-                    //
-                    //     if (stack.Count > 1)
-                    //         throw new EESyntaxErrorException($"The left part of {exceptionContext} must be a variable, a property or an indexer.");
-                    //
-                    //     if (indexingBeginningMatch.Groups["nullConditional"].Success)
-                    //         throw new EESyntaxErrorException($"Null conditional is not usable left to {exceptionContext}");
-                    //
-                    //     if (postFixOperator)
-                    //     {
-                    //         if (left is IDictionary<string, object> dictionaryLeft)
-                    //         {
-                    //             valueToPush = assignationOrPostFixOperatorMatch.Groups["postfixOperator"].Value.Equals("++") ? dictionaryLeft[oIndexingArgs[0]]++ : dictionaryLeft[oIndexingArgs[0]]--;
-                    //         }
-                    //         else if (itemProperties?.Length > 0)
-                    //         {
-                    //             valueToPush = itemProperties[0].GetValue(left, oIndexingArgs.Cast<object>().ToArray());
-                    //             itemProperties[0].SetValue(left, assignationOrPostFixOperatorMatch.Groups["postfixOperator"].Value.Equals("++") ? valueToPush + 1 : valueToPush - 1, oIndexingArgs.Cast<object>().ToArray());
-                    //         }
-                    //         else
-                    //         {
-                    //             valueToPush = assignationOrPostFixOperatorMatch.Groups["postfixOperator"].Value.Equals("++") ? left[oIndexingArgs[0]]++ : left[oIndexingArgs[0]]--;
-                    //         }
-                    //     }
-                    //     else
-                    //     {
-                    //         valueToPush = ManageKindOfAssignation(expression, ref i, assignationOrPostFixOperatorMatch, GetIndexedObject);
-                    //
-                    //         if (left is IDictionary<string, object> dictionaryLeft)
-                    //             dictionaryLeft[oIndexingArgs[0]] = valueToPush;
-                    //         else if (itemProperties?.Length > 0)
-                    //             itemProperties[0].SetValue(left, valueToPush, oIndexingArgs.Cast<object>().ToArray());
-                    //         else
-                    //             left[oIndexingArgs[0]] = valueToPush;
-                    //
-                    //         stack.Clear();
-                    //     }
-                    // }
-                    // else
-                    // {
-                    //     valueToPush = GetIndexedObject();
-                    // }
-                    //
-                    // stack.Push(valueToPush);
-                }
-
-                return true;
-            }
-
-            return false;
         }
 
         /// <summary>解析字符串</summary>
@@ -2428,7 +2282,6 @@ namespace Arc.UniInk
 
             //将栈中的值类型,异常,空值进行处理
             var list = stack.Select(e => e is ValueTypeNestingTrace valueTypeNestingTrace ? valueTypeNestingTrace.Value : e) //处理值类型
-                .Select(e => e is SubExpression subExpression ? Evaluate(subExpression.Expression) : e) //处理子表达式
                 .Select(e => e is NullConditionalNullValue ? null : e).ToList(); //处理空值
 
             // 遍历所有的操作符
@@ -2463,7 +2316,6 @@ namespace Arc.UniInk
                             }
 
                             EvaluateFirstNextUnaryOp(i - 1, ref i);
-                            //list[i] = _operatorFunc(null, (dynamic)list[i - 1]);
                             list[i] = _operatorMsg.Value(null, list[i - 1]);
                         }
                         catch (Exception ex)
@@ -2515,9 +2367,7 @@ namespace Arc.UniInk
 
                     // 剩下的为左右双目操作符
                     {
-                        // var left = (dynamic)list[i + 1];
                         var left = list[i + 1];
-                        // var right = (dynamic)list[i - 1];
                         var right = list[i - 1];
 
                         try
@@ -3347,7 +3197,7 @@ namespace Arc.UniInk
             }).FirstOrDefault(mi => mi.ReturnType == destType);
 
             if (castOperator != null)
-                result = castOperator.Invoke(null, new object[] { source });
+                result = castOperator.Invoke(null, new[] { source });
             else
                 return false;
 
@@ -3612,16 +3462,6 @@ namespace Arc.UniInk
         public object Value { get; set; }
     }
 
-    public class SubExpression
-    {
-        public string Expression { get; set; }
-
-        public SubExpression(string expression)
-        {
-            Expression = expression;
-        }
-    }
-
     /// <summary>表示一组方法，其中要调用的重载方法尚未确定。该类可以被用来模拟委托。</summary>
     public class MethodsGroupEncaps
     {
@@ -3845,12 +3685,7 @@ namespace Arc.UniInk
         /// <param name="onInstance">要对方法求值的对象实例 (赋值给 <see cref="This"/>)</param>
         /// <param name="genericTypes">调用函数时指定的泛型类型</param>
         /// <param name="evaluateGenericTypes">用于解释泛型类型的函数</param>
-        public FunctionEvaluationEventArg(string name, List<string> args = null, UniInk evaluator = null, object onInstance = null, string genericTypes = null, Func<string, Type[]> evaluateGenericTypes = null)
-        {
-            Initialization(name, args, evaluator, onInstance, genericTypes, evaluateGenericTypes);
-        }
-
-        public FunctionEvaluationEventArg Initialization(string name, List<string> args = null, UniInk evaluator = null, object onInstance = null, string _genericTypes = null, Func<string, Type[]> _evaluateGenericTypes = null)
+        public FunctionEvaluationEventArg(string name, List<string> args = null, UniInk evaluator = null, object onInstance = null, string _genericTypes = null, Func<string, Type[]> _evaluateGenericTypes = null)
         {
             Name = name;
             Args = args ?? new List<string>();
@@ -3858,7 +3693,6 @@ namespace Arc.UniInk
             Evaluator = evaluator;
             genericTypes = _genericTypes;
             evaluateGenericTypes = _evaluateGenericTypes;
-            return this;
         }
 
         /// <summary>未被解释的函数或方法的参数</summary>
@@ -3912,70 +3746,6 @@ namespace Arc.UniInk
         private Func<string, Type[]> evaluateGenericTypes;
         private string genericTypes;
         private object returnValue;
-    }
-
-    /// <summary>当前计算的索引的信息</summary>
-    public class IndexingPreEvaluationEventArg : EventArgs
-    {
-        /// <summary>构造器</summary>
-        /// <param name="args">索引的未计算参数</param>
-        /// <param name="evaluator">当前解释器的应用</param>
-        /// <param name="onInstance">调用索引的对象的实例。<para/>会变为<see cref="This"/> 属性</param>
-        public IndexingPreEvaluationEventArg(List<string> args, UniInk evaluator, object onInstance)
-        {
-            Initialization(args, evaluator, onInstance);
-        }
-
-        public IndexingPreEvaluationEventArg Initialization(List<string> args, UniInk evaluator, object onInstance)
-        {
-            Args = args;
-            This = onInstance;
-            Evaluator = evaluator;
-            return this;
-        }
-
-        /// <summary>未被解释的索引参数</summary>
-        public List<string> Args { get; set; }
-
-        /// <summary>调用索引的对象的实例</summary>
-        public object This { get; set; }
-
-        private object returnValue;
-
-        /// <summary>要设置索引的结果值</summary>
-        public object Value
-        {
-            get => returnValue;
-            set
-            {
-                returnValue = value;
-                HasValue = true;
-            }
-        }
-
-        /// <summary>
-        /// <c>true </c> 已经完成索引求值<para/>
-        /// <c>false</c> 索引不存在     <para/>
-        /// </summary>
-        public bool HasValue { get; set; }
-
-        /// <summary>对当前表达式求值器的引用</summary>
-        public UniInk Evaluator { get; set; }
-
-        /// <summary>获取所有参数的值</summary>
-        public object[] EvaluateArgs() => Args.ConvertAll(arg => Evaluator.Evaluate(arg)).ToArray();
-
-        /// <summary>获取指定索引处索引参数的值</summary>
-        public object EvaluateArg(int index) => Evaluator.Evaluate(Args[index]);
-
-        /// <summary>获取指定索引处索引参数的值</summary>
-        /// <param name="index">要求值的索引参数的索引</param>
-        /// <typeparam name="T">要获得的结果的类型. (进行一次强转)</typeparam>
-        /// <returns>在指定类型中强制转换的求值参数</returns>
-        public T EvaluateArg<T>(int index) => Evaluator.Evaluate<T>(Args[index]);
-
-        /// <summary>设置 <c>true</c> 取消当前函数或方法的求值，并抛出函数不存在的异常</summary>
-        public bool CancelEvaluation { get; set; }
     }
 
     /// <summary>参数转换求值事件参数的类 </summary>
@@ -4066,13 +3836,10 @@ namespace Arc.UniInk
     /// <summary>当前计算的函数或方法的信息</summary>
     public class FunctionPreEvaluationEventArg : FunctionEvaluationEventArg
     {
-        public FunctionPreEvaluationEventArg(string name, List<string> args = null, UniInk evaluator = null, object onInstance = null, string genericTypes = null, Func<string, Type[]> evaluateGenericTypes = null) : base(name, args, evaluator, onInstance, genericTypes, evaluateGenericTypes) { }
-
-        public new FunctionPreEvaluationEventArg Initialization(string name, List<string> args = null, UniInk evaluator = null, object onInstance = null, string genericTypes = null, Func<string, Type[]> evaluateGenericTypes = null)
+        public FunctionPreEvaluationEventArg(string name, List<string> args = null, UniInk evaluator = null, object onInstance = null, string genericTypes = null, Func<string, Type[]> evaluateGenericTypes = null) 
+            : base(name, args, evaluator, onInstance, genericTypes, evaluateGenericTypes)
         {
-            base.Initialization(name, args, evaluator, onInstance, genericTypes, evaluateGenericTypes);
             CancelEvaluation = false;
-            return this;
         }
 
         /// <summary>如果设置为true，则取消当前函数或方法的求值，并抛出该函数不存在的异常</summary>
@@ -4120,6 +3887,7 @@ namespace Arc.UniInk
         #endregion
     }
 }
+//3984行
 //4132行
 //4225行
 //4404行

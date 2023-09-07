@@ -40,7 +40,9 @@ namespace Arc.UniInk.Test
         [TestCase("var a = 4-2;")]
         [TestCase("4/2;")]
         [TestCase("Test();")]
-        [TestCase("Test(@\"aaa\");")]
+        [TestCase("Test(@\"aaa\"+\"aaaaa\");")]
+        [TestCase("Test(Test(aaa));")]
+        [TestCase("Test(Test(aaa)+\"aaaaa\");")]
         public void Test_02(string script)
         {
             var test = new HelperClass();
