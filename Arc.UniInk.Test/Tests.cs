@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 
 namespace Arc.UniInk.Test
@@ -19,19 +20,20 @@ namespace Arc.UniInk.Test
 
 
         [Test]
-        [TestCase("2+4")]
+        [TestCase("(2+4)+6")]
         [TestCase("4-2")]
         [TestCase("4*2")]
         [TestCase("4/2")]
         [TestCase("4%2")]
-        [TestCase("4*2")]
+        [TestCase("4*2+3")]
+        [TestCase("(true&&false)")]
         public void Test(string script)
         {
             var Ink = new UniInk();
             var ans = Ink.Evaluate($"{script}");
 
             Assert.NotNull(ans);
-            TestContext.Progress.WriteLine($"✅:{script}={ans}");
+            TestContext.Progress.WriteLine($"✅:{script}=" + $"{ans}");
         }
 
         [Test]
@@ -43,6 +45,7 @@ namespace Arc.UniInk.Test
         [TestCase("Test(@\"aaa\"+\"aaaaa\");")]
         [TestCase("Test(Test(aaa));")]
         [TestCase("Test(Test(aaa)+\"aaaaa\");")]
+        [TestCase("Test3()")]
         public void Test_02(string script)
         {
             var test = new HelperClass();
@@ -73,6 +76,16 @@ namespace Arc.UniInk.Test
         {
             Console.WriteLine(str);
             return str;
+        }
+    }
+    
+    
+    public static class ExtensionClass
+    {
+        public static string Test3(this HelperClass str)
+        {
+            Console.WriteLine(str);
+            return str.ToString();
         }
     }
 }
