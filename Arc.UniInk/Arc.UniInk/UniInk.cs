@@ -64,6 +64,7 @@ namespace Arc.UniInk
         protected static readonly Regex endOfStringWithoutDollar = new("^([^\"\\\\]|\\\\[\\\\\"0abfnrtv])*[\"]", RegexOptions.Compiled);
         protected static readonly Regex endOfStringWithDollarWithAt = new("^[^\"{]*[\"{]", RegexOptions.Compiled);
         protected static readonly Regex endOfStringWithoutDollarWithAt = new("^[^\"]*[\"]", RegexOptions.Compiled);
+        //
         protected static readonly Regex endOfStringInterpolationRegex = new("^('\"'|[^}\"])*[}\"]", RegexOptions.Compiled);
         protected static readonly Regex stringBeginningForEndBlockRegex = new("[$]?[@]?[\"]$", RegexOptions.Compiled);
         protected static readonly Regex lambdaExpressionRegex = new(@"^(?>\s*)(?<args>((?>\s*)[(](?>\s*)([\p{L}_](?>[\p{L}_0-9]*)(?>\s*)([,](?>\s*)[\p{L}_][\p{L}_0-9]*(?>\s*))*)?[)])|[\p{L}_](?>[\p{L}_0-9]*))(?>\s*)=>(?<expression>.*)$", RegexOptions.Singleline | RegexOptions.Compiled);
@@ -482,7 +483,7 @@ namespace Arc.UniInk
 
         /// <summary>添加或删除要在表达式中管理的特定类型。</summary>
         public List<Type> Types { get; } = new();
-        
+
         /// <summary>用于查找扩展方法的静态类型列表</summary>
         public IList<Type> StaticTypesForExtensionsMethods { get; } = new List<Type>
         {
@@ -512,7 +513,6 @@ namespace Arc.UniInk
 
         /// <summary>
         /// 的当前实例计算的表达式和脚本中可以使用的变量名/值字典 <see cref="UniInk"/><para/>
-        /// 警告:复制给定的字典以管理大小写。
         /// </summary>
         public Dictionary<string, object> Variables { get; set; } = new();
 
@@ -522,10 +522,6 @@ namespace Arc.UniInk
         /// <summary>在计算表达式之前触发</summary>
         /// <remarks>允许在此修改表达式以计算或强制返回值</remarks>
         public event EventHandler<ExpressionEvaluationEventArg> ExpressionEvaluating;
-
-        /// <summary>在返回表达式求值之前被触发。</summary>
-        /// <remarks>允许即时修改返回值</remarks>
-        public event EventHandler<ExpressionEvaluationEventArg> ExpressionEvaluated;
 
         /// <summary>在变量、字段或属性解析之前激发。</summary>
         /// 允许动态定义变量和相应的值。<para/>
@@ -1068,7 +1064,8 @@ namespace Arc.UniInk
             try
             {
                 //如果是lambda表达式，则入栈
-                if (GetLambdaExpression(expression, stack)) return stack.Pop(); //然后出栈
+                if (GetLambdaExpression(expression, stack))
+                    return stack.Pop(); //然后出栈
 
 
                 for (var i = 0; i < expression.Length; i++)
@@ -1171,18 +1168,18 @@ namespace Arc.UniInk
         {
             var varFuncMatch = varOrFunctionRegEx.Match(expression.Substring(i));
 
+            if (!varFuncMatch.Success) return false;
+
             //有var 关键字 但 没有赋值运算符
             if (varFuncMatch.Groups["varKeyword"].Success && !varFuncMatch.Groups["assignationOperator"].Success)
                 throw new SyntaxException($"隐式变量未初始化! [var {varFuncMatch.Groups["name"].Value}]");
-            
-            if ( varFuncMatch.Groups["isgeneric"].Success)
-               throw new SecurityException("不允许使用泛型");
-            
+            if (varFuncMatch.Groups["isgeneric"].Success)
+                throw new SecurityException("禁止使用泛型");
 
-            if (varFuncMatch.Success //匹配成功
-                && (!varFuncMatch.Groups["sign"].Success || stack.Count == 0 || stack.Peek() is ExpressionOperator) //前缀没有符号 且栈为空 或者栈顶为运算符 
+
+            if ((!varFuncMatch.Groups["sign"].Success || stack.Count == 0 || stack.Peek() is ExpressionOperator) //前缀没有符号 或 栈为空 或 栈顶为运算符 
                 && !operatorsDictionary.ContainsKey(varFuncMatch.Value.Trim()) //且不是已注册的运算符
-                && (!operatorsDictionary.ContainsKey(varFuncMatch.Groups["name"].Value) || varFuncMatch.Groups["inObject"].Success)) //且不是已注册的运算符 或者在对象中
+                && (!operatorsDictionary.ContainsKey(varFuncMatch.Groups["name"].Value) || varFuncMatch.Groups["inObject"].Success)) // 不是已注册的运算符 或 在对象中
             {
                 var varFuncName = varFuncMatch.Groups["name"].Value;
                 var inObject = varFuncMatch.Groups["inObject"].Success;
@@ -1204,7 +1201,7 @@ namespace Arc.UniInk
                         var obj = inObject ? stack.Pop() : Context;
                         var keepObj = obj;
                         var objType = obj?.GetType();
-                        
+
                         try
                         {
                             if (obj is NullValue)
@@ -1222,139 +1219,112 @@ namespace Arc.UniInk
                             }
                             else
                             {
-                                var functionPreEvaluationEventArg = new FunctionEvaluationEventArg(varFuncName, funcArgs, this, obj);
+                                var argIndex = 0;
+                                var argsWithKeywords = new List<ArgKeywordsWrapper>();
 
-                                PreEvaluateFunction?.Invoke(this, functionPreEvaluationEventArg);
-
-                                if (functionPreEvaluationEventArg.FunctionReturnedValue)
+                                var oArgs = funcArgs.ConvertAll(arg =>
                                 {
-                                    stack.Push(functionPreEvaluationEventArg.Value);
-                                }
-                                else
-                                {
-                                    var argIndex = 0;
-                                    var argsWithKeywords = new List<ArgKeywordsWrapper>();
+                                    var functionArgKeywordsMatch = functionArgKeywordsRegex.Match(arg);
+                                    object argValue;
 
-                                    var oArgs = funcArgs.ConvertAll(arg =>
+                                    if (functionArgKeywordsMatch.Success)
                                     {
-                                        var functionArgKeywordsMatch = functionArgKeywordsRegex.Match(arg);
-                                        object argValue;
+                                        var argKeywordWrapper = new ArgKeywordsWrapper { Index = argIndex, Keyword = functionArgKeywordsMatch.Groups["keyword"].Value, VariableName = functionArgKeywordsMatch.Groups["varName"].Value };
 
-                                        if (functionArgKeywordsMatch.Success)
+                                        argsWithKeywords.Add(argKeywordWrapper);
+
+                                        if (functionArgKeywordsMatch.Groups["typeName"].Success)
                                         {
-                                            var argKeywordWrapper = new ArgKeywordsWrapper
-                                            {
-                                                Index = argIndex, 
-                                                Keyword = functionArgKeywordsMatch.Groups["keyword"].Value, 
-                                                VariableName = functionArgKeywordsMatch.Groups["varName"].Value
-                                            };
+                                            var fixedType = ((ClassOrEnumType)Evaluate(functionArgKeywordsMatch.Groups["typeName"].Value)).Type;
 
-                                            argsWithKeywords.Add(argKeywordWrapper);
-
-                                            if (functionArgKeywordsMatch.Groups["typeName"].Success)
-                                            {
-                                                var fixedType = ((ClassOrEnumType)Evaluate(functionArgKeywordsMatch.Groups["typeName"].Value)).Type;
-
-                                                Variables[argKeywordWrapper.VariableName] = new StronglyTypedVariable { Type = fixedType, Value = GetDefaultValueOfType(fixedType) };
-                                            }
-                                            else if (!Variables.ContainsKey(argKeywordWrapper.VariableName))
-                                            {
-                                                Variables[argKeywordWrapper.VariableName] = null;
-                                            }
-
-                                            argValue = Evaluate(functionArgKeywordsMatch.Groups["toEval"].Value);
+                                            Variables[argKeywordWrapper.VariableName] = new StronglyTypedVariable { Type = fixedType, Value = GetDefaultValueOfType(fixedType) };
                                         }
-                                        else
+                                        else if (!Variables.ContainsKey(argKeywordWrapper.VariableName))
                                         {
-                                            argValue = Evaluate(arg);
+                                            Variables[argKeywordWrapper.VariableName] = null;
                                         }
 
-                                        argIndex++;
-                                        return argValue;
-                                    });
-
-                                    var flag = DetermineInstanceOrStatic(out objType, ref obj, out _);
-
-                                    // 寻找标准实例或公共方法
-                                    var methodInfo = GetRealMethod(ref objType, ref obj, varFuncName, flag, oArgs, string.Empty, Type.EmptyTypes, argsWithKeywords);
-
-                                    // 如果找不到，检查obj是否是expandoObject或类似对象
-                                    if (obj is IDictionary<string, object> dictionaryObject && (dictionaryObject[varFuncName] is InternalDelegate || dictionaryObject[varFuncName] is Delegate)) //obj is IDynamicMetaObjectProvider &&
-                                    {
-                                        if (dictionaryObject[varFuncName] is InternalDelegate internalDelegate)
-                                            stack.Push(internalDelegate(oArgs.ToArray()));
-                                        else if (dictionaryObject[varFuncName] is Delegate del)
-                                            stack.Push(del.DynamicInvoke(oArgs.ToArray()));
-                                    }
-                                    else if (objType.GetProperty(varFuncName, InstanceBindingFlag) is { } instancePropertyInfo && (instancePropertyInfo.PropertyType.IsSubclassOf(typeof(Delegate)) || instancePropertyInfo.PropertyType == typeof(Delegate)) && instancePropertyInfo.GetValue(obj) is Delegate del)
-                                    {
-                                        stack.Push(del.DynamicInvoke(oArgs.ToArray()));
+                                        argValue = Evaluate(functionArgKeywordsMatch.Groups["toEval"].Value);
                                     }
                                     else
                                     {
-                                        var isExtension = false;
+                                        argValue = Evaluate(arg);
+                                    }
 
-                                        // if not found try to Find extension methods.
-                                        if (methodInfo == null && obj != null)
+                                    argIndex++;
+                                    return argValue;
+                                });
+
+                                var flag = DetermineInstanceOrStatic(out objType, ref obj, out _);
+
+                                // 寻找标准实例或公共方法
+                                var methodInfo = GetRealMethod(ref objType, ref obj, varFuncName, flag, oArgs, string.Empty, Type.EmptyTypes, argsWithKeywords);
+
+                                // 如果找不到，检查obj是否是expandoObject或类似对象
+                                if (obj is IDictionary<string, object> dictionaryObject && (dictionaryObject[varFuncName] is InternalDelegate || dictionaryObject[varFuncName] is Delegate)) //obj is IDynamicMetaObjectProvider &&
+                                {
+                                    if (dictionaryObject[varFuncName] is InternalDelegate internalDelegate)
+                                        stack.Push(internalDelegate(oArgs.ToArray()));
+                                    else if (dictionaryObject[varFuncName] is Delegate del)
+                                        stack.Push(del.DynamicInvoke(oArgs.ToArray()));
+                                }
+                                else if (objType.GetProperty(varFuncName, InstanceBindingFlag) is { } instancePropertyInfo && (instancePropertyInfo.PropertyType.IsSubclassOf(typeof(Delegate)) || instancePropertyInfo.PropertyType == typeof(Delegate)) && instancePropertyInfo.GetValue(obj) is Delegate del)
+                                {
+                                    stack.Push(del.DynamicInvoke(oArgs.ToArray()));
+                                }
+                                else
+                                {
+                                    var isExtension = false;
+
+                                    // if not found try to Find extension methods.
+                                    if (methodInfo == null && obj != null)
+                                    {
+                                        oArgs.Insert(0, obj);
+                                        objType = obj.GetType();
+
+                                        object extensionObj = null;
+                                        for (var e = 0; e < StaticTypesForExtensionsMethods.Count && methodInfo == null; e++)
                                         {
-                                            oArgs.Insert(0, obj);
-                                            objType = obj.GetType();
+                                            var type = StaticTypesForExtensionsMethods[e];
+                                            methodInfo = GetRealMethod(ref type, ref extensionObj, varFuncName, StaticBindingFlag, oArgs, string.Empty, Type.EmptyTypes, argsWithKeywords, true);
+                                            isExtension = methodInfo != null;
+                                        }
+                                    }
 
-                                            object extensionObj = null;
-                                            for (var e = 0; e < StaticTypesForExtensionsMethods.Count && methodInfo == null; e++)
+                                    if (methodInfo != null)
+                                    {
+                                        var argsArray = oArgs.ToArray();
+                                        stack.Push(methodInfo.Invoke(isExtension ? null : obj, argsArray));
+                                        argsWithKeywords.FindAll(argWithKeyword => argWithKeyword.Keyword.Equals("out") || argWithKeyword.Keyword.Equals("ref")).ForEach(outOrRefArg => AssignVariable(outOrRefArg.VariableName, argsArray[outOrRefArg.Index + (isExtension ? 1 : 0)]));
+                                    }
+                                    else if (objType.GetProperty(varFuncName, StaticBindingFlag) is { } staticPropertyInfo && (staticPropertyInfo.PropertyType.IsSubclassOf(typeof(Delegate)) || staticPropertyInfo.PropertyType == typeof(Delegate)) && staticPropertyInfo.GetValue(obj) is Delegate del2)
+                                    {
+                                        stack.Push(del2.DynamicInvoke(oArgs.ToArray()));
+                                    }
+                                    else
+                                    {
+                                        var query = from type in StaticTypesForExtensionsMethods
+                                            where !type.IsGenericType && type.IsSealed && !type.IsNested
+                                            from method in type.GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)
+                                            where method.GetParameters()[0].ParameterType == objType // static extMethod(this outType, ...)
+                                            select method;
+
+                                        if (query.Any())
+                                        {
+                                            var fnArgsPrint = string.Join(",", funcArgs);
+                                            var fnOverloadsPrint = "";
+
+                                            foreach (var mi in query)
                                             {
-                                                var type = StaticTypesForExtensionsMethods[e];
-                                                methodInfo = GetRealMethod(ref type, ref extensionObj, varFuncName, StaticBindingFlag, oArgs, string.Empty, Type.EmptyTypes, argsWithKeywords, true);
-                                                isExtension = methodInfo != null;
+                                                var parInfo = mi.GetParameters();
+                                                fnOverloadsPrint += string.Join(",", parInfo.Select(x => x.ParameterType.FullName ?? x.ParameterType.Name)) + "\n";
                                             }
+
+                                            throw new SyntaxException($"[{objType}] extension method \"{varFuncName}\" has no overload for arguments: {fnArgsPrint}. Candidates: {fnOverloadsPrint}");
                                         }
 
-                                        if (methodInfo != null)
-                                        {
-                                            var argsArray = oArgs.ToArray();
-                                            stack.Push(methodInfo.Invoke(isExtension ? null : obj, argsArray));
-                                            argsWithKeywords.FindAll(argWithKeyword => argWithKeyword.Keyword.Equals("out") || argWithKeyword.Keyword.Equals("ref")).ForEach(outOrRefArg => AssignVariable(outOrRefArg.VariableName, argsArray[outOrRefArg.Index + (isExtension ? 1 : 0)]));
-                                        }
-                                        else if (objType.GetProperty(varFuncName, StaticBindingFlag) is PropertyInfo staticPropertyInfo && (staticPropertyInfo.PropertyType.IsSubclassOf(typeof(Delegate)) || staticPropertyInfo.PropertyType == typeof(Delegate)) && staticPropertyInfo.GetValue(obj) is Delegate del2)
-                                        {
-                                            stack.Push(del2.DynamicInvoke(oArgs.ToArray()));
-                                        }
-                                        else
-                                        {
-                                            var functionEvaluationEventArg = new FunctionEvaluationEventArg(varFuncName, funcArgs, this, obj ?? keepObj);
 
-                                            EvaluateFunction?.Invoke(this, functionEvaluationEventArg);
-
-                                            if (functionEvaluationEventArg.FunctionReturnedValue)
-                                            {
-                                                stack.Push(functionEvaluationEventArg.Value);
-                                            }
-                                            else
-                                            {
-                                                var query = from type in StaticTypesForExtensionsMethods
-                                                    where !type.IsGenericType && type.IsSealed && !type.IsNested
-                                                    from method in type.GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)
-                                                    where method.GetParameters()[0].ParameterType == objType // static extMethod(this outType, ...)
-                                                    select method;
-
-                                                if (query.Any())
-                                                {
-                                                    var fnArgsPrint = string.Join(",", funcArgs);
-                                                    var fnOverloadsPrint = "";
-
-                                                    foreach (var mi in query)
-                                                    {
-                                                        var parInfo = mi.GetParameters();
-                                                        fnOverloadsPrint += string.Join(",", parInfo.Select(x => x.ParameterType.FullName ?? x.ParameterType.Name)) + "\n";
-                                                    }
-
-                                                    throw new SyntaxException($"[{objType}] extension method \"{varFuncName}\" has no overload for arguments: {fnArgsPrint}. Candidates: {fnOverloadsPrint}");
-                                                }
-
-
-                                                throw new SyntaxException($"[{objType}] 对象方法  [{varFuncName}] ");
-                                            }
-                                        }
+                                        throw new SyntaxException($"[{objType}] 对象方法  [{varFuncName}] ");
                                     }
                                 }
                             }
@@ -1415,18 +1385,7 @@ namespace Arc.UniInk
                         }
                         else
                         {
-                            var functionEvaluationEventArg = new FunctionEvaluationEventArg(varFuncName, funcArgs, this);
-
-                            EvaluateFunction?.Invoke(this, functionEvaluationEventArg);
-
-                            if (functionEvaluationEventArg.FunctionReturnedValue)
-                            {
-                                stack.Push(functionEvaluationEventArg.Value);
-                            }
-                            else
-                            {
-                                throw new SyntaxException($"Function [{varFuncName}] unknown in expression : [{expression.Replace("\r", "").Replace("\n", "")}]");
-                            }
+                            throw new SyntaxException($"[{varFuncName}]:函数在脚本中未知: [{expression}]");
                         }
                     }
                 }
@@ -1441,7 +1400,6 @@ namespace Arc.UniInk
                         var obj = inObject ? stack.Pop() : Context;
                         var keepObj = obj;
                         var objType = obj?.GetType();
-                        ValueTypeNestingTrace valueTypeNestingTrace = null;
 
                         try
                         {
@@ -1460,115 +1418,88 @@ namespace Arc.UniInk
                             }
                             else
                             {
-                                var variablePreEvaluationEventArg = new VariablePreEvaluationEventArg(varFuncName, this, obj, string.Empty, GetConcreteTypes);
+                                var flag = DetermineInstanceOrStatic(out objType, ref obj, out var valueTypeNestingTrace);
 
-                                PreEvaluateVariable?.Invoke(this, variablePreEvaluationEventArg);
 
-                                if (variablePreEvaluationEventArg.CancelEvaluation)
+                                var isDynamic = (flag & BindingFlags.Instance) != 0 && obj is IDictionary<string, object>; //&& obj is IDynamicMetaObjectProvider
+                                var dictionaryObject = obj as IDictionary<string, object>;
+
+                                MemberInfo member = isDynamic ? null : objType?.GetProperty(varFuncName, flag);
+                                object varValue = null; //TODO:
+                                var assign = true;
+
+
+                                if (member == null && !isDynamic)
+                                    member = objType?.GetField(varFuncName, flag);
+
+                                if (member == null && !isDynamic)
                                 {
-                                    throw new SyntaxException($"[{objType}] 对象没有名为 [{varFuncName}] 的公共属性或成员", new Exception("变量求值已取消"));
+                                    var methodsGroup = objType?.GetMember(varFuncName, flag).OfType<MethodInfo>().ToArray();
+
+                                    if (methodsGroup.Length > 0)
+                                        varValue = new MethodsGroupWrapper { ContainerObject = obj, MethodsGroup = methodsGroup };
                                 }
 
-                                if (variablePreEvaluationEventArg.HasValue)
+                                var pushVarValue = true;
+
+                                if (isDynamic)
                                 {
-                                    stack.Push(variablePreEvaluationEventArg.Value);
+                                    if (!varFuncMatch.Groups["assignationOperator"].Success || varFuncMatch.Groups["assignmentPrefix"].Success)
+                                        varValue = dictionaryObject.TryGetValue(varFuncName, out var value) ? value : null;
+                                    else
+                                        pushVarValue = false;
+                                }
+
+                                var isVarValueSet = false;
+
+                                //Var去设置值 且 不是动态的 且 值为null 且 pushVarValue为true
+                                if (!isDynamic && varValue == null)
+                                {
+                                    varValue = (member as PropertyInfo)?.GetValue(obj);
+                                    varValue ??= (member as FieldInfo)?.GetValue(obj);
+
+                                    //TODO: 这里有问题
+                                    if (varValue?.GetType().IsPrimitive ?? false)
+                                    {
+                                        stack.Push(valueTypeNestingTrace = new ValueTypeNestingTrace { Container = valueTypeNestingTrace ?? obj, Member = member, Value = varValue });
+
+                                        pushVarValue = false;
+                                    }
+                                }
+
+                                if (pushVarValue) stack.Push(varValue);
+
+
+                                if (varFuncMatch.Groups["assignationOperator"].Success)
+                                {
+                                    varValue = ManageKindOfAssignation(expression, ref i, varFuncMatch, () => varValue, stack);
+                                }
+                                else if (varFuncMatch.Groups["postfixOperator"].Success)
+                                {
+                                    //不是++就是--;
+                                    if (varValue != null)
+                                        varValue = varFuncMatch.Groups["postfixOperator"].Value.Equals("++") ? (int)varValue + 1 : (int)varValue - 1;
                                 }
                                 else
                                 {
-                                    var flag = DetermineInstanceOrStatic(out objType, ref obj, out valueTypeNestingTrace);
+                                    assign = false;
+                                }
 
-
-                                    var isDynamic = (flag & BindingFlags.Instance) != 0 && obj is IDictionary<string, object>; //&& obj is IDynamicMetaObjectProvider
-                                    var dictionaryObject = obj as IDictionary<string, object>;
-
-                                    MemberInfo member = isDynamic ? null : objType?.GetProperty(varFuncName, flag);
-                                    object varValue = null; //TODO:
-                                    var assign = true;
-
-
-                                    if (member == null && !isDynamic)
-                                        member = objType?.GetField(varFuncName, flag);
-
-                                    if (member == null && !isDynamic)
-                                    {
-                                        var methodsGroup = objType?.GetMember(varFuncName, flag).OfType<MethodInfo>().ToArray();
-
-                                        if (methodsGroup.Length > 0)
-                                            varValue = new MethodsGroupWrapper { ContainerObject = obj, MethodsGroup = methodsGroup };
-                                    }
-
-                                    var pushVarValue = true;
-
+                                if (assign)
+                                {
                                     if (isDynamic)
                                     {
-                                        if (!varFuncMatch.Groups["assignationOperator"].Success || varFuncMatch.Groups["assignmentPrefix"].Success)
-                                            varValue = dictionaryObject.TryGetValue(varFuncName, out var value) ? value : null;
-                                        else
-                                            pushVarValue = false;
+                                        dictionaryObject[varFuncName] = varValue;
                                     }
-
-                                    var isVarValueSet = false;
-                                    if (member == null && pushVarValue)
+                                    else if (valueTypeNestingTrace != null)
                                     {
-                                        var variableEvaluationEventArg = new VariableEvaluationEventArg(varFuncName, this, obj ?? keepObj, string.Empty, GetConcreteTypes);
-                                        EvaluateVariable?.Invoke(this, variableEvaluationEventArg);
-
-                                        if (variableEvaluationEventArg.HasValue)
-                                        {
-                                            varValue = variableEvaluationEventArg.Value;
-                                            isVarValueSet = true;
-                                        }
-                                    }
-
-                                    //Var去设置值 且 不是动态的 且 值为null 且 pushVarValue为true
-                                    if (!isVarValueSet && !isDynamic && varValue == null && pushVarValue)
-                                    {
-                                        varValue = (member as PropertyInfo)?.GetValue(obj);
-                                        varValue ??= (member as FieldInfo)?.GetValue(obj);
-
-                                        //TODO: 这里有问题
-                                        if (varValue?.GetType().IsPrimitive ?? false)
-                                        {
-                                            stack.Push(valueTypeNestingTrace = new ValueTypeNestingTrace { Container = valueTypeNestingTrace ?? obj, Member = member, Value = varValue });
-
-                                            pushVarValue = false;
-                                        }
-                                    }
-
-                                    if (pushVarValue) stack.Push(varValue);
-
-
-                                    if (varFuncMatch.Groups["assignationOperator"].Success)
-                                    {
-                                        varValue = ManageKindOfAssignation(expression, ref i, varFuncMatch, () => varValue, stack);
-                                    }
-                                    else if (varFuncMatch.Groups["postfixOperator"].Success)
-                                    {
-                                        //不是++就是--;
-                                        if (varValue != null)
-                                            varValue = varFuncMatch.Groups["postfixOperator"].Value.Equals("++") ? (int)varValue + 1 : (int)varValue - 1;
+                                        valueTypeNestingTrace.Value = varValue;
+                                        valueTypeNestingTrace.AssignValue();
                                     }
                                     else
                                     {
-                                        assign = false;
-                                    }
-
-                                    if (assign)
-                                    {
-                                        if (isDynamic)
-                                        {
-                                            dictionaryObject[varFuncName] = varValue;
-                                        }
-                                        else if (valueTypeNestingTrace != null)
-                                        {
-                                            valueTypeNestingTrace.Value = varValue;
-                                            valueTypeNestingTrace.AssignValue();
-                                        }
-                                        else
-                                        {
-                                            throw new NotImplementedException();
-                                            //((dynamic)member).SetValue(obj, varValue);
-                                        }
+                                        throw new NotImplementedException();
+                                        //((dynamic)member).SetValue(obj, varValue);
                                     }
                                 }
                             }
@@ -1592,20 +1523,7 @@ namespace Arc.UniInk
                     }
                     else
                     {
-                        var variablePreEvaluationEventArg = new VariablePreEvaluationEventArg(varFuncName, this, genericTypes: string.Empty, evaluateGenericTypes: GetConcreteTypes);
-
-                        PreEvaluateVariable?.Invoke(this, variablePreEvaluationEventArg);
-
-                        if (variablePreEvaluationEventArg.CancelEvaluation)
-                        {
-                            throw new SyntaxException($"Variable [{varFuncName}] unknown in expression : [{expression}]");
-                        }
-
-                        if (variablePreEvaluationEventArg.HasValue)
-                        {
-                            stack.Push(variablePreEvaluationEventArg.Value);
-                        }
-                        else if (defaultVariables.TryGetValue(varFuncName, out var varValueToPush))
+                        if (defaultVariables.TryGetValue(varFuncName, out var varValueToPush))
                         {
                             stack.Push(varValueToPush);
                         }
@@ -1666,22 +1584,11 @@ namespace Arc.UniInk
 
                             if (staticType != null)
                             {
-                                stack.Push(new ClassOrEnumType { Type = staticType });
+                                stack.Push(new ClassOrEnumType(staticType));
                             }
                             else
                             {
-                                var variableEvaluationEventArg = new VariableEvaluationEventArg(varFuncName, this, genericTypes: string.Empty, evaluateGenericTypes: GetConcreteTypes);
-
-                                EvaluateVariable?.Invoke(this, variableEvaluationEventArg);
-
-                                if (variableEvaluationEventArg.HasValue)
-                                {
-                                    stack.Push(variableEvaluationEventArg.Value);
-                                }
-                                else
-                                {
-                                    throw new SyntaxException($"变量 [{varFuncName}] 在脚本中未知 : [{expression}]");
-                                }
+                                throw new SyntaxException($"变量 [{varFuncName}] 在脚本中未知 : [{expression}]");
                             }
                         }
                     }
@@ -1705,7 +1612,7 @@ namespace Arc.UniInk
         /// <summary>解析类型</summary>
         private Type EvaluateType(string expression, ref int i, string currentName = "", string genericsTypes = "")
         {
-            var typeName = $"{currentName}{((i < expression.Length && expression.Substring(i)[0] == '?') ? "?" : "")}";
+            var typeName = $"{currentName}{(i < expression.Length && expression[i] == '?' ? "?" : "")}";
             var staticType = GetTypeByFriendlyName(typeName, genericsTypes);
 
             if (staticType == null)
@@ -2367,10 +2274,6 @@ namespace Arc.UniInk
             var modifiedArgs = new List<object>(args);
 
 
-            bool parameterValidate(ParameterInfo p) => p.Position >= modifiedArgs.Count || (testForExtension && p.Position == 0) || modifiedArgs[p.Position] == null || IsCastable(modifiedArgs[p.Position].GetType(), p.ParameterType) || typeof(Delegate).IsAssignableFrom(p.ParameterType) || p.IsDefined(typeof(ParamArrayAttribute)) || (p.ParameterType.IsByRef && argsWithKeywords.Any(a => a.Index == p.Position + (testForExtension ? 1 : 0)));
-
-            bool methodByNameFilter(MethodInfo m) => m.Name.Equals(func) && (m.GetParameters().Length == modifiedArgs.Count || (m.GetParameters().Length > modifiedArgs.Count && m.GetParameters().Take(modifiedArgs.Count).All(p => modifiedArgs[p.Position] == null || IsCastable(modifiedArgs[p.Position].GetType(), p.ParameterType)) && m.GetParameters().Skip(modifiedArgs.Count).All(p => p.HasDefaultValue)) || (m.GetParameters().Length > 0 && m.GetParameters().Last().IsDefined(typeof(ParamArrayAttribute), false) && m.GetParameters().All(parameterValidate)));
-
             var methodInfos = type.GetMethods(flag).Where(methodByNameFilter).OrderByDescending(m => m.GetParameters().Length).ToList();
 
             //对于重载并可能实现lambda参数的Linq方法
@@ -2412,9 +2315,14 @@ namespace Arc.UniInk
             }
 
             return methodInfo;
+
+            bool methodByNameFilter(MethodInfo m) => m.Name.Equals(func) && (m.GetParameters().Length == modifiedArgs.Count || (m.GetParameters().Length > modifiedArgs.Count && m.GetParameters().Take(modifiedArgs.Count).All(p => modifiedArgs[p.Position] == null || IsCastable(modifiedArgs[p.Position].GetType(), p.ParameterType)) && m.GetParameters().Skip(modifiedArgs.Count).All(p => p.HasDefaultValue)) || (m.GetParameters().Length > 0 && m.GetParameters().Last().IsDefined(typeof(ParamArrayAttribute), false) && m.GetParameters().All(parameterValidate)));
+
+            bool parameterValidate(ParameterInfo p) => p.Position >= modifiedArgs.Count || (testForExtension && p.Position == 0) || modifiedArgs[p.Position] == null || IsCastable(modifiedArgs[p.Position].GetType(), p.ParameterType) || typeof(Delegate).IsAssignableFrom(p.ParameterType) || p.IsDefined(typeof(ParamArrayAttribute)) || (p.ParameterType.IsByRef && argsWithKeywords.Any(a => a.Index == p.Position + (testForExtension ? 1 : 0)));
         }
 
-        private bool IsCastable(Type fromType, Type toType)
+        /// <summary>两个类型之间是否能转换?</summary>
+        private static bool IsCastable(Type fromType, Type toType)
         {
             return toType.IsAssignableFrom(fromType) || (implicitCastDict.ContainsKey(fromType) && implicitCastDict[fromType].Contains(toType));
         }
@@ -2453,12 +2361,12 @@ namespace Arc.UniInk
 
                             if (paramsForInference == null) continue;
 
-                            if (modifiedArgs[paramsForInference.Position] is MethodsGroupWrapper methodsGroupEncaps)
+                            if (modifiedArgs[paramsForInference.Position] is MethodsGroupWrapper methodsGroupWrapper)
                             {
                                 if (paramsForInference.ParameterType.Name.StartsWith("Converter"))
                                 {
                                     var specificType = Array.Find(paramsForInference.ParameterType.GetGenericArguments(), pType => pType.Name.Equals(name));
-                                    var paraMethodInfo = Array.Find(methodsGroupEncaps.MethodsGroup, mi => mi.GetParameters().Length == 1);
+                                    var paraMethodInfo = Array.Find(methodsGroupWrapper.MethodsGroup, mi => mi.GetParameters().Length == 1);
                                     switch (specificType?.GenericParameterPosition)
                                     {
                                         case 0:
@@ -2472,7 +2380,7 @@ namespace Arc.UniInk
                                 else if (paramsForInference.ParameterType.Name.StartsWith("Action"))
                                 {
                                     var specificType = Array.Find(paramsForInference.ParameterType.GetGenericArguments(), pType => pType.Name.Equals(name));
-                                    var paraMethodInfo = Array.Find(methodsGroupEncaps.MethodsGroup, mi => mi.GetParameters().Length == paramsForInference.ParameterType.GetGenericArguments().Length);
+                                    var paraMethodInfo = Array.Find(methodsGroupWrapper.MethodsGroup, mi => mi.GetParameters().Length == paramsForInference.ParameterType.GetGenericArguments().Length);
                                     if (specificType != null)
                                     {
                                         inferredTypes.Add(paraMethodInfo.GetParameters()[specificType.GenericParameterPosition].ParameterType);
@@ -2481,14 +2389,15 @@ namespace Arc.UniInk
                                 else if (paramsForInference.ParameterType.Name.StartsWith("Func"))
                                 {
                                     var specificType = Array.Find(paramsForInference.ParameterType.GetGenericArguments(), pType => pType.Name.Equals(name));
-                                    var paraMethodInfo = Array.Find(methodsGroupEncaps.MethodsGroup, mi => mi.GetParameters().Length == paramsForInference.ParameterType.GetGenericArguments().Length - 1);
+                                    var paraMethodInfo = Array.Find(methodsGroupWrapper.MethodsGroup, mi => mi.GetParameters().Length == paramsForInference.ParameterType.GetGenericArguments().Length - 1);
                                     if (specificType?.GenericParameterPosition == paraMethodInfo.GetParameters().Length)
                                     {
                                         inferredTypes.Add(paraMethodInfo.ReturnType);
                                     }
                                     else
                                     {
-                                        inferredTypes.Add(paraMethodInfo.GetParameters()[specificType.GenericParameterPosition].ParameterType);
+                                        if (specificType != null)
+                                            inferredTypes.Add(paraMethodInfo.GetParameters()[specificType.GenericParameterPosition].ParameterType);
                                     }
                                 }
                             }
@@ -2647,23 +2556,6 @@ namespace Arc.UniInk
                     catch
                     {
                         parametersCastOK = false;
-                    }
-
-                    if (!parametersCastOK)
-                    {
-                        try
-                        {
-                            var parameterCastEvaluationEventArg = new ParameterCastEvaluationEventArg(methodInfoToCast, parameterType, modifiedArgs[a], a, this, onInstance);
-
-                            EvaluateParameterCast?.Invoke(this, parameterCastEvaluationEventArg);
-
-                            if (parameterCastEvaluationEventArg.FunctionModifiedArgument)
-                            {
-                                modifiedArgs[a] = parameterCastEvaluationEventArg.Argument;
-                                parametersCastOK = true;
-                            }
-                        }
-                        catch { }
                     }
                 }
             }
@@ -2884,20 +2776,20 @@ namespace Arc.UniInk
         /// <summary>通过类型名获取类型</summary>
         private Type GetTypeByFriendlyName(string typeName, string genericTypes = "", bool throwExceptionIfNotFound = false)
         {
+            typeName = typeName.Trim();
+            genericTypes = genericTypes.Trim();
+            var fullName = typeName + genericTypes;
+
             Type result;
             var formattedGenericTypes = string.Empty;
             var isCached = false;
+
             try
             {
-                typeName = typeName.Trim();
-                genericTypes = genericTypes.Trim();
-
                 primaryTypesDic.TryGetValue(typeName, out result);
-
                 if (CachedTypesDic.TryGetValue(typeName + genericTypes, out result))
-                {
                     isCached = true;
-                }
+
 
                 if (result == null)
                 {
@@ -2946,8 +2838,7 @@ namespace Arc.UniInk
         /// <summary>改变类型</summary>
         private static object ChangeType(object value, Type conversionType)
         {
-            if (conversionType == null)
-                throw new ArgumentNullException(nameof(conversionType));
+            if (conversionType == null) throw new ArgumentNullException(nameof(conversionType));
 
             // 泛型类型 且 定义的泛型类型可以为 null
             if (conversionType.IsGenericType && conversionType.GetGenericTypeDefinition() == typeof(Nullable<>))
@@ -3106,36 +2997,10 @@ namespace Arc.UniInk
             }
         }
 
-        /// <summary> 值类型嵌套跟踪 </summary>
-        private class ValueTypeNestingTrace<TContainer, TValue>
-        {
-            public TContainer Container { get; set; }
-
-            public MemberInfo Member { get; set; }
-
-            public TValue Value { get; set; }
-
-            /// <summary> 赋值 </summary>
-            public void AssignValue()
-            {
-                if (Container is ValueTypeNestingTrace<TValue, TValue> valueTypeNestingTrace)
-                {
-                    var propertyInfo = Member as PropertyInfo;
-                    propertyInfo?.SetValue(valueTypeNestingTrace.Value, Value);
-                    valueTypeNestingTrace.AssignValue();
-                }
-                else
-                {
-                    var propertyInfo = Member as PropertyInfo;
-                    propertyInfo?.SetValue(Container, Value);
-                }
-            }
-        }
-
         /// <summary> 用于?语法糖的容器 </summary>
         private struct NullValue { }
 
-        private class ArgKeywordsWrapper
+        private struct ArgKeywordsWrapper
         {
             public int Index { get; set; }
             public string Keyword { get; set; }
@@ -3198,21 +3063,6 @@ namespace Arc.UniInk
                 lambda(arg1, arg2, arg3, arg4);
             }
 
-            public void Action5<T1, T2, T3, T4, T5>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5)
-            {
-                lambda(arg1, arg2, arg3, arg4, arg5);
-            }
-
-            public void Action6<T1, T2, T3, T4, T5, T6>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6)
-            {
-                lambda(arg1, arg2, arg3, arg4, arg5, arg6);
-            }
-
-            public void Action7<T1, T2, T3, T4, T5, T6, T7>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7)
-            {
-                lambda(arg1, arg2, arg3, arg4, arg5, arg6, arg7);
-            }
-
             public TResult Func0<TResult>() => (TResult)lambda();
 
             public TResult Func1<T, TResult>(T arg) => (TResult)lambda(arg);
@@ -3231,21 +3081,6 @@ namespace Arc.UniInk
             {
                 return (TResult)lambda(arg1, arg2, arg3, arg4);
             }
-
-            public TResult Func5<T1, T2, T3, T4, T5, TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5)
-            {
-                return (TResult)lambda(arg1, arg2, arg3, arg4, arg5);
-            }
-
-            public TResult Func6<T1, T2, T3, T4, T5, T6, TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6)
-            {
-                return (TResult)lambda(arg1, arg2, arg3, arg4, arg5, arg6);
-            }
-
-            public TResult Func7<T1, T2, T3, T4, T5, T6, T7, TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7)
-            {
-                return (TResult)lambda(arg1, arg2, arg3, arg4, arg5, arg6, arg7);
-            }
         }
 
         #endregion
@@ -3254,6 +3089,8 @@ namespace Arc.UniInk
 
     public class ClassOrEnumType
     {
+        public ClassOrEnumType(Type type) => Type = type;
+
         public Type Type { get; set; }
     }
 
@@ -3278,18 +3115,8 @@ namespace Arc.UniInk
     #region Operators
 
     /// <summary>用于解释的操作符</summary>
-    public class ExpressionOperator : IEquatable<ExpressionOperator>
+    public class ExpressionOperator
     {
-        protected static uint indexer;
-        protected uint OperatorValue { get; }
-
-        protected ExpressionOperator()
-        {
-            indexer++;
-            OperatorValue = indexer;
-        }
-
-
         public static readonly ExpressionOperator Plus = new();
         public static readonly ExpressionOperator Minus = new();
         public static readonly ExpressionOperator UnaryPlus = new();
@@ -3316,17 +3143,20 @@ namespace Arc.UniInk
         public static readonly ExpressionOperator NullCoalescing = new();
         public static readonly ExpressionOperator Cast = new();
 
-        public override bool Equals(object obj)
+
+        protected static ushort indexer;
+        protected ushort OperatorValue { get; }
+
+        protected ExpressionOperator()
         {
-            return obj is ExpressionOperator otherOperator ? Equals(otherOperator) : OperatorValue.Equals(obj);
+            indexer++;
+            OperatorValue = indexer;
         }
 
         public bool Equals(ExpressionOperator otherOperator)
         {
             return otherOperator != null && OperatorValue == otherOperator.OperatorValue;
         }
-
-        public override int GetHashCode() => OperatorValue.GetHashCode();
     }
 
     #endregion
@@ -3337,7 +3167,6 @@ namespace Arc.UniInk
     /// <summary>用于封装在表达式子部分中发生的异常，以便在表达式求值需要继续执行时，将异常传递到更高层次的调用栈中。</summary>
     public class BubbleExceptionContainer
     {
-
         private readonly Exception _exception;
 
         /// <summary>构造器</summary>
@@ -3363,8 +3192,6 @@ namespace Arc.UniInk
     public class SecurityException : Exception
     {
         public SecurityException(string message) : base(message) { }
-
-        public SecurityException(string message, Exception innerException) : base(message, innerException) { }
     }
 
     #endregion
@@ -3373,7 +3200,7 @@ namespace Arc.UniInk
 
     /// <summary>关于已经/将要被求值的表达式的信息</summary>
     /// <remarks>用于<see cref="UniInk.ExpressionEvaluating"/>事件</remarks>
-    public class ExpressionEvaluationEventArg : EventArgs
+    public class ExpressionEvaluationEventArg
     {
         /// <summary>将用于计算表达式的求值器</summary>
         public UniInk Evaluator { get; set; }
@@ -3383,58 +3210,34 @@ namespace Arc.UniInk
 
         /// <summary>设置求值的返回值</summary>
         /// 用于 <see cref="UniInk.ExpressionEvaluated"/> 事件, 存储计算结果
-        public object Value
-        {
-            get => value;
-            set
-            {
-                this.value = value;
-                HasValue = true;
-            }
-        }
+        public object Value { get; set; }
 
         /// <summary>真: 表达式已经被求值, 假: 表达式还未被求值</summary>
-        public bool HasValue { get; set; }
-
-        private object value;
+        public bool HasValue => Value != null;
 
         /// <summary>构造器</summary>
         /// <param name="expression">要求值的表达式</param>
         /// <param name="evaluator">将用于计算表达式的求值器</param>
         /// <param name="value"></param>
-        public ExpressionEvaluationEventArg(string expression, UniInk evaluator, object value = null)
-        {
-            Refresh(expression, evaluator, value);
-        }
-
-        public ExpressionEvaluationEventArg Refresh(string expression, UniInk evaluator, object _value = null)
+        public ExpressionEvaluationEventArg(string expression, UniInk evaluator, object _value = null)
         {
             Expression = expression;
             Evaluator = evaluator;
-            value = _value;
-            return this;
+            Value = _value;
         }
     }
 
     /// <summary>当前解释器的变量、特性或属性的信息</summary>
-    public class VariableEvaluationEventArg : EventArgs
+    public class VariableEvaluationEventArg
     {
         /// <summary>被解释的变量名</summary>
         public string Name { get; set; }
 
         /// <summary>为该变量设置一个值</summary>
-        public object Value
-        {
-            get => varValue;
-            set
-            {
-                varValue = value;
-                HasValue = true;
-            }
-        }
+        public object Value { get; set; }
 
         /// <summary>变量是否有值</summary>
-        public bool HasValue { get; set; }
+        public bool HasValue => Value != null;
 
         /// <summary>在动态实例属性定义的情况下，调用此属性的对象的实例。<para/>否则设置为null。</summary>
         public object This { get; set; }
@@ -3451,7 +3254,6 @@ namespace Arc.UniInk
 
         private Func<string, Type[]> evaluateGenericTypes;
         private string genericTypes;
-        private object varValue;
 
         /// <summary>构造器</summary>
         /// <param name="name">被解释的变量名</param>
@@ -3459,24 +3261,18 @@ namespace Arc.UniInk
         /// <param name="onInstance">要在其上计算字段或属性的对象实例(赋值给<see cref="This"/>)</param>
         /// <param name="genericTypes">在属性访问时指定的泛型类型</param>
         /// <param name="evaluateGenericTypes">用于解释A func to evaluate the list of specific types given between &lt; and &gt;</param>
-        public VariableEvaluationEventArg(string name, UniInk evaluator = null, object onInstance = null, string genericTypes = null, Func<string, Type[]> evaluateGenericTypes = null)
-        {
-            Initialization(name, evaluator, onInstance, genericTypes, evaluateGenericTypes);
-        }
-
-        public VariableEvaluationEventArg Initialization(string name, UniInk evaluator = null, object onInstance = null, string _genericTypes = null, Func<string, Type[]> _evaluateGenericTypes = null)
+        public VariableEvaluationEventArg(string name, UniInk evaluator = null, object onInstance = null, string _genericTypes = null, Func<string, Type[]> _evaluateGenericTypes = null)
         {
             Name = name;
             This = onInstance;
             Evaluator = evaluator;
             genericTypes = _genericTypes;
             evaluateGenericTypes = _evaluateGenericTypes;
-            return this;
         }
     }
 
     /// <summary>关于当前求值的函数或方法的信息</summary>
-    public class FunctionEvaluationEventArg : EventArgs
+    public class FunctionEvaluationEventArg
     {
         /// <summary>构造器</summary>
         /// <param name="name">函数或者方法的名字</param>
@@ -3510,33 +3306,22 @@ namespace Arc.UniInk
         /// <param name="index">要计算的函数参数的索引</param>
         /// <returns>在指定类型中转换的计算参数</returns>
         public T EvaluateArg<T>(int index) => Evaluator.Evaluate<T>(Args[index]);
-
-
+        
         /// <summary>用于设置函数的返回值</summary>
-        public object Value
-        {
-            get => returnValue;
-            set
-            {
-                returnValue = value;
-                FunctionReturnedValue = true;
-            }
-        }
+        public object Value { get; set; }
 
         /// <summary>函数是否返回了值</summary>
-        public bool FunctionReturnedValue { get; set; }
+        public bool FunctionReturnedValue => Value != null;
 
         /// <summary>在动态实例方法定义的情况下，调用该方法(函数)的对象的实例。<para/>否则设置为空。</summary>
         public object This { get; set; }
 
         /// <summary>当前解释器的引用</summary>
         public UniInk Evaluator { get; set; }
-
-        private object returnValue;
     }
 
     /// <summary>参数转换求值事件参数的类 </summary>
-    public class ParameterCastEvaluationEventArg : EventArgs
+    public class ParameterCastEvaluationEventArg
     {
         /// <summary>尝试调用的方法数据 </summary>
         public MethodInfo MethodInfo { get; set; }
@@ -3568,52 +3353,32 @@ namespace Arc.UniInk
         /// <param name="this">此方法被动态对象调用的实例,等价于This关键字</param>
         public ParameterCastEvaluationEventArg(MethodInfo methodInfo, Type parameterType, object originalArg, int argPosition, UniInk evaluator = null, object @this = null)
         {
-            Initialization(methodInfo, parameterType, originalArg, argPosition, evaluator, @this);
-        }
-
-        public ParameterCastEvaluationEventArg Initialization(MethodInfo methodInfo, Type parameterType, object originalArg, int argPosition, UniInk evaluator = null, object @this = null)
-        {
             MethodInfo = methodInfo;
             ParameterType = parameterType;
             OriginalArg = originalArg;
             Evaluator = evaluator;
             This = @this;
             ArgPosition = argPosition;
-
-            return this;
         }
 
 
         /// <summary>设置修改后的参数</summary>
-        public object Argument
-        {
-            get => modifiedArgument;
-            set
-            {
-                modifiedArgument = value;
-                FunctionModifiedArgument = true; //只要被设置后，就会变成true，即使他是null
-            }
-        }
+        public object Argument { get; set; }
 
         /// <summary>
         /// 真:参数已被修改<para/>
         /// 假:这意味着参数不能是给定的类型.<para/>
+        /// TODO:有一种情况是故意设置成null
         /// </summary>
-        public bool FunctionModifiedArgument { get; set; }
-
-        private object modifiedArgument;
+        public bool FunctionModifiedArgument => Argument != null;
     }
 
     /// <summary>当前计算的变量、属性或属性的信息</summary>
     public class VariablePreEvaluationEventArg : VariableEvaluationEventArg
     {
-        public VariablePreEvaluationEventArg(string name, UniInk evaluator = null, object onInstance = null, string genericTypes = null, Func<string, Type[]> evaluateGenericTypes = null) : base(name, evaluator, onInstance, genericTypes, evaluateGenericTypes) { }
-
-        public new VariablePreEvaluationEventArg Initialization(string name, UniInk evaluator = null, object onInstance = null, string genericTypes = null, Func<string, Type[]> evaluateGenericTypes = null)
+        public VariablePreEvaluationEventArg(string name, UniInk evaluator = null, object onInstance = null, string genericTypes = null, Func<string, Type[]> evaluateGenericTypes = null) : base(name, evaluator, onInstance, genericTypes, evaluateGenericTypes)
         {
-            base.Initialization(name, evaluator, onInstance, genericTypes, evaluateGenericTypes);
             CancelEvaluation = false;
-            return this;
         }
 
         /// <summary>如果设置为true，则取消当前变量、字段或属性的求值，并抛出不存在的异常</summary>
