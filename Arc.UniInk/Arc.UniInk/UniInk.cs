@@ -21,6 +21,7 @@ namespace Arc.UniInk
     public class UniInk
     {
         #region Regex
+        /// https://regex101.com/r/0PN0yS/1
 
         /// 匹配C#代码中的变量或函数名
         /// sign: 匹配变量或函数名前的加号或减号。
@@ -35,7 +36,7 @@ namespace Arc.UniInk
         /// isGeneric: 匹配泛型类型参数。
         /// genTag: 匹配泛型类型参数中的尖括号。
         /// isFunction: 匹配函数参数列表的左括号。
-        protected static readonly Regex varOrFunctionRegEx = new(@"^((?<sign>[+-])|(?<prefixOperator>[+][+]|--)|(?<varKeyword>var)\s+|((?<nullConditional>[?])?(?<inObject>\.))?)(?<name>[\p{L}_](?>[\p{L}_0-9]*))(?>\s*)((?<assignationOperator>(?<assignmentPrefix>[+\-*/%&|^]|<<|>>|\?\?)?=(?![=>]))|(?<postfixOperator>([+][+]|--)(?![\p{L}_0-9]))|((?<isgeneric>[<](?>([\p{L}_](?>[\p{L}_0-9]*)|(?>\s+)|[,])+|(?<gentag>[<])|(?<-gentag>[>]))*(?(gentag)(?!))[>])?(?<isfunction>[(])?))", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        protected static readonly Regex varOrFunctionRegEx = new(@"^((?<sign>[+-])|(?<prefixOperator>[+][+]|--)|(?<varKeyword>var)\s+|((?<nullConditional>[?])?(?<inObject>\.))?)(?<name>[\p{L}_](?>[\p{L}_0-9]*))(?>\s*)((?<assignationOperator>(?<assignmentPrefix>[+\-*/%&|^]|<<|>>|\?\?)?=(?![=>]))|(?<postfixOperator>([+][+]|--)(?![\p{L}_0-9]))|((?<isgeneric>[<](?>([\p{L}_](?>[\p{L}_0-9]*)|(?>\s+)|[,])+)*[>])?(?<isfunction>[(])?))", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
         //language=regex
         ///匹配C#代码中的数字
@@ -63,7 +64,9 @@ namespace Arc.UniInk
         protected static readonly Regex endOfStringWithDollar = new("^([^\"{\\\\]|\\\\[\\\\\"0abfnrtv])*[\"{]", RegexOptions.Compiled);
         protected static readonly Regex endOfStringWithoutDollar = new("^([^\"\\\\]|\\\\[\\\\\"0abfnrtv])*[\"]", RegexOptions.Compiled);
         protected static readonly Regex endOfStringWithDollarWithAt = new("^[^\"{]*[\"{]", RegexOptions.Compiled);
+
         protected static readonly Regex endOfStringWithoutDollarWithAt = new("^[^\"]*[\"]", RegexOptions.Compiled);
+
         //
         protected static readonly Regex endOfStringInterpolationRegex = new("^('\"'|[^}\"])*[}\"]", RegexOptions.Compiled);
         protected static readonly Regex stringBeginningForEndBlockRegex = new("[$]?[@]?[\"]$", RegexOptions.Compiled);
@@ -2128,17 +2131,17 @@ namespace Arc.UniInk
             {
                 foreach (var item in stack)
                 {
-                    if (item is BubbleExceptionContainer bubbleExceptionContainer)
+                    if (item is BubbleExceptionContainer bubbleExceptionContainer1)
                     {
-                        bubbleExceptionContainer.Throw(); //Throw the first occuring error
+                        bubbleExceptionContainer1.Throw(); //抛出第一个出现的错误
                     }
                 }
 
                 throw new SyntaxException("语法错误.检查没有操作符丢失");
             }
-            else if (evaluationStackCount == 1 && stack.Peek() is BubbleExceptionContainer bubbleExceptionContainer)
+
+            if (evaluationStackCount == 1 && stack.Peek() is BubbleExceptionContainer bubbleExceptionContainer)
             {
-                //We reached the top level of the evaluation. So we want to throw the resulting exception.
                 bubbleExceptionContainer.Throw();
             }
 
@@ -2274,20 +2277,20 @@ namespace Arc.UniInk
             var modifiedArgs = new List<object>(args);
 
 
-            var methodInfos = type.GetMethods(flag).Where(methodByNameFilter).OrderByDescending(m => m.GetParameters().Length).ToList();
+            var methodsInfo = type.GetMethods(flag).Where(methodByNameFilter).OrderByDescending(m => m.GetParameters().Length).ToList();
 
             //对于重载并可能实现lambda参数的Linq方法
             try
             {
-                if (methodInfos.Count > 1 && type == typeof(Enumerable) && args.Count == 2 && args[1] is InternalDelegate internalDelegate && args[0] is IEnumerable enumerable && enumerable.GetEnumerator() is { } enumerator && enumerator.MoveNext() && methodInfos.Any(m => m.GetParameters().Any(p => p.ParameterType.Name.StartsWith("Func"))))
+                if (methodsInfo.Count > 1 && type == typeof(Enumerable) && args.Count == 2 && args[1] is InternalDelegate internalDelegate && args[0] is IEnumerable enumerable && enumerable.GetEnumerator() is { } enumerator && enumerator.MoveNext() && methodsInfo.Any(m => m.GetParameters().Any(p => p.ParameterType.Name.StartsWith("Func"))))
                 {
                     var lambdaResultType = internalDelegate.Invoke(enumerator.Current).GetType();
 
-                    methodInfo = methodInfos.Find(m =>
+                    methodInfo = methodsInfo.Find(m =>
                     {
-                        var parameterInfos = m.GetParameters();
+                        var parameters = m.GetParameters();
 
-                        return parameterInfos.Length == 2 && parameterInfos[1].ParameterType.Name.StartsWith("Func") && parameterInfos[1].ParameterType.GenericTypeArguments is { Length: 2 } genericTypesArgs && genericTypesArgs[1] == lambdaResultType;
+                        return parameters.Length == 2 && parameters[1].ParameterType.Name.StartsWith("Func") && parameters[1].ParameterType.GenericTypeArguments is { Length: 2 } genericTypesArgs && genericTypesArgs[1] == lambdaResultType;
                     });
 
                     if (methodInfo != null)
@@ -2301,18 +2304,16 @@ namespace Arc.UniInk
                 /*ignored*/
             }
 
-            for (var m = 0; methodInfo == null && m < methodInfos.Count; m++)
+            for (var m = 0; methodInfo == null && m < methodsInfo.Count; m++)
             {
                 modifiedArgs = new List<object>(args);
 
-                methodInfo = TryToCastMethodParametersToMakeItCallable(methodInfos[m], modifiedArgs, genericsTypes, inferredGenericsTypes, obj);
+                methodInfo = TryToCastMethodParametersToMakeItCallable(methodsInfo[m], modifiedArgs, genericsTypes, inferredGenericsTypes, obj);
             }
 
-            if (methodInfo != null)
-            {
-                args.Clear();
-                args.AddRange(modifiedArgs);
-            }
+            if (methodInfo == null) return null;
+            args.Clear();
+            args.AddRange(modifiedArgs);
 
             return methodInfo;
 
@@ -3306,7 +3307,7 @@ namespace Arc.UniInk
         /// <param name="index">要计算的函数参数的索引</param>
         /// <returns>在指定类型中转换的计算参数</returns>
         public T EvaluateArg<T>(int index) => Evaluator.Evaluate<T>(Args[index]);
-        
+
         /// <summary>用于设置函数的返回值</summary>
         public object Value { get; set; }
 

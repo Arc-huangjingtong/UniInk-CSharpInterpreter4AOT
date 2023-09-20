@@ -1,10 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Runtime.CompilerServices;
-
-
-namespace Arc.UniInk.Test
+﻿namespace Arc.UniInk.Test
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Runtime.CompilerServices;
     using Arc.UniInk;
     using NUnit.Framework;
 
@@ -48,7 +46,8 @@ namespace Arc.UniInk.Test
         [TestCase("this.Test3();")] //测试扩展方法
         [TestCase("TestA(x => (x > 0) && (int)MyEnum.A == 1);")] //测试lambda表达式
         [TestCase("MyEnum.A;")] //测试枚举
-        [TestCase("TestA(x => (x > 0) && (A == B));")] 
+        [TestCase("TestA(x => (x > 0) && (A == B));")]
+        //[TestCase("TestC<MyEnum>(A);")] //测试无返回值的函数
         public void Test_02(string script)
         {
             var test = new HelperClass();
@@ -56,7 +55,7 @@ namespace Arc.UniInk.Test
             Ink.Types.Add(typeof(MyEnum));
             Ink.StaticTypesForExtensionsMethods.Add(typeof(ExtensionClass));
             var ans = Ink.ScriptEvaluate($"{script}");
-
+          
             Assert.NotNull(ans);
             TestContext.Progress.WriteLine($"✅:{script}={ans}");
         }
@@ -81,7 +80,7 @@ namespace Arc.UniInk.Test
         {
             Console.WriteLine("test");
 
-            
+
             return 1;
         }
 
@@ -100,7 +99,14 @@ namespace Arc.UniInk.Test
 
         public static void TestB()
         {
+            
             Console.WriteLine("actionB");
+        }
+
+        public static T TestC<T>(T t)
+        {
+            Console.WriteLine("actionB");
+            return t;
         }
     }
 
