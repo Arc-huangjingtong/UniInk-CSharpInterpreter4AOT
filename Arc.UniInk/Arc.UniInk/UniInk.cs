@@ -21,8 +21,8 @@ namespace Arc.UniInk
     public class UniInk
     {
         #region Regex
-        /// https://regex101.com/r/0PN0yS/1
 
+        /// https://regex101.com/r/0PN0yS/1
         /// 匹配C#代码中的变量或函数名
         /// sign: 匹配变量或函数名前的加号或减号。
         /// prefixOperator: 匹配变量或函数名前的自增或自减运算符。
@@ -38,12 +38,13 @@ namespace Arc.UniInk
         /// isFunction: 匹配函数参数列表的左括号。
         protected static readonly Regex varOrFunctionRegEx = new(@"^((?<sign>[+-])|(?<prefixOperator>[+][+]|--)|(?<varKeyword>var)\s+|((?<nullConditional>[?])?(?<inObject>\.))?)(?<name>[\p{L}_](?>[\p{L}_0-9]*))(?>\s*)((?<assignationOperator>(?<assignmentPrefix>[+\-*/%&|^]|<<|>>|\?\?)?=(?![=>]))|(?<postfixOperator>([+][+]|--)(?![\p{L}_0-9]))|((?<isgeneric>[<](?>([\p{L}_](?>[\p{L}_0-9]*)|(?>\s+)|[,])+)*[>])?(?<isfunction>[(])?))", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
-        //language=regex
-        ///匹配C#代码中的数字
-        ///sign: 匹配数字字面量前面的符号，可以是加号或减号。
-        ///hasDecimal: 匹配数字字面量是否包含小数点。
-        ///type: 匹配数字字面量的类型后缀，可以是u、l、d、f、m等。
-        protected static readonly Regex numberRegex = new(@"^(?<sign>[+-])?([0-9][0-9_{1}]*[0-9]|\d)(?<hasdecimal>\.?([0-9][0-9_]*[0-9]|\d)(e[+-]?([0-9][0-9_]*[0-9]|\d))?)?(?<type>ul|[fdulm])?", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+        /// 匹配脚本中的数字
+        /// sign: 匹配数字字面量前面的符号，可以是加号或减号
+        /// hasDecimal: 匹配数字字面量是否包含小数点
+        /// type: 匹配数字字面量的类型后缀，可以是u、l、d、f、m、ul 等
+        /// 支持[1111.2f],[+123],[-122.2m]等写法，放弃支持 下划线[33_000], 科学计数[34.e+23] 等其他写法
+        protected static readonly Regex numberRegex = new(@"^(?<sign>[+-])?([\d]+)(?<hasdecimal>[\.]?([\d]+))?(?<type>ul|[fdulm])?", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
         //匹配 字符串前面的$或者@符号或者“双引号
         protected static readonly Regex stringBeginRegex = new("^(?<interpolated>[$])?(?<escaped>[@])?[\"]", RegexOptions.Compiled);
@@ -57,8 +58,6 @@ namespace Arc.UniInk
         //匹配 泛型
         private static readonly Regex genericsDecodeRegex = new("(?<name>[^,<>]+)(?<isgeneric>[<](?>[^<>]+|(?<gentag>[<])|(?<-gentag>[>]))*(?(gentag)(?!))[>])?", RegexOptions.Compiled);
 
-        //匹配 泛型类型参数列表的末尾
-        private static readonly Regex genericsEndOnlyOneTrim = new(@"(?>\s*)[>](?>\s*)$", RegexOptions.Compiled);
 
         //匹配 $标记的字符串末尾
         protected static readonly Regex endOfStringWithDollar = new("^([^\"{\\\\]|\\\\[\\\\\"0abfnrtv])*[\"{]", RegexOptions.Compiled);
@@ -144,7 +143,7 @@ namespace Arc.UniInk
 
         /// 强转类型字典
         /// 基于 https://docs.microsoft.com/en-us/previous-versions/visualstudio/visual-studio-2012/y5b434w4(v=vs.110)?redirectedfrom=MSDN
-        private static readonly Dictionary<Type, Type[]> implicitCastDict = new()
+        private static readonly Dictionary<Type, Type[]> implicitCastDic = new()
         {
             { typeof(sbyte), new[] { typeof(short), typeof(int), typeof(long), typeof(float), typeof(double), typeof(decimal) } },
             { typeof(byte), new[] { typeof(short), typeof(ushort), typeof(int), typeof(uint), typeof(long), typeof(ulong), typeof(float), typeof(double), typeof(decimal) } },
@@ -1130,7 +1129,6 @@ namespace Arc.UniInk
         }
 
         /// <summary>解析数字:只能是十进制类型</summary>
-        /// <remarks>可以识别<code>int a=666_666</code>这种分隔符</remarks>
         private bool EvaluateNumber(string expression, Stack<object> stack, ref int i)
         {
             var numberMatch = numberRegex.Match(expression.Substring(i));
@@ -1138,13 +1136,12 @@ namespace Arc.UniInk
             //匹配成功 && ( 前面无符号 || 栈为空 || 栈顶为运算符 )
             if (numberMatch.Success && (!numberMatch.Groups["sign"].Success || stack.Count == 0 || stack.Peek() is ExpressionOperator))
             {
-                i += numberMatch.Length;
-                i--;
+                i += numberMatch.Length - 1;
 
                 if (numberMatch.Groups["type"].Success) //有后缀的情况下,直接解析对应类型
                 {
                     var type = numberMatch.Groups["type"].Value;
-                    var numberNoType = numberMatch.Value.Replace(type, string.Empty).Replace("_", "");
+                    var numberNoType = numberMatch.Value.Replace(type, string.Empty);
 
                     if (numberSuffixToParse.TryGetValue(type, out var parseFunc))
                     {
@@ -1153,11 +1150,11 @@ namespace Arc.UniInk
                 }
                 else if (numberMatch.Groups["hasdecimal"].Success) //无后缀情况下,只要有小数点就被解析为double类型
                 {
-                    stack.Push(double.Parse(numberMatch.Value.Replace("_", "")));
+                    stack.Push(double.Parse(numberMatch.Value));
                 }
                 else //否则默认为int类型
                 {
-                    stack.Push(int.Parse(numberMatch.Value.Replace("_", "")));
+                    stack.Push(int.Parse(numberMatch.Value));
                 }
 
                 return true;
@@ -1176,12 +1173,8 @@ namespace Arc.UniInk
             //有var 关键字 但 没有赋值运算符
             if (varFuncMatch.Groups["varKeyword"].Success && !varFuncMatch.Groups["assignationOperator"].Success)
                 throw new SyntaxException($"隐式变量未初始化! [var {varFuncMatch.Groups["name"].Value}]");
-            if (varFuncMatch.Groups["isgeneric"].Success)
-                throw new SecurityException("禁止使用泛型");
-
 
             if ((!varFuncMatch.Groups["sign"].Success || stack.Count == 0 || stack.Peek() is ExpressionOperator) //前缀没有符号 或 栈为空 或 栈顶为运算符 
-                && !operatorsDictionary.ContainsKey(varFuncMatch.Value.Trim()) //且不是已注册的运算符
                 && (!operatorsDictionary.ContainsKey(varFuncMatch.Groups["name"].Value) || varFuncMatch.Groups["inObject"].Success)) // 不是已注册的运算符 或 在对象中
             {
                 var varFuncName = varFuncMatch.Groups["name"].Value;
@@ -1202,7 +1195,6 @@ namespace Arc.UniInk
                             throw new SyntaxException($"[{varFuncMatch.Value})] 必须紧跟一个对象"); //只有点
 
                         var obj = inObject ? stack.Pop() : Context;
-                        var keepObj = obj;
                         var objType = obj?.GetType();
 
                         try
@@ -1263,7 +1255,7 @@ namespace Arc.UniInk
                                 // 寻找标准实例或公共方法
                                 var methodInfo = GetRealMethod(ref objType, ref obj, varFuncName, flag, oArgs, string.Empty, Type.EmptyTypes, argsWithKeywords);
 
-                                // 如果找不到，检查obj是否是expandoObject或类似对象
+                                // 如果找不到，检查obj是否是dictionaryObject或类似对象
                                 if (obj is IDictionary<string, object> dictionaryObject && (dictionaryObject[varFuncName] is InternalDelegate || dictionaryObject[varFuncName] is Delegate)) //obj is IDynamicMetaObjectProvider &&
                                 {
                                     if (dictionaryObject[varFuncName] is InternalDelegate internalDelegate)
@@ -1538,8 +1530,6 @@ namespace Arc.UniInk
                                     throw new SyntaxException($"变量名已存在：[{varFuncName}]");
                                 if (varFuncMatch.Groups["varKeyword"].Success)
                                     throw new SyntaxException("无法使用type和var关键字的变量");
-                                if (varFuncMatch.Groups["dynamicKeyword"].Success)
-                                    throw new SyntaxException("禁止使用dynamic关键字声明变量");
 
                                 stack.Pop();
 
@@ -1616,7 +1606,7 @@ namespace Arc.UniInk
         private Type EvaluateType(string expression, ref int i, string currentName = "", string genericsTypes = "")
         {
             var typeName = $"{currentName}{(i < expression.Length && expression[i] == '?' ? "?" : "")}";
-            var staticType = GetTypeByFriendlyName(typeName, genericsTypes);
+            var staticType = GetTypeByName(typeName, genericsTypes);
 
             if (staticType == null)
             {
@@ -1628,12 +1618,10 @@ namespace Arc.UniInk
                     subIndex += typeMatch.Length;
                     typeName += $"{typeMatch.Groups["name"].Value}{((i + subIndex < expression.Length && expression.Substring(i + subIndex)[0] == '?') ? "?" : "")}";
 
-                    staticType = GetTypeByFriendlyName(typeName, typeMatch.Groups["isgeneric"].Value);
+                    staticType = GetTypeByName(typeName, typeMatch.Groups["isgeneric"].Value);
 
                     if (staticType != null)
-                    {
                         i += subIndex;
-                    }
                 }
             }
 
@@ -1648,7 +1636,7 @@ namespace Arc.UniInk
                     var subIndex = nestedTypeMatch.Length;
                     typeName += $"+{nestedTypeMatch.Groups["name"].Value}{((i + subIndex < expression.Length && expression.Substring(i + subIndex)[0] == '?') ? "?" : "")}";
 
-                    var nestedType = GetTypeByFriendlyName(typeName, nestedTypeMatch.Groups["isgeneric"].Value);
+                    var nestedType = GetTypeByName(typeName, nestedTypeMatch.Groups["isgeneric"].Value);
                     if (nestedType != null)
                     {
                         i += subIndex;
@@ -1670,7 +1658,7 @@ namespace Arc.UniInk
 
             if (i < expression.Length && (arrayTypeMatch = arrayTypeDetectionRegex.Match(expression.Substring(i))).Success)
             {
-                var arrayType = GetTypeByFriendlyName(staticType + arrayTypeMatch.Value);
+                var arrayType = GetTypeByName(staticType + arrayTypeMatch.Value);
                 if (arrayType != null)
                 {
                     i += arrayTypeMatch.Length;
@@ -1737,11 +1725,8 @@ namespace Arc.UniInk
                 switch (op)
                 {
                     //排除一元运算符的可能性
-                    case "+" when (stack.Count == 0 || (stack.Peek() is ExpressionOperator previousOp && !UnaryPrefixOperators.Contains(previousOp))):
-                        stack.Push(ExpressionOperator.UnaryPlus);
-                        break;
-                    case "-" when (stack.Count == 0 || (stack.Peek() is ExpressionOperator previousOp2 && !UnaryPrefixOperators.Contains(previousOp2))):
-                        stack.Push(ExpressionOperator.UnaryMinus);
+                    case "+" or "-" when stack.Count == 0 || (stack.Peek() is ExpressionOperator previousOp && !UnaryPrefixOperators.Contains(previousOp)):
+                        stack.Push(op == "+" ? ExpressionOperator.UnaryPlus : ExpressionOperator.UnaryMinus);
                         break;
                     default:
                         stack.Push(operatorsDictionary[op]);
@@ -1801,7 +1786,7 @@ namespace Arc.UniInk
         {
             var s = expression[i];
 
-            if (s.Equals(')')) throw new Exception($"[)] 找不到对应的匹配 : [{expression}] ");
+            if (s.Equals(')')) throw new SyntaxException($"[)] 找不到对应的匹配 : [{expression}] ");
 
             if (s.Equals('('))
             {
@@ -2325,7 +2310,7 @@ namespace Arc.UniInk
         /// <summary>两个类型之间是否能转换?</summary>
         private static bool IsCastable(Type fromType, Type toType)
         {
-            return toType.IsAssignableFrom(fromType) || (implicitCastDict.ContainsKey(fromType) && implicitCastDict[fromType].Contains(toType));
+            return toType.IsAssignableFrom(fromType) || (implicitCastDic.ContainsKey(fromType) && implicitCastDic[fromType].Contains(toType));
         }
 
         private MethodInfo TryToCastMethodParametersToMakeItCallable(MethodInfo methodInfoToCast, List<object> modifiedArgs, string genericsTypes, Type[] inferredGenericsTypes, object onInstance = null)
@@ -2587,9 +2572,23 @@ namespace Arc.UniInk
             return methodInfo;
         }
 
+        /// <summary> 获取泛型内部的类型 </summary>
         private Type[] GetConcreteTypes(string genericsTypes)
         {
-            return genericsDecodeRegex.Matches(genericsEndOnlyOneTrim.Replace(genericsTypes.TrimStart(' ', '<'), "")).Cast<Match>().Select(match => GetTypeByFriendlyName(match.Groups["name"].Value, match.Groups["isgeneric"].Value, true)).ToArray();
+            var matchStr = genericsTypes.Trim().TrimStart('<').TrimEnd('>');
+            var matches = genericsDecodeRegex.Matches(matchStr); //再次检查是否有嵌套泛型
+            var concreteTypes = new List<Type>();
+
+            foreach (Match match in matches)
+            {
+                var typeName = match.Groups["name"].Value;
+                var isGeneric = match.Groups["isgeneric"].Value;
+
+                var concreteType = GetTypeByName(typeName, isGeneric, true);
+                concreteTypes.Add(concreteType);
+            }
+
+            return concreteTypes.ToArray();
         }
 
         private static BindingFlags DetermineInstanceOrStatic(out Type objType, ref object obj, out ValueTypeNestingTrace valueTypeNestingTrace)
@@ -2775,7 +2774,7 @@ namespace Arc.UniInk
         }
 
         /// <summary>通过类型名获取类型</summary>
-        private Type GetTypeByFriendlyName(string typeName, string genericTypes = "", bool throwExceptionIfNotFound = false)
+        private Type GetTypeByName(string typeName, string genericTypes = "", bool throwExceptionIfNotFound = false)
         {
             typeName = typeName.Trim();
             genericTypes = genericTypes.Trim();
@@ -2788,13 +2787,13 @@ namespace Arc.UniInk
             try
             {
                 primaryTypesDic.TryGetValue(typeName, out result);
-                if (CachedTypesDic.TryGetValue(typeName + genericTypes, out result))
+                if (CachedTypesDic.TryGetValue(fullName, out result))
                     isCached = true;
 
 
                 if (result == null)
                 {
-                    if (!genericTypes.Equals(string.Empty))
+                    if (!string.IsNullOrEmpty(genericTypes))
                     {
                         var types = GetConcreteTypes(genericTypes);
                         formattedGenericTypes = $"`{types.Length}[{string.Join(", ", types.Select(type => $"[{type.AssemblyQualifiedName}]"))}]";
@@ -2831,7 +2830,7 @@ namespace Arc.UniInk
                 throw new SyntaxException($"未知的类型或类 : {typeName}{genericTypes}");
 
             if (result != null && !isCached)
-                CachedTypesDic[typeName + genericTypes] = result;
+                CachedTypesDic[fullName] = result;
 
             return result;
         }
@@ -3435,3 +3434,5 @@ namespace Arc.UniInk
 //4225行
 //4404行
 //4562行
+//优化思路：SubString()方法的使用，尽量不要使用，因为这个方法会创建一个新的字符串，而不是引用原来的字符串，这样会导致内存的浪费
+//改进：使用Span<T>结构体，这个结构体可以引用原来的字符串，而不是创建一个新的字符串，这样就不会导致内存的浪费
