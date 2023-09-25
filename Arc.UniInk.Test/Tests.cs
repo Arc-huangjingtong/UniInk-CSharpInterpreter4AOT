@@ -1,16 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text.RegularExpressions;
-using NUnit.Framework.Internal;
-
-
-namespace Arc.UniInk.Test
+﻿namespace Arc.UniInk.Test
 {
     using System;
-    using System.Collections.Generic;
-    using System.Runtime.CompilerServices;
     using Arc.UniInk;
     using NUnit.Framework;
+    using System.Collections.Generic;
+    using System.Text.RegularExpressions;
 
     //🔴🟠🟡🟢🔵🟣🟤⚫⚪
     [TestFixture]
@@ -79,81 +73,92 @@ namespace Arc.UniInk.Test
             TestContext.Progress.WriteLine($"✅:{str}");
             Console.WriteLine(str);
         }
+        // [TestCase("<List<int>>")]
+        // public void Test_String(string script)
+        // {
+        //     var test = new HelperClass();
+        //     var Ink = new UniInk(test);
+        //     Ink.Types.Add(typeof(MyEnum));
+        //     Ink.StaticTypesForExtensionsMethods.Add(typeof(ExtensionClass));
+        //     var ans = Ink.ScriptEvaluate($"{script}");
+        //     Assert.NotNull(ans);
+        //     TestContext.Progress.WriteLine($"✅:{script}={ans}");
+        // }
     }
-}
 
 
-public enum MyEnum { A, B, C }
+    public enum MyEnum { A, B, C }
 
 
-public class HelperClass
-{
-    public int Id = 233;
-
-    public string aaa = "2222";
-
-    public MyEnum A => MyEnum.A;
-    public MyEnum B => MyEnum.B;
-    public MyEnum C => MyEnum.C;
-
-    public static List<int> D = new List<int>();
-
-
-    ///无参数的测试函数
-    public static int Test()
+    public class HelperClass
     {
-        Console.WriteLine("test");
+        public int Id = 233;
+
+        public string aaa = "2222";
+
+        public MyEnum A => MyEnum.A;
+        public MyEnum B => MyEnum.B;
+        public MyEnum C => MyEnum.C;
+
+        public static List<int> D = new List<int>();
 
 
-        return 1;
+        ///无参数的测试函数
+        public static int Test()
+        {
+            Console.WriteLine("test");
+
+
+            return 1;
+        }
+
+        ///有参数的测试函数
+        public static string Test(string str)
+        {
+            Console.WriteLine(str);
+            return str;
+        }
+
+        public static string TestA(Predicate<int> predicate)
+        {
+            Console.WriteLine("predicate");
+            return "action";
+        }
+
+        public static string TestA(Predicate<List<int>> predicate)
+        {
+            Console.WriteLine("predicate");
+            return "action";
+        }
+
+        public static void TestB()
+        {
+            Console.WriteLine("actionB");
+        }
+
+        public static T TestC<T>(T t)
+        {
+            Console.WriteLine("actionB");
+            return t;
+        }
+
+        public static T2 TestD<T1, T2>(T2 t)
+        {
+            Console.WriteLine("actionB");
+            return t;
+        }
     }
 
-    ///有参数的测试函数
-    public static string Test(string str)
+
+    public static class ExtensionClass
     {
-        Console.WriteLine(str);
-        return str;
+        public static string Test3(this HelperClass str)
+        {
+            Console.WriteLine(str);
+            return str.ToString();
+        }
     }
-
-    public static string TestA(Predicate<int> predicate)
-    {
-        Console.WriteLine("predicate");
-        return "action";
-    }
-
-    public static string TestA(Predicate<List<int>> predicate)
-    {
-        Console.WriteLine("predicate");
-        return "action";
-    }
-
-    public static void TestB()
-    {
-        Console.WriteLine("actionB");
-    }
-
-    public static T TestC<T>(T t)
-    {
-        Console.WriteLine("actionB");
-        return t;
-    }
-
-    public static T2 TestD<T1, T2>(T2 t)
-    {
-        Console.WriteLine("actionB");
-        return t;
-    }
-}
-
-
-public static class ExtensionClass
-{
-    public static string Test3(this HelperClass str)
-    {
-        Console.WriteLine(str);
-        return str.ToString();
-    }
-}
 
 ////匹配 泛型类型参数列表的末尾
 //private static readonly Regex genericsEndOnlyOneTrim = new(@"(?>\s*)[>](?>\s*)$", RegexOptions.Compiled);
+}

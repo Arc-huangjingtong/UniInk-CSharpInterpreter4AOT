@@ -1837,137 +1837,139 @@ namespace Arc.UniInk
         {
             var stringBeginningMatch = stringBeginRegex.Match(expression.Substring(i));
 
-            if (stringBeginningMatch.Success)
+            if (!stringBeginningMatch.Success) return false;
+
+
+            var isEscaped = stringBeginningMatch.Groups["escaped"].Success;
+            var isInterpolated = stringBeginningMatch.Groups["interpolated"].Success;
+
+            //if (isEscaped || isInterpolated) throw new SyntaxException("不支持@和$字符");
+
+            i += stringBeginningMatch.Length;
+
+            var stringRegexPattern = new Regex($"^[^{(isEscaped ? "" : @"\\")}{(isInterpolated ? "{}" : "")}\"]*");
+            // new Regex($"^[^{(false ? "" : @"\\")}{(false ? "{}" : "")}\"]*");
+            //^[\\\"]*
+            //$"^[^{@"\\"}\"]*"
+            var endOfString = false;
+
+            var resultString = new StringBuilder();
+
+            while (!endOfString && i < expression.Length)
             {
-                var isEscaped = stringBeginningMatch.Groups["escaped"].Success;
-                var isInterpolated = stringBeginningMatch.Groups["interpolated"].Success;
+                var stringMatch = stringRegexPattern.Match(expression.Substring(i, expression.Length - i));
 
-                i += stringBeginningMatch.Length;
+                resultString.Append(stringMatch.Value);
+                i += stringMatch.Length;
 
-                var stringRegexPattern = new Regex($"^[^{(isEscaped ? "" : @"\\")}{(isInterpolated ? "{}" : "")}\"]*");
-
-                var endOfString = false;
-
-                var resultString = new StringBuilder();
-
-                while (!endOfString && i < expression.Length)
+                if (expression[i] == '"')
                 {
-                    var stringMatch = stringRegexPattern.Match(expression.Substring(i, expression.Length - i));
-
-                    resultString.Append(stringMatch.Value);
-                    i += stringMatch.Length;
-
-                    if (expression.Substring(i)[0] == '"')
+                    if (expression.Substring(i).Length > 1 && expression.Substring(i)[1] == '"')
                     {
-                        if (expression.Substring(i).Length > 1 && expression.Substring(i)[1] == '"')
-                        {
-                            i += 2;
-                            resultString.Append(@"""");
-                        }
-                        else
-                        {
-                            endOfString = true;
-                            stack.Push(resultString.ToString());
-                        }
+                        i += 2;
+                        resultString.Append(@"""");
                     }
-                    else if (expression.Substring(i)[0] == '{')
+                    else
                     {
-                        i++;
+                        endOfString = true;
+                        stack.Push(resultString.ToString());
+                    }
+                }
+                else if (expression.Substring(i)[0] == '{')
+                {
+                    i++;
 
-                        if (expression.Substring(i)[0] == '{')
+                    if (expression.Substring(i)[0] == '{')
+                    {
+                        resultString.Append("{");
+                        i++;
+                    }
+                    else
+                    {
+                        var innerExp = new StringBuilder();
+                        var bracketCount = 1;
+                        for (; i < expression.Length; i++)
                         {
-                            resultString.Append("{");
-                            i++;
-                        }
-                        else
-                        {
-                            var innerExp = new StringBuilder();
-                            var bracketCount = 1;
-                            for (; i < expression.Length; i++)
+                            if (i + 3 <= expression.Length && expression.Substring(i, 3).Equals("'\"'"))
                             {
-                                if (i + 3 <= expression.Length && expression.Substring(i, 3).Equals("'\"'"))
+                                innerExp.Append("'\"'");
+                                i += 2;
+                            }
+                            else
+                            {
+                                var internalStringMatch = stringBeginRegex.Match(expression.Substring(i));
+
+                                if (internalStringMatch.Success)
                                 {
-                                    innerExp.Append("'\"'");
-                                    i += 2;
+                                    var innerString = internalStringMatch.Value + GetCodeUntilEndOfString(expression.Substring(i + internalStringMatch.Length), internalStringMatch);
+                                    innerExp.Append(innerString);
+                                    i += innerString.Length - 1;
                                 }
                                 else
                                 {
-                                    var internalStringMatch = stringBeginRegex.Match(expression.Substring(i));
+                                    var s = expression.Substring(i, 1);
 
-                                    if (internalStringMatch.Success)
+                                    if (s.Equals("{")) bracketCount++;
+
+                                    if (s.Equals("}"))
                                     {
-                                        var innerString = internalStringMatch.Value + GetCodeUntilEndOfString(expression.Substring(i + internalStringMatch.Length), internalStringMatch);
-                                        innerExp.Append(innerString);
-                                        i += innerString.Length - 1;
+                                        bracketCount--;
+                                        i++;
+                                        if (bracketCount == 0) break;
                                     }
-                                    else
-                                    {
-                                        var s = expression.Substring(i, 1);
 
-                                        if (s.Equals("{")) bracketCount++;
-
-                                        if (s.Equals("}"))
-                                        {
-                                            bracketCount--;
-                                            i++;
-                                            if (bracketCount == 0) break;
-                                        }
-
-                                        innerExp.Append(s);
-                                    }
+                                    innerExp.Append(s);
                                 }
                             }
-
-                            if (bracketCount > 0)
-                            {
-                                var beVerb = bracketCount == 1 ? "is" : "are";
-                                throw new Exception($"{bracketCount} '}}' character {beVerb} missing in expression : [{expression}]");
-                            }
-
-                            var obj = Evaluate(innerExp.ToString());
-
-                            if (obj is BubbleExceptionContainer bubbleExceptionContainer)
-                                bubbleExceptionContainer.Throw();
-
-                            resultString.Append(obj);
                         }
-                    }
-                    else if (expression.Substring(i, expression.Length - i)[0] == '}')
-                    {
-                        i++;
 
-                        if (expression.Substring(i, expression.Length - i)[0] == '}')
+                        if (bracketCount > 0)
                         {
-                            resultString.Append("}");
-                            i++;
+                            var beVerb = bracketCount == 1 ? "is" : "are";
+                            throw new Exception($"{bracketCount} '}}' character {beVerb} missing in expression : [{expression}]");
                         }
-                        else
-                        {
-                            throw new SyntaxException("A character '}' must be escaped in a interpolated string.");
-                        }
-                    }
-                    else if (expression.Substring(i, expression.Length - i)[0] == '\\')
-                    {
-                        i++;
 
-                        if (stringEscapedCharDict.TryGetValue(expression.Substring(i, expression.Length - i)[0], out var escapedString))
-                        {
-                            resultString.Append(escapedString);
-                            i++;
-                        }
-                        else
-                        {
-                            throw new SyntaxException("There is no corresponding escaped character for \\" + expression.Substring(i, 1));
-                        }
+                        var obj = Evaluate(innerExp.ToString());
+
+                        if (obj is BubbleExceptionContainer bubbleExceptionContainer)
+                            bubbleExceptionContainer.Throw();
+
+                        resultString.Append(obj);
                     }
                 }
+                else if (expression.Substring(i, expression.Length - i)[0] == '}')
+                {
+                    i++;
 
-                if (!endOfString) throw new SyntaxException(@"缺少一个[ \ ]字符");
+                    if (expression.Substring(i, expression.Length - i)[0] == '}')
+                    {
+                        resultString.Append("}");
+                        i++;
+                    }
+                    else
+                    {
+                        throw new SyntaxException("A character '}' must be escaped in a interpolated string.");
+                    }
+                }
+                else if (expression.Substring(i, expression.Length - i)[0] == '\\')
+                {
+                    i++;
 
-                return true;
+                    if (stringEscapedCharDict.TryGetValue(expression.Substring(i, expression.Length - i)[0], out var escapedString))
+                    {
+                        resultString.Append(escapedString);
+                        i++;
+                    }
+                    else
+                    {
+                        throw new SyntaxException("There is no corresponding escaped character for \\" + expression.Substring(i, 1));
+                    }
+                }
             }
 
-            return false;
+            if (!endOfString) throw new SyntaxException(@"缺少一个[ \ ]字符");
+
+            return true;
         }
 
         #endregion
