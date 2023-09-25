@@ -225,9 +225,6 @@ namespace Arc.UniInk
             { "??", ExpressionOperator.NullCoalescing },
         };
 
-        /// 一元左操作符
-        protected static readonly List<ExpressionOperator> UnaryPrefixOperators = new();
-
         /// 一元右操作符
         protected static readonly List<ExpressionOperator> UnaryPostfixOperators = new()
         {
@@ -310,7 +307,7 @@ namespace Arc.UniInk
                     if (left is BubbleExceptionContainer leftExceptionContainer)
                     {
                         leftExceptionContainer.Throw();
-                        return null; // this line is never reached
+                        return null;
                     }
 
                     if ((bool)left) return true;
@@ -318,7 +315,7 @@ namespace Arc.UniInk
                     if (right is BubbleExceptionContainer rightExceptionContainer)
                     {
                         rightExceptionContainer.Throw();
-                        return null; // this line is never reached
+                        return null;
                     }
 
                     return (bool)left || (bool)right; // 条件或
@@ -518,34 +515,11 @@ namespace Arc.UniInk
         /// </summary>
         public Dictionary<string, object> Variables { get; set; } = new();
 
-        /// <summary>在解释脚本前触发</summary>
-        public event EventHandler<ExpressionEvaluationEventArg> OnEvaluatScript;
-
-        /// <summary>在计算表达式之前触发</summary>
-        /// <remarks>允许在此修改表达式以计算或强制返回值</remarks>
-        public event EventHandler<ExpressionEvaluationEventArg> ExpressionEvaluating;
-
-        /// <summary>在变量、字段或属性解析之前激发。</summary>
-        /// 允许动态定义变量和相应的值。<para/>
-        /// 允许取消这个变量的解释(视为它不存在)<para/>
-        public event EventHandler<VariablePreEvaluationEventArg> PreEvaluateVariable;
 
         /// <summary>在函数或方法解析之前触发。</summary>
         /// 允许动态定义函数或方法及其对应的值。<para/>
         /// 允许取消对该函数的评估（将其视为不存在）。<para/>
         public event EventHandler<FunctionEvaluationEventArg> PreEvaluateFunction;
-
-        /// <summary>如果未找到变量、字段或属性，则触发。</summary>
-        /// 允许动态定义变量及其对应的值。<para/>
-        public event EventHandler<VariableEvaluationEventArg> EvaluateVariable;
-
-        /// <summary>如果未找到函数或方法，则触发。</summary>
-        /// 允许动态定义函数或方法及其对应的值。<para/>
-        public event EventHandler<FunctionEvaluationEventArg> EvaluateFunction;
-
-        /// <summary>当参数对于函数来说不是正确的类型时触发</summary>
-        /// 允许动态定义自定义参数转换以使函数调用正常运行
-        public event EventHandler<ParameterCastEvaluationEventArg> EvaluateParameterCast;
 
         #endregion
 
@@ -1376,7 +1350,7 @@ namespace Arc.UniInk
                             }
 
                             if (methodInfo != null)
-                                stack.Push(methodInfo.Invoke(methodsGroupWrapper.ContainerObject, modifiedArgs?.ToArray()));
+                                stack.Push(methodInfo.Invoke(methodsGroupWrapper.ContainerObject, modifiedArgs.ToArray()));
                         }
                         else
                         {
@@ -1393,7 +1367,6 @@ namespace Arc.UniInk
                             throw new SyntaxException($"[{varFuncMatch.Value}] 后面必须有一个对象");
 
                         var obj = inObject ? stack.Pop() : Context;
-                        var keepObj = obj;
                         var objType = obj?.GetType();
 
                         try
@@ -1725,7 +1698,7 @@ namespace Arc.UniInk
                 switch (op)
                 {
                     //排除一元运算符的可能性
-                    case "+" or "-" when stack.Count == 0 || (stack.Peek() is ExpressionOperator previousOp && !UnaryPrefixOperators.Contains(previousOp)):
+                    case "+" or "-" when stack.Count == 0 || stack.Peek() is ExpressionOperator:
                         stack.Push(op == "+" ? ExpressionOperator.UnaryPlus : ExpressionOperator.UnaryMinus);
                         break;
                     default:
@@ -1839,135 +1812,51 @@ namespace Arc.UniInk
 
             if (!stringBeginningMatch.Success) return false;
 
-
             var isEscaped = stringBeginningMatch.Groups["escaped"].Success;
             var isInterpolated = stringBeginningMatch.Groups["interpolated"].Success;
 
-            //if (isEscaped || isInterpolated) throw new SyntaxException("不支持@和$字符");
+            if (isEscaped || isInterpolated) throw new SyntaxException("不支持@和$字符,请删除后重试");
 
             i += stringBeginningMatch.Length;
 
-            var stringRegexPattern = new Regex($"^[^{(isEscaped ? "" : @"\\")}{(isInterpolated ? "{}" : "")}\"]*");
-            // new Regex($"^[^{(false ? "" : @"\\")}{(false ? "{}" : "")}\"]*");
-            //^[\\\"]*
-            //$"^[^{@"\\"}\"]*"
+            var stringRegexPattern = new Regex("^[^\\\"]*"); //提取一行文本中不包含反斜杠和双引号的部分
+
             var endOfString = false;
-
             var resultString = new StringBuilder();
-
+            resultString.Append('\"');
             while (!endOfString && i < expression.Length)
             {
-                var stringMatch = stringRegexPattern.Match(expression.Substring(i, expression.Length - i));
+                var stringMatch = stringRegexPattern.Match(expression.Substring(i));
 
                 resultString.Append(stringMatch.Value);
                 i += stringMatch.Length;
 
-                if (expression[i] == '"')
+                switch (expression[i])
                 {
-                    if (expression.Substring(i).Length > 1 && expression.Substring(i)[1] == '"')
-                    {
-                        i += 2;
-                        resultString.Append(@"""");
-                    }
-                    else
-                    {
+                    case '"':
                         endOfString = true;
                         stack.Push(resultString.ToString());
-                    }
-                }
-                else if (expression.Substring(i)[0] == '{')
-                {
-                    i++;
-
-                    if (expression.Substring(i)[0] == '{')
+                        break;
+                    case '\\':
                     {
-                        resultString.Append("{");
                         i++;
-                    }
-                    else
-                    {
-                        var innerExp = new StringBuilder();
-                        var bracketCount = 1;
-                        for (; i < expression.Length; i++)
+
+                        if (stringEscapedCharDict.TryGetValue(expression[i], out var escapedString))
                         {
-                            if (i + 3 <= expression.Length && expression.Substring(i, 3).Equals("'\"'"))
-                            {
-                                innerExp.Append("'\"'");
-                                i += 2;
-                            }
-                            else
-                            {
-                                var internalStringMatch = stringBeginRegex.Match(expression.Substring(i));
-
-                                if (internalStringMatch.Success)
-                                {
-                                    var innerString = internalStringMatch.Value + GetCodeUntilEndOfString(expression.Substring(i + internalStringMatch.Length), internalStringMatch);
-                                    innerExp.Append(innerString);
-                                    i += innerString.Length - 1;
-                                }
-                                else
-                                {
-                                    var s = expression.Substring(i, 1);
-
-                                    if (s.Equals("{")) bracketCount++;
-
-                                    if (s.Equals("}"))
-                                    {
-                                        bracketCount--;
-                                        i++;
-                                        if (bracketCount == 0) break;
-                                    }
-
-                                    innerExp.Append(s);
-                                }
-                            }
+                            resultString.Append(escapedString);
+                            i++;
+                        }
+                        else
+                        {
+                            throw new SyntaxException($"未知的转义字符 \\{expression[i]}");
                         }
 
-                        if (bracketCount > 0)
-                        {
-                            var beVerb = bracketCount == 1 ? "is" : "are";
-                            throw new Exception($"{bracketCount} '}}' character {beVerb} missing in expression : [{expression}]");
-                        }
-
-                        var obj = Evaluate(innerExp.ToString());
-
-                        if (obj is BubbleExceptionContainer bubbleExceptionContainer)
-                            bubbleExceptionContainer.Throw();
-
-                        resultString.Append(obj);
-                    }
-                }
-                else if (expression.Substring(i, expression.Length - i)[0] == '}')
-                {
-                    i++;
-
-                    if (expression.Substring(i, expression.Length - i)[0] == '}')
-                    {
-                        resultString.Append("}");
-                        i++;
-                    }
-                    else
-                    {
-                        throw new SyntaxException("A character '}' must be escaped in a interpolated string.");
-                    }
-                }
-                else if (expression.Substring(i, expression.Length - i)[0] == '\\')
-                {
-                    i++;
-
-                    if (stringEscapedCharDict.TryGetValue(expression.Substring(i, expression.Length - i)[0], out var escapedString))
-                    {
-                        resultString.Append(escapedString);
-                        i++;
-                    }
-                    else
-                    {
-                        throw new SyntaxException("There is no corresponding escaped character for \\" + expression.Substring(i, 1));
+                        break;
                     }
                 }
             }
 
-            if (!endOfString) throw new SyntaxException(@"缺少一个[ \ ]字符");
+            if (!endOfString) throw new SyntaxException("缺少一个[ \\ ]字符");
 
             return true;
         }
@@ -2029,41 +1918,7 @@ namespace Arc.UniInk
                         list.RemoveAt(i - 1);
                         break;
                     }
-
-                    // 如果当前的操作符 同时也是 是左操作符,则(目前没有左操作符)
-                    if (UnaryPrefixOperators.Contains(_operatorMsg.Key))
-                    {
-                        try
-                        {
-                            void EvaluateFirstPreviousUnaryOp(int j)
-                            {
-                                if (j < list.Count - 1 && list[j] is ExpressionOperator previousOp && UnaryPrefixOperators.Contains(previousOp))
-                                {
-                                    EvaluateFirstPreviousUnaryOp(j + 1);
-
-                                    list[j] = OperatorsEvaluation?[previousOp](list[j + 1], null);
-
-
-                                    list.RemoveAt(j + 1);
-                                }
-                            }
-
-                            EvaluateFirstPreviousUnaryOp(i + 1);
-
-                            // list[i] = _operatorFunc((dynamic)list[i + 1], null);
-                            list[i] = _operatorMsg.Value(list[i + 1], null);
-                        }
-                        catch (Exception ex)
-                        {
-                            // var left = (dynamic)list[i + 1];
-                            var left = list[i + 1];
-                            //                Bubble up the causing error       //Transport the processing error
-                            list[i] = left is BubbleExceptionContainer ? left : new BubbleExceptionContainer(ex);
-                        }
-
-                        list.RemoveAt(i + 1);
-                        break;
-                    }
+                   
 
                     // 剩下的为左右双目操作符
                     {
@@ -3428,6 +3283,7 @@ namespace Arc.UniInk
         #endregion
     }
 }
+//3286行 --删除左操作符
 //3669行
 //3694行--删除索引器
 //3888行

@@ -41,7 +41,7 @@
         [TestCase("var w = 4-2;")]
         [TestCase("4/2;")]
         [TestCase("Test();")]
-        [TestCase("Test(@\"aaa\"+\"aaaaa\");")]
+        [TestCase("Test(\"aaa\"+\"aaaaa\");")]
         [TestCase("Test(Test(aaa));")]
         [TestCase("Test(Test(aaa)+\"aaaaa\");")]
         [TestCase("this.Test3();")] //测试扩展方法
