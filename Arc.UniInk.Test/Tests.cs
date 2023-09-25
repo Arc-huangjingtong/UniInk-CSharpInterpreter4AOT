@@ -73,6 +73,7 @@
             TestContext.Progress.WriteLine($"✅:{str}");
             Console.WriteLine(str);
         }
+
         // [TestCase("<List<int>>")]
         // public void Test_String(string script)
         // {
@@ -84,8 +85,20 @@
         //     Assert.NotNull(ans);
         //     TestContext.Progress.WriteLine($"✅:{script}={ans}");
         // }
-    }
+        [Test]
+        [TestCase(typeof(int),typeof(long))]
+        [TestCase(typeof(int),typeof(decimal))]
+        public void Test_Type(Type fromType, Type toType)
+        {
+          var ans=  IsCastable(fromType, toType);
+            TestContext.Progress.WriteLine($"✅:={ans}");
+        }
 
+        private static bool IsCastable(Type fromType, Type toType)
+        {
+            return toType.IsAssignableFrom(fromType);
+        }
+    }
 
     public enum MyEnum { A, B, C }
 

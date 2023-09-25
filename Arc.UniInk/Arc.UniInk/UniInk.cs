@@ -141,22 +141,6 @@ namespace Arc.UniInk
             { "void", typeof(void) }
         };
 
-        /// 强转类型字典
-        /// 基于 https://docs.microsoft.com/en-us/previous-versions/visualstudio/visual-studio-2012/y5b434w4(v=vs.110)?redirectedfrom=MSDN
-        private static readonly Dictionary<Type, Type[]> implicitCastDic = new()
-        {
-            { typeof(sbyte), new[] { typeof(short), typeof(int), typeof(long), typeof(float), typeof(double), typeof(decimal) } },
-            { typeof(byte), new[] { typeof(short), typeof(ushort), typeof(int), typeof(uint), typeof(long), typeof(ulong), typeof(float), typeof(double), typeof(decimal) } },
-            { typeof(short), new[] { typeof(int), typeof(long), typeof(float), typeof(double), typeof(decimal) } },
-            { typeof(ushort), new[] { typeof(int), typeof(uint), typeof(long), typeof(ulong), typeof(float), typeof(double), typeof(decimal) } },
-            { typeof(int), new[] { typeof(long), typeof(float), typeof(double), typeof(decimal) } },
-            { typeof(uint), new[] { typeof(long), typeof(ulong), typeof(float), typeof(double), typeof(decimal) } },
-            { typeof(long), new[] { typeof(float), typeof(double), typeof(decimal) } },
-            { typeof(char), new[] { typeof(ushort), typeof(int), typeof(uint), typeof(long), typeof(ulong), typeof(float), typeof(double), typeof(decimal) } },
-            { typeof(float), new[] { typeof(double) } },
-            { typeof(ulong), new[] { typeof(float), typeof(double), typeof(decimal) } },
-        };
-
         /// 数字后缀字典  Always Case insensitive, like in C#
         private static readonly Dictionary<string, Func<string, object>> numberSuffixToParse = new()
         {
@@ -603,7 +587,7 @@ namespace Arc.UniInk
                 {
                     endIndex += blockKeywordsBeginMatch.Success ? blockKeywordsBeginMatch.Length : blockKeywordsBeginMatch_NoParentheses.Length;
                     var keyword = blockKeywordsBeginMatch.Success ? blockKeywordsBeginMatch.Groups["keyword"].Value.Replace(" ", "").Replace("\t", "") : (blockKeywordsBeginMatch_NoParentheses?.Groups["keyword"].Value ?? string.Empty);
-                    var keywordAttributes = blockKeywordsBeginMatch.Success ? GetExpressionsParenthesized(script, ref endIndex, true, ";") : null;
+                    var keywordAttributes = blockKeywordsBeginMatch.Success ? GetExpressionsParenthesized(script, ref endIndex, true, ';') : null;
 
                     if (blockKeywordsBeginMatch.Success) endIndex++;
 
@@ -698,7 +682,7 @@ namespace Arc.UniInk
                             if ((blockKeywordsBeginMatch = blockKeywordBeginRegex.Match(script.Substring(endIndex))).Success && blockKeywordsBeginMatch.Groups["keyword"].Value.Equals("while"))
                             {
                                 endIndex += blockKeywordsBeginMatch.Length;
-                                keywordAttributes = GetExpressionsParenthesized(script, ref endIndex, true, ";");
+                                keywordAttributes = GetExpressionsParenthesized(script, ref endIndex, true, ';');
 
                                 endIndex++;
 
@@ -1278,18 +1262,19 @@ namespace Arc.UniInk
                                             where method.GetParameters()[0].ParameterType == objType // static extMethod(this outType, ...)
                                             select method;
 
-                                        if (query.Any())
+                                        var methodInfos = query as MethodInfo[] ?? query.ToArray();
+                                        if (methodInfos.Any())
                                         {
                                             var fnArgsPrint = string.Join(",", funcArgs);
                                             var fnOverloadsPrint = "";
 
-                                            foreach (var mi in query)
+                                            foreach (var mi in methodInfos)
                                             {
                                                 var parInfo = mi.GetParameters();
                                                 fnOverloadsPrint += string.Join(",", parInfo.Select(x => x.ParameterType.FullName ?? x.ParameterType.Name)) + "\n";
                                             }
 
-                                            throw new SyntaxException($"[{objType}] extension method \"{varFuncName}\" has no overload for arguments: {fnArgsPrint}. Candidates: {fnOverloadsPrint}");
+                                            throw new SyntaxException($"[{objType}] 的扩展方法 \"{varFuncName}\"没有参数重载: {fnArgsPrint}. 候选: {fnOverloadsPrint}");
                                         }
 
 
@@ -2167,7 +2152,7 @@ namespace Arc.UniInk
         /// <summary>两个类型之间是否能转换?</summary>
         private static bool IsCastable(Type fromType, Type toType)
         {
-            return toType.IsAssignableFrom(fromType) || (implicitCastDic.ContainsKey(fromType) && implicitCastDic[fromType].Contains(toType));
+            return toType.IsAssignableFrom(fromType);
         }
 
         private MethodInfo TryToCastMethodParametersToMakeItCallable(MethodInfo methodInfoToCast, List<object> modifiedArgs, string genericsTypes, Type[] inferredGenericsTypes, object onInstance = null)
@@ -2309,7 +2294,7 @@ namespace Arc.UniInk
                 else if (typeof(Delegate).IsAssignableFrom(parameterType) && modifiedArgs[a] is MethodsGroupWrapper methodsGroupWrapper)
                 {
                     var invokeMethod = parameterType.GetMethod("Invoke");
-                    var methodForDelegate = Array.Find(methodsGroupWrapper.MethodsGroup, m => invokeMethod.GetParameters().Length == m.GetParameters().Length && invokeMethod.ReturnType.IsAssignableFrom(m.ReturnType));
+                    var methodForDelegate = Array.Find(methodsGroupWrapper.MethodsGroup, m => invokeMethod != null && invokeMethod.GetParameters().Length == m.GetParameters().Length && invokeMethod.ReturnType.IsAssignableFrom(m.ReturnType));
                     if (methodForDelegate != null)
                     {
                         var parametersTypes = methodForDelegate.GetParameters().Select(p => p.ParameterType).ToArray();
@@ -2517,7 +2502,7 @@ namespace Arc.UniInk
         }
 
         /// <summary>获取指定括号之间的表达式列表</summary>
-        private List<string> GetExpressionsParenthesized(string expression, ref int i, bool checkSeparator, string separator = ",", string startChar = "(", string endChar = ")")
+        private List<string> GetExpressionsParenthesized(string expression, ref int i, bool checkSeparator, char separator = ',', char startChar = '(', char endChar = ')')
         {
             var expressionsList = new List<string>();
 
@@ -2542,7 +2527,7 @@ namespace Arc.UniInk
                 }
                 else
                 {
-                    var s = expression.Substring(i, 1);
+                    var s = expression[i+1];
 
                     if (s.Equals(startChar))
                     {
@@ -2550,24 +2535,24 @@ namespace Arc.UniInk
                     }
                     else
                     {
-                        if (s == "(")
+                        if (s == '(')
                         {
                             i++;
                             currentExpression += $"({GetExpressionsParenthesized(expression, ref i, false).SingleOrDefault()})";
                             continue;
                         }
 
-                        if (s == "{")
+                        if (s == '{')
                         {
                             i++;
-                            currentExpression += $"{{{GetExpressionsParenthesized(expression, ref i, false, ",", "{", "}").SingleOrDefault()}}}";
+                            currentExpression += $"{{{GetExpressionsParenthesized(expression, ref i, false, ',', '{', '}').SingleOrDefault()}}}";
                             continue;
                         }
 
-                        if (s == "[")
+                        if (s == '[')
                         {
                             i++;
-                            currentExpression += $"[{GetExpressionsParenthesized(expression, ref i, false, ",", "[", "]").SingleOrDefault()}]";
+                            currentExpression += $"[{GetExpressionsParenthesized(expression, ref i, false, ',', '[', ']').SingleOrDefault()}]";
                             continue;
                         }
                     }
@@ -2596,7 +2581,7 @@ namespace Arc.UniInk
             }
 
             if (bracketCount > 0)
-                throw new Exception($"[{expression}] 中缺少 [{bracketCount}] 个 字符 ['{endChar}'] ");
+                throw new Exception($"[{expression}] 中缺少字符 ['{endChar}'] ");
 
 
             return expressionsList;
