@@ -144,27 +144,12 @@ namespace Arc.UniInk
         /// 数字后缀字典  Always Case insensitive, like in C#
         private static readonly Dictionary<string, Func<string, object>> numberSuffixToParse = new()
         {
-            { "f", (number) => float.Parse(number) },
-            { "d", (number) => double.Parse(number) },
-            { "u", (number) => uint.Parse(number) },
-            { "l", (number) => long.Parse(number) },
-            { "ul", (number) => ulong.Parse(number) },
-            { "m", (number) => decimal.Parse(number) }
-        };
-
-        /// 转义字符串字典
-        private static readonly Dictionary<char, string> stringEscapedCharDict = new()
-        {
-            { '\\', @"\" },
-            { '"', "\"" },
-            { '0', "\0" },
-            { 'a', "\a" },
-            { 'b', "\b" },
-            { 'f', "\f" },
-            { 'n', "\n" },
-            { 'r', "\r" },
-            { 't', "\t" },
-            { 'v', "\v" }
+            { "f", number => float.Parse(number) },
+            { "d", number => double.Parse(number) },
+            { "u", number => uint.Parse(number) },
+            { "l", number => long.Parse(number) },
+            { "ul", number => ulong.Parse(number) },
+            { "m", number => decimal.Parse(number) }
         };
 
         /// 转义字符字典
@@ -218,7 +203,7 @@ namespace Arc.UniInk
             ExpressionOperator.UnaryMinus // -a 一元减号,表示负数符号
         };
 
-        /// 二元操作符计算逻辑 ||这是一个字典的列表,记录了所有操作的具体方法
+        /// 二元操作符计算逻辑
         protected static readonly Dictionary<ExpressionOperator, Func<object, object, object>> OperatorsEvaluation = new()
         {
             { ExpressionOperator.UnaryPlus, (_, right) => +(int)right }, // 一元加号,表示正数符号
@@ -340,11 +325,6 @@ namespace Arc.UniInk
             { "Truncate", Math.Truncate },
         };
 
-        ///复杂的双参数计算函数
-        private readonly Dictionary<string, Func<double, double, double>> doubleDoubleMathFuncDictionary = new()
-        {
-            { "Atan2", Math.Atan2 }, { "IEEERemainder", Math.IEEERemainder }, { "Log", Math.Log }, { "Pow", Math.Pow },
-        };
 
         ///复杂的基本函数
         private readonly Dictionary<string, Func<UniInk, List<string>, object>> complexStandardFuncDictionary = new()
@@ -1211,7 +1191,7 @@ namespace Arc.UniInk
                                 var flag = DetermineInstanceOrStatic(out objType, ref obj, out _);
 
                                 // 寻找标准实例或公共方法
-                                var methodInfo = GetRealMethod(ref objType, ref obj, varFuncName, flag, oArgs, string.Empty, Type.EmptyTypes, argsWithKeywords);
+                                var methodInfo = GetRealMethod(ref objType, varFuncName, flag, oArgs, string.Empty, Type.EmptyTypes, argsWithKeywords);
 
                                 // 如果找不到，检查obj是否是dictionaryObject或类似对象
                                 if (obj is IDictionary<string, object> dictionaryObject && (dictionaryObject[varFuncName] is InternalDelegate || dictionaryObject[varFuncName] is Delegate)) //obj is IDynamicMetaObjectProvider &&
@@ -1235,11 +1215,10 @@ namespace Arc.UniInk
                                         oArgs.Insert(0, obj);
                                         objType = obj.GetType();
 
-                                        object extensionObj = null;
                                         for (var e = 0; e < StaticTypesForExtensionsMethods.Count && methodInfo == null; e++)
                                         {
                                             var type = StaticTypesForExtensionsMethods[e];
-                                            methodInfo = GetRealMethod(ref type, ref extensionObj, varFuncName, StaticBindingFlag, oArgs, string.Empty, Type.EmptyTypes, argsWithKeywords, true);
+                                            methodInfo = GetRealMethod(ref type, varFuncName, StaticBindingFlag, oArgs, string.Empty, Type.EmptyTypes, argsWithKeywords, true);
                                             isExtension = methodInfo != null;
                                         }
                                     }
@@ -1283,7 +1262,6 @@ namespace Arc.UniInk
                                 }
                             }
                         }
-                        catch (SecurityException) { throw; }
                         catch (SyntaxException) { throw; }
                         catch (NullReferenceException nullException)
                         {
@@ -1331,7 +1309,7 @@ namespace Arc.UniInk
                             {
                                 modifiedArgs = new List<object>(args);
 
-                                methodInfo = TryToCastMethodParametersToMakeItCallable(methodsGroupWrapper.MethodsGroup[m], modifiedArgs, string.Empty, Type.EmptyTypes, methodsGroupWrapper.ContainerObject);
+                                methodInfo = TryToCastMethodParametersToMakeItCallable(methodsGroupWrapper.MethodsGroup[m], modifiedArgs, string.Empty, Type.EmptyTypes);
                             }
 
                             if (methodInfo != null)
@@ -1389,7 +1367,7 @@ namespace Arc.UniInk
                                 {
                                     var methodsGroup = objType?.GetMember(varFuncName, flag).OfType<MethodInfo>().ToArray();
 
-                                    if (methodsGroup.Length > 0)
+                                    if (methodsGroup is { Length: > 0 })
                                         varValue = new MethodsGroupWrapper { ContainerObject = obj, MethodsGroup = methodsGroup };
                                 }
 
@@ -1402,8 +1380,6 @@ namespace Arc.UniInk
                                     else
                                         pushVarValue = false;
                                 }
-
-                                var isVarValueSet = false;
 
                                 //Var去设置值 且 不是动态的 且 值为null 且 pushVarValue为true
                                 if (!isDynamic && varValue == null)
@@ -1425,7 +1401,8 @@ namespace Arc.UniInk
 
                                 if (varFuncMatch.Groups["assignationOperator"].Success)
                                 {
-                                    varValue = ManageKindOfAssignation(expression, ref i, varFuncMatch, () => varValue, stack);
+                                    var value = varValue;
+                                    varValue = ManageKindOfAssignation(expression, ref i, varFuncMatch, () => value, stack);
                                 }
                                 else if (varFuncMatch.Groups["postfixOperator"].Success)
                                 {
@@ -1456,10 +1433,6 @@ namespace Arc.UniInk
                                     }
                                 }
                             }
-                        }
-                        catch (SecurityException)
-                        {
-                            throw;
                         }
                         catch (SyntaxException)
                         {
@@ -1826,7 +1799,7 @@ namespace Arc.UniInk
                     {
                         i++;
 
-                        if (stringEscapedCharDict.TryGetValue(expression[i], out var escapedString))
+                        if (charEscapedCharDict.TryGetValue(expression[i], out var escapedString))
                         {
                             resultString.Append(escapedString);
                             i++;
@@ -1873,6 +1846,9 @@ namespace Arc.UniInk
                     {
                         try
                         {
+                            EvaluateFirstNextUnaryOp(i - 1, ref i);
+                            list[i] = _operatorMsg.Value(null, list[i - 1]);
+
                             //定义一个方法,用于递归处理前一个操作符
                             void EvaluateFirstNextUnaryOp(int j, ref int parentIndex)
                             {
@@ -1881,7 +1857,6 @@ namespace Arc.UniInk
                                     EvaluateFirstNextUnaryOp(j - 1, ref j);
 
                                     //处理前一个操作符
-                                    //list[j] = OperatorsEvaluation[nextOp](null, (dynamic)list[j - 1]);
                                     list[j] = OperatorsEvaluation[nextOp](null, list[j - 1]);
 
                                     //移除前一个操作符
@@ -1889,9 +1864,6 @@ namespace Arc.UniInk
                                     parentIndex = j;
                                 }
                             }
-
-                            EvaluateFirstNextUnaryOp(i - 1, ref i);
-                            list[i] = _operatorMsg.Value(null, list[i - 1]);
                         }
                         catch (Exception ex)
                         {
@@ -1903,7 +1875,7 @@ namespace Arc.UniInk
                         list.RemoveAt(i - 1);
                         break;
                     }
-                   
+
 
                     // 剩下的为左右双目操作符
                     {
@@ -2020,13 +1992,14 @@ namespace Arc.UniInk
             return result;
         }
 
+        /// <summary>给变量赋值</summary>
         private void AssignVariable(string varName, object value)
         {
             if (Variables.ContainsKey(varName) && Variables[varName] is StronglyTypedVariable stronglyTypedVariable)
             {
                 if (value == null && stronglyTypedVariable.Type.IsValueType && Nullable.GetUnderlyingType(stronglyTypedVariable.Type) == null)
                 {
-                    throw new SyntaxException($"Can not cast null to {stronglyTypedVariable.Type} because it's not a nullable valueType");
+                    throw new SyntaxException($"不可空的类型 : 不能强制转换为 null {stronglyTypedVariable.Type}");
                 }
 
                 var typeToAssign = value?.GetType();
@@ -2042,7 +2015,7 @@ namespace Arc.UniInk
                     }
                     catch (Exception exception)
                     {
-                        throw new InvalidCastException($"A object of type {typeToAssign} can not be cast implicitely in {stronglyTypedVariable.Type}", exception);
+                        throw new InvalidCastException($"对象类型:{typeToAssign}无法转换成{stronglyTypedVariable.Type}", exception);
                     }
                 }
             }
@@ -2098,7 +2071,7 @@ namespace Arc.UniInk
         }
 
         /// <summary>获取方法的解释器</summary>
-        private MethodInfo GetRealMethod(ref Type type, ref object obj, string func, BindingFlags flag, List<object> args, string genericsTypes, Type[] inferredGenericsTypes, List<ArgKeywordsWrapper> argsWithKeywords, bool testForExtension = false)
+        private MethodInfo GetRealMethod(ref Type type, string func, BindingFlags flag, List<object> args, string genericsTypes, Type[] inferredGenericsTypes, List<ArgKeywordsWrapper> argsWithKeywords, bool testForExtension = false)
         {
             MethodInfo methodInfo = null;
             var modifiedArgs = new List<object>(args);
@@ -2122,7 +2095,7 @@ namespace Arc.UniInk
 
                     if (methodInfo != null)
                     {
-                        methodInfo = TryToCastMethodParametersToMakeItCallable(methodInfo, modifiedArgs, genericsTypes, inferredGenericsTypes, obj);
+                        methodInfo = TryToCastMethodParametersToMakeItCallable(methodInfo, modifiedArgs, genericsTypes, inferredGenericsTypes);
                     }
                 }
             }
@@ -2135,7 +2108,7 @@ namespace Arc.UniInk
             {
                 modifiedArgs = new List<object>(args);
 
-                methodInfo = TryToCastMethodParametersToMakeItCallable(methodsInfo[m], modifiedArgs, genericsTypes, inferredGenericsTypes, obj);
+                methodInfo = TryToCastMethodParametersToMakeItCallable(methodsInfo[m], modifiedArgs, genericsTypes, inferredGenericsTypes);
             }
 
             if (methodInfo == null) return null;
@@ -2144,18 +2117,12 @@ namespace Arc.UniInk
 
             return methodInfo;
 
-            bool methodByNameFilter(MethodInfo m) => m.Name.Equals(func) && (m.GetParameters().Length == modifiedArgs.Count || (m.GetParameters().Length > modifiedArgs.Count && m.GetParameters().Take(modifiedArgs.Count).All(p => modifiedArgs[p.Position] == null || IsCastable(modifiedArgs[p.Position].GetType(), p.ParameterType)) && m.GetParameters().Skip(modifiedArgs.Count).All(p => p.HasDefaultValue)) || (m.GetParameters().Length > 0 && m.GetParameters().Last().IsDefined(typeof(ParamArrayAttribute), false) && m.GetParameters().All(parameterValidate)));
+            bool methodByNameFilter(MethodInfo m) => m.Name.Equals(func) && (m.GetParameters().Length == modifiedArgs.Count || (m.GetParameters().Length > modifiedArgs.Count && m.GetParameters().Take(modifiedArgs.Count).All(p => modifiedArgs[p.Position] == null ||  p.ParameterType.IsInstanceOfType(modifiedArgs[p.Position]) ) && m.GetParameters().Skip(modifiedArgs.Count).All(p => p.HasDefaultValue)) || (m.GetParameters().Length > 0 && m.GetParameters().Last().IsDefined(typeof(ParamArrayAttribute), false) && m.GetParameters().All(parameterValidate)));
 
-            bool parameterValidate(ParameterInfo p) => p.Position >= modifiedArgs.Count || (testForExtension && p.Position == 0) || modifiedArgs[p.Position] == null || IsCastable(modifiedArgs[p.Position].GetType(), p.ParameterType) || typeof(Delegate).IsAssignableFrom(p.ParameterType) || p.IsDefined(typeof(ParamArrayAttribute)) || (p.ParameterType.IsByRef && argsWithKeywords.Any(a => a.Index == p.Position + (testForExtension ? 1 : 0)));
+            bool parameterValidate(ParameterInfo p) => p.Position >= modifiedArgs.Count || (testForExtension && p.Position == 0) || modifiedArgs[p.Position] == null || p.ParameterType.IsInstanceOfType(modifiedArgs[p.Position]) || typeof(Delegate).IsAssignableFrom(p.ParameterType) || p.IsDefined(typeof(ParamArrayAttribute)) || (p.ParameterType.IsByRef && argsWithKeywords.Any(a => a.Index == p.Position + (testForExtension ? 1 : 0)));
         }
 
-        /// <summary>两个类型之间是否能转换?</summary>
-        private static bool IsCastable(Type fromType, Type toType)
-        {
-            return toType.IsAssignableFrom(fromType);
-        }
-
-        private MethodInfo TryToCastMethodParametersToMakeItCallable(MethodInfo methodInfoToCast, List<object> modifiedArgs, string genericsTypes, Type[] inferredGenericsTypes, object onInstance = null)
+        private MethodInfo TryToCastMethodParametersToMakeItCallable(MethodInfo methodInfoToCast, List<object> modifiedArgs, string genericsTypes, Type[] inferredGenericsTypes)
         {
             MethodInfo methodInfo = null;
 
@@ -2335,7 +2302,7 @@ namespace Arc.UniInk
                     try
                     {
                         // To manage params argument
-                        if (methodInfoToCast.GetParameters().Length == a + 1 && methodInfoToCast.GetParameters()[a].IsDefined(typeof(ParamArrayAttribute), false) && parameterType != modifiedArgs[a]?.GetType() && parameterType.GetElementType() is Type elementType && modifiedArgs.Skip(a).All(arg => arg == null || elementType.IsAssignableFrom(arg.GetType())))
+                        if (methodInfoToCast.GetParameters().Length == a + 1 && methodInfoToCast.GetParameters()[a].IsDefined(typeof(ParamArrayAttribute), false) && parameterType != modifiedArgs[a]?.GetType() && parameterType.GetElementType() is { } elementType && modifiedArgs.Skip(a).All(arg => arg == null || elementType.IsInstanceOfType(arg)))
                         {
                             var numberOfElements = modifiedArgs.Count - a;
                             var paramsArray = Array.CreateInstance(elementType, numberOfElements);
@@ -2350,7 +2317,7 @@ namespace Arc.UniInk
                                 if (!parameterType.GetElementType().IsInstanceOfType(modifiedArgs[a]))
                                     modifiedArgs[a] = Convert.ChangeType(modifiedArgs[a], parameterType.GetElementType());
                             }
-                            else if (modifiedArgs[a].GetType().IsArray && typeof(IEnumerable).IsAssignableFrom(parameterType) && oldMethodInfo.IsGenericMethod && string.IsNullOrWhiteSpace(genericsTypes) && methodInfoToCast.GetGenericArguments().Length == 1 && !methodInfoToCast.GetGenericArguments()[0].Equals(modifiedArgs[a].GetType().GetElementType()))
+                            else if (modifiedArgs[a].GetType().IsArray && typeof(IEnumerable).IsAssignableFrom(parameterType) && oldMethodInfo.IsGenericMethod && string.IsNullOrWhiteSpace(genericsTypes) && methodInfoToCast.GetGenericArguments().Length == 1 && methodInfoToCast.GetGenericArguments()[0] != modifiedArgs[a].GetType().GetElementType())
                             {
                                 methodInfoToCast = MakeConcreteMethodIfGeneric(oldMethodInfo, genericsTypes, new Type[] { modifiedArgs[a].GetType().GetElementType() });
                             }
@@ -2362,7 +2329,7 @@ namespace Arc.UniInk
 
                                     modifiedArgs[a] = typeof(Enumerable).GetMethod("ToArray").MakeGenericMethod(parameterType.GetElementType()).Invoke(null, new[] { modifiedArgs[a] });
                                 }
-                                else if (IsCastable(modifiedArgs[a].GetType(), parameterType))
+                                else if (parameterType.IsInstanceOfType(modifiedArgs[a]))
                                 {
                                     modifiedArgs[a] = Convert.ChangeType(modifiedArgs[a], parameterType);
                                 }
@@ -2453,7 +2420,8 @@ namespace Arc.UniInk
             objType = obj.GetType();
             return InstanceBindingFlag;
         }
-
+        
+        /// <summary>获取两个花括号之间的脚本</summary>
         private string GetScriptBetweenCurlyBrackets(string parentScript, ref int index)
         {
             var currentScript = string.Empty;
@@ -2527,7 +2495,7 @@ namespace Arc.UniInk
                 }
                 else
                 {
-                    var s = expression[i+1];
+                    var s = expression[i];
 
                     if (s.Equals(startChar))
                     {
@@ -2597,10 +2565,6 @@ namespace Arc.UniInk
             if (simpleDoubleMathFuncDictionary.TryGetValue(name, out var func))
             {
                 result = func(Convert.ToDouble(Evaluate(args[0])));
-            }
-            else if (doubleDoubleMathFuncDictionary.TryGetValue(name, out var func2))
-            {
-                result = func2(Convert.ToDouble(Evaluate(args[0])), Convert.ToDouble(Evaluate(args[1])));
             }
             else if (complexStandardFuncDictionary.TryGetValue(name, out var complexFunc))
             {
@@ -2705,7 +2669,7 @@ namespace Arc.UniInk
                 return ret;
             }
 
-            return Convert.ChangeType(value, conversionType);
+            return conversionType != null ? Convert.ChangeType(value, conversionType) : null;
         }
 
 
@@ -2860,12 +2824,6 @@ namespace Arc.UniInk
             public DelegateWrapper(InternalDelegate lambda)
             {
                 this.lambda = lambda;
-            }
-
-            public DelegateWrapper(object target, MethodInfo methodInfo)
-            {
-                this.target = target;
-                this.methodInfo = methodInfo;
             }
 
 
@@ -3030,12 +2988,6 @@ namespace Arc.UniInk
         public SyntaxException(string message, Exception innerException) : base(message, innerException) { }
     }
 
-    /// <summary>解释器执行时安全性的异常</summary>
-    public class SecurityException : Exception
-    {
-        public SecurityException(string message) : base(message) { }
-    }
-
     #endregion
 
     #region EventArgs
@@ -3094,8 +3046,8 @@ namespace Arc.UniInk
         public Type[] EvaluateGenericTypes() => evaluateGenericTypes?.Invoke(genericTypes) ?? Type.EmptyTypes;
 
 
-        private Func<string, Type[]> evaluateGenericTypes;
-        private string genericTypes;
+        private readonly Func<string, Type[]> evaluateGenericTypes;
+        private readonly string genericTypes;
 
         /// <summary>构造器</summary>
         /// <param name="name">被解释的变量名</param>
@@ -3162,71 +3114,6 @@ namespace Arc.UniInk
         public UniInk Evaluator { get; set; }
     }
 
-    /// <summary>参数转换求值事件参数的类 </summary>
-    public class ParameterCastEvaluationEventArg
-    {
-        /// <summary>尝试调用的方法数据 </summary>
-        public MethodInfo MethodInfo { get; set; }
-
-        /// <summary>
-        /// 在动态实例方法定义的情况下，调用该方法(函数)的对象的实例。<para/>
-        /// 否则设置为空。<para/>
-        /// </summary>
-        public object This { get; set; }
-
-        /// <summary>指向当前表达式计算器的引用 </summary>
-        public UniInk Evaluator { get; set; }
-
-        /// <summary> 参数的必需类型 </summary>
-        public Type ParameterType { get; set; }
-
-        /// <summary> 修改前的原始参数 </summary>
-        public object OriginalArg { get; set; }
-
-        /// <summary> 参数的位置(从0开始的索引) </summary>
-        public int ArgPosition { get; set; }
-
-        /// <summary>构造器</summary>
-        /// <param name="methodInfo"> 尝试调用的方法数据 </param>
-        /// <param name="parameterType"> 参数的必需类型 </param>
-        /// <param name="originalArg"> 修改前的原始参数 </param>
-        /// <param name="argPosition"> 参数的位置(从0开始的索引) </param>
-        /// <param name="evaluator"> 当前表达式计算器的引用</param>
-        /// <param name="this">此方法被动态对象调用的实例,等价于This关键字</param>
-        public ParameterCastEvaluationEventArg(MethodInfo methodInfo, Type parameterType, object originalArg, int argPosition, UniInk evaluator = null, object @this = null)
-        {
-            MethodInfo = methodInfo;
-            ParameterType = parameterType;
-            OriginalArg = originalArg;
-            Evaluator = evaluator;
-            This = @this;
-            ArgPosition = argPosition;
-        }
-
-
-        /// <summary>设置修改后的参数</summary>
-        public object Argument { get; set; }
-
-        /// <summary>
-        /// 真:参数已被修改<para/>
-        /// 假:这意味着参数不能是给定的类型.<para/>
-        /// TODO:有一种情况是故意设置成null
-        /// </summary>
-        public bool FunctionModifiedArgument => Argument != null;
-    }
-
-    /// <summary>当前计算的变量、属性或属性的信息</summary>
-    public class VariablePreEvaluationEventArg : VariableEvaluationEventArg
-    {
-        public VariablePreEvaluationEventArg(string name, UniInk evaluator = null, object onInstance = null, string genericTypes = null, Func<string, Type[]> evaluateGenericTypes = null) : base(name, evaluator, onInstance, genericTypes, evaluateGenericTypes)
-        {
-            CancelEvaluation = false;
-        }
-
-        /// <summary>如果设置为true，则取消当前变量、字段或属性的求值，并抛出不存在的异常</summary>
-        public bool CancelEvaluation { get; set; }
-    }
-
     #endregion
 
 
@@ -3268,6 +3155,7 @@ namespace Arc.UniInk
         #endregion
     }
 }
+//3203行 --删除
 //3286行 --删除左操作符
 //3669行
 //3694行--删除索引器

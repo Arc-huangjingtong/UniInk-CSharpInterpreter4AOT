@@ -51,6 +51,7 @@
         [TestCase("TestA(x => x == D);")]
         [TestCase("TestC<MyEnum>(A);")]
         [TestCase("TestD<MyEnum,MyEnum>(A);")] //测试多泛型参数
+        [TestCase("if(3>5){return 3;}else{return 5;}")] //测试if else
         public void Test_02(string script) //TestA(x => x == D);
         {
             var test = new HelperClass();
