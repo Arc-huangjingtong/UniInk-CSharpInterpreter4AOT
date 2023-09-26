@@ -1,42 +1,51 @@
-﻿/*****************************************************************************************************************
- *    Title     : UniInk (https://github.com/Arc-huangjingtong/UniInk-CSharpInterpreter4Unity)
- *    Version   : 1.0.0
- *    Author    : Arc
- *    Licence   : MIT (https://github.com/Arc-huangjingtong/UniInk-CSharpInterpreter4Unity/blob/main/LICENSE)
- *    Origin    : UniInk(https://github.com/codingseb/UniInk)
-/*****************************************************************************************************************/
+﻿/**********************************************************************************************************************
+ *📰 Title    : UniInk (https://github.com/Arc-huangjingtong/UniInk-CSharpInterpreter4Unity)                          *
+ *🔖 Version  : 1.0.0                                                                                                 *
+ *👩‍💻 Author   : Arc                                                                                                   *
+ *🔑 Licence  : MIT    (https://github.com/Arc-huangjingtong/UniInk-CSharpInterpreter4Unity/blob/main/LICENSE)        *
+ *🔍 Origin   : UniInk (https://github.com/codingseb/UniInk)                                                          *
+ *🤝 Support  : .NET Framework 4 +                                                                                    *
+ *📝 Desc     : High performance .NET Simple Interpreter for IL2CPP                                                   *
+/**********************************************************************************************************************/
 
 namespace Arc.UniInk
 {
     using System;
     using System.Collections;
     using System.Collections.Generic;
-    using System.Linq;
-    using System.Reflection;
     using System.Text;
     using System.Text.RegularExpressions;
+    using System.Reflection;
+    using System.Linq;
 
 
-    /// <summary>表达式求值器:简单的解释器，用于解释符串表达式/脚本</summary>
     public class UniInk
     {
-        #region Regex
+        /// <summary> Constructor </summary>
+        /// <param name="context"  > Set context use as "This" or use internal member variables directly </param>
+        /// <param name="variables"> Set variables can replace a key string with value object            </param>
+        public UniInk(object context = null, Dictionary<string, object> variables = null)
+        {
+            Context = context;
+            Variables = variables ?? new Dictionary<string, object>();
+        }
+
 
         /// https://regex101.com/r/0PN0yS/1
         /// 匹配C#代码中的变量或函数名
-        /// sign: 匹配变量或函数名前的加号或减号。
-        /// prefixOperator: 匹配变量或函数名前的自增或自减运算符。
-        /// varKeyword: 匹配变量声明关键字var。
-        /// nullConditional: 匹配空条件运算符?。
-        /// inObject: 匹配变量或函数名前的句点(.)，表示该变量或函数是类的成员。
-        /// name: 匹配变量或函数名。
-        /// assignationOperator: 匹配赋值运算符和一些算术或位运算符。
-        /// assignmentPrefix: 匹配赋值运算符前的算术或位运算符。
-        /// postfixOperator: 匹配变量或函数名后的自增或自减运算符。
-        /// isGeneric: 匹配泛型类型参数。
-        /// genTag: 匹配泛型类型参数中的尖括号。
-        /// isFunction: 匹配函数参数列表的左括号。
-        protected static readonly Regex varOrFunctionRegEx = new(@"^((?<sign>[+-])|(?<prefixOperator>[+][+]|--)|(?<varKeyword>var)\s+|((?<nullConditional>[?])?(?<inObject>\.))?)(?<name>[\p{L}_](?>[\p{L}_0-9]*))(?>\s*)((?<assignationOperator>(?<assignmentPrefix>[+\-*/%&|^]|<<|>>|\?\?)?=(?![=>]))|(?<postfixOperator>([+][+]|--)(?![\p{L}_0-9]))|((?<isgeneric>[<](?>([\p{L}_](?>[\p{L}_0-9]*)|(?>\s+)|[,])+)*[>])?(?<isfunction>[(])?))", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        /// sign: 匹配变量或函数名前的加号或减号
+        /// prefixOperator: 匹配变量或函数名前的自增或自减运算符
+        /// varKeyword: 匹配变量声明关键字var
+        /// nullConditional: 匹配空条件运算符?
+        /// inObject: 匹配变量或函数名前的句点(.)，表示该变量或函数是类的成员
+        /// name: 匹配变量或函数名
+        /// assignationOperator: 匹配赋值运算符和一些算术或位运算符
+        /// assignmentPrefix: 匹配赋值运算符前的算术或位运算符
+        /// postfixOperator: 匹配变量或函数名后的自增或自减运算符
+        /// isGeneric: 匹配泛型类型参数
+        /// genTag: 匹配泛型类型参数中的尖括号
+        /// isFunction: 匹配函数参数列表的左括号
+        protected static readonly Regex varOrFunctionRegEx = new(@"^((?<sign>[+-])|(?<prefixOperator>[+][+]|[-][-])|(?<varKeyword>var)\s+|((?<nullConditional>[?])?(?<inObject>\.))?)(?<name>[\p{L}_](?>[\p{L}_0-9]*))(?>\s*)((?<assignationOperator>(?<assignmentPrefix>[+\-*/%&|^]|<<|>>|\?\?)?=(?![=>]))|(?<postfixOperator>([+][+]|--)(?![\p{L}_0-9]))|((?<isgeneric>[<](?>([\p{L}_](?>[\p{L}_0-9]*)|(?>\s+)|[,])+)*[>])?(?<isfunction>[(])?))", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
 
         /// 匹配脚本中的数字
@@ -77,7 +86,6 @@ namespace Arc.UniInk
         protected static readonly Regex castRegex = new(@"^\((?>\s*)(?<typeName>[\p{L}_][\p{L}_0-9\.\[\]<>]*[?]?)(?>\s*)\)", RegexOptions.Compiled);
 
 
-        // 仅限于脚本模式下
         /// 匹配while||for||foreach||if||else||catch(后面跟括号的)关键字
         private static readonly Regex blockKeywordBeginRegex = new(@"^(?>\s*)(?<keyword>while|for|foreach|if|else(?>\s*)if|catch)(?>\s*)[(]", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
@@ -96,18 +104,24 @@ namespace Arc.UniInk
         /// 匹配 ; 结束符
         private static readonly Regex nextIsEndOfExpressionRegex = new(@"^(?>\s*)[;]", RegexOptions.Compiled);
 
-        #endregion
-
-        #region Enums
 
         protected enum EBlockState_If { NoBlock, If, ElseIf }
 
         protected enum EBlockState_Try { NoBlock, Try, Catch }
 
-        #endregion
+        private static readonly Dictionary<string, object> defaultVariables = new()
+        {
+            { "Pi", Math.PI },
+            { "E", Math.E },
+            { "null", null },
+            { "true", true },
+            { "false", false },
+            { "this", null }
+        };
 
-        #region DictionaryData (Primary types, number suffix, escaped chars, operators management, default vars and functions)
-
+        
+        
+        public static readonly Dictionary<string, Type> CachedTypesDic = new();
         private static readonly Dictionary<string, Type> primaryTypesDic = new()
         {
             { "object", typeof(object) },
@@ -293,16 +307,6 @@ namespace Arc.UniInk
             { ExpressionOperator.NullCoalescing, (left, right) => left ?? right }, // 空合并
         };
 
-        /// <summary>默认变量</summary>
-        private readonly Dictionary<string, object> defaultVariables = new()
-        {
-            { "Pi", Math.PI },
-            { "E", Math.E },
-            { "null", null },
-            { "true", true },
-            { "false", false },
-            { "this", null }
-        };
 
         ///简单的浮点数计算函数
         private readonly Dictionary<string, Func<double, double>> simpleDoubleMathFuncDictionary = new()
@@ -406,16 +410,6 @@ namespace Arc.UniInk
             { "Sign", (self, args) => Math.Sign(Convert.ToDouble(self.Evaluate(args[0]))) }
         };
 
-        #endregion
-
-        #region Caches
-
-        /// <summary> 用于类型解析的共享缓存 </summary>
-        public static readonly Dictionary<string, Type> CachedTypesDic = new();
-
-        #endregion
-
-        #region 程序集, 命名空间, 类型列表
 
         private static IList<Assembly> staticAssemblies;
         private IList<Assembly> assemblies;
@@ -453,16 +447,10 @@ namespace Arc.UniInk
             typeof(Enumerable) // 用于Linq扩展方法
         };
 
-        #endregion
-
-        #region Reflection Flags
 
         private static BindingFlags InstanceBindingFlag => BindingFlags.Public | BindingFlags.Instance | BindingFlags.GetProperty | BindingFlags.Static;
         private static BindingFlags StaticBindingFlag => BindingFlags.Public | BindingFlags.Static;
 
-        #endregion
-
-        #region 自定义和动态求值
 
         /// <summary>计算堆栈初始化次数，以确定是否到达了表达式入口点。在这种情况下，应该抛出传输的异常。</summary>
         private int evaluationStackCount;
@@ -477,7 +465,7 @@ namespace Arc.UniInk
         /// <summary>
         /// 的当前实例计算的表达式和脚本中可以使用的变量名/值字典 <see cref="UniInk"/><para/>
         /// </summary>
-        public Dictionary<string, object> Variables { get; set; } = new();
+        public Dictionary<string, object> Variables { get; set; }
 
 
         /// <summary>在函数或方法解析之前触发。</summary>
@@ -485,35 +473,6 @@ namespace Arc.UniInk
         /// 允许取消对该函数的评估（将其视为不存在）。<para/>
         public event EventHandler<FunctionEvaluationEventArg> PreEvaluateFunction;
 
-        #endregion
-
-        #region 构造函数和可重写的init方法
-
-        /// <summary>默认构造器</summary>
-        public UniInk() { }
-
-        /// <summary>带有初始化变量的构造函数</summary>
-        /// <param name="variables">解释器中可以使用的变量</param>
-        public UniInk(Dictionary<string, object> variables) : this() => Variables = variables;
-
-        /// <summary>具有上下文初始化的构造函数</summary>
-        /// <param name="context">提出它的字段、属性和方法的上下文</param>
-        public UniInk(object context) : this() => Context = context;
-
-        /// <summary>具有变量和上下文初始化的构造函数</summary>
-        /// <param name="context">提出它的字段、属性和方法的上下文</param>
-        /// <param name="variables">解释器中可以使用的变量</param>
-        public UniInk(object context, Dictionary<string, object> variables) : this()
-        {
-            Context = context;
-            Variables = variables;
-        }
-
-        #endregion
-
-        #region 主要的求值方法(Expressions and scripts)
-
-        #region 脚本
 
         /// <summary>解释脚本(用分号分隔的多个表达式),支持一些条件、循环等c#代码流管理关键字</summary>
         /// <typeparam name="T">要对表达式的结果进行强制转换的类型</typeparam>
@@ -963,9 +922,6 @@ namespace Arc.UniInk
             }
         }
 
-        #endregion
-
-        #region 表达式
 
         /// <summary>解释指定的数学或伪C#表达式</summary>
         /// <typeparam name="T">将表达式的结果转换为哪种类型</typeparam>
@@ -1036,11 +992,6 @@ namespace Arc.UniInk
             }
         }
 
-        #endregion
-
-        #endregion
-
-        #region 子部分求值方法(protected virtual)
 
         /// <summary>解析强转:(int)</summary>
         private bool EvaluateCast(string expression, Stack<object> stack, ref int i)
@@ -1819,9 +1770,6 @@ namespace Arc.UniInk
             return true;
         }
 
-        #endregion
-
-        #region 进程堆栈
 
         public object ProcessStack(Stack<object> stack)
         {
@@ -1947,9 +1895,6 @@ namespace Arc.UniInk
             return stack.Pop();
         }
 
-        #endregion
-
-        #region 用于解析和解释代码的工具方法
 
         /// <summary>用于解析方法的委托</summary>
         private delegate bool ParsingMethodDelegate(string expression, Stack<object> stack, ref int i);
@@ -2117,7 +2062,7 @@ namespace Arc.UniInk
 
             return methodInfo;
 
-            bool methodByNameFilter(MethodInfo m) => m.Name.Equals(func) && (m.GetParameters().Length == modifiedArgs.Count || (m.GetParameters().Length > modifiedArgs.Count && m.GetParameters().Take(modifiedArgs.Count).All(p => modifiedArgs[p.Position] == null ||  p.ParameterType.IsInstanceOfType(modifiedArgs[p.Position]) ) && m.GetParameters().Skip(modifiedArgs.Count).All(p => p.HasDefaultValue)) || (m.GetParameters().Length > 0 && m.GetParameters().Last().IsDefined(typeof(ParamArrayAttribute), false) && m.GetParameters().All(parameterValidate)));
+            bool methodByNameFilter(MethodInfo m) => m.Name.Equals(func) && (m.GetParameters().Length == modifiedArgs.Count || (m.GetParameters().Length > modifiedArgs.Count && m.GetParameters().Take(modifiedArgs.Count).All(p => modifiedArgs[p.Position] == null || p.ParameterType.IsInstanceOfType(modifiedArgs[p.Position])) && m.GetParameters().Skip(modifiedArgs.Count).All(p => p.HasDefaultValue)) || (m.GetParameters().Length > 0 && m.GetParameters().Last().IsDefined(typeof(ParamArrayAttribute), false) && m.GetParameters().All(parameterValidate)));
 
             bool parameterValidate(ParameterInfo p) => p.Position >= modifiedArgs.Count || (testForExtension && p.Position == 0) || modifiedArgs[p.Position] == null || p.ParameterType.IsInstanceOfType(modifiedArgs[p.Position]) || typeof(Delegate).IsAssignableFrom(p.ParameterType) || p.IsDefined(typeof(ParamArrayAttribute)) || (p.ParameterType.IsByRef && argsWithKeywords.Any(a => a.Index == p.Position + (testForExtension ? 1 : 0)));
         }
@@ -2420,7 +2365,7 @@ namespace Arc.UniInk
             objType = obj.GetType();
             return InstanceBindingFlag;
         }
-        
+
         /// <summary>获取两个花括号之间的脚本</summary>
         private string GetScriptBetweenCurlyBrackets(string parentScript, ref int index)
         {
@@ -2773,7 +2718,6 @@ namespace Arc.UniInk
             return result;
         }
 
-        #endregion
 
         #region 用于解析和解释的受保护的工具子类
 
@@ -3155,6 +3099,7 @@ namespace Arc.UniInk
         #endregion
     }
 }
+//3106行 --删除
 //3203行 --删除
 //3286行 --删除左操作符
 //3669行
