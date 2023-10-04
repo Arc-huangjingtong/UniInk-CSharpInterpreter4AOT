@@ -285,7 +285,7 @@ namespace Arc.UniInk
             { ExpressionOperator.Greater, (left, right) => (int)left > (int)right }, // 大于
             { ExpressionOperator.LowerOrEqual, (left, right) => (int)left <= (int)right }, // 小于等于
             { ExpressionOperator.GreaterOrEqual, (left, right) => (int)left >= (int)right }, // 大于等于
-            { ExpressionOperator.Is, (left, right) => left != null && ((ClassOrEnumType)right).Type.IsInstanceOfType(left) }, // 类型判断
+            { ExpressionOperator.Is, (left, right) => left != null && ((Type)right).IsInstanceOfType(left) }, // 类型判断
             { ExpressionOperator.Equal, (left, right) => left == right }, // 等于
             { ExpressionOperator.NotEqual, (left, right) => left != right }, // 不等于
             { ExpressionOperator.LogicalAnd, (left, right) => (int)left & (int)right }, // 逻辑与
@@ -369,7 +369,7 @@ namespace Arc.UniInk
                 "new", (self, args) =>
                 {
                     var cArgs = args.ConvertAll(self.Evaluate);
-                    return cArgs[0] is ClassOrEnumType classOrEnumType ? Activator.CreateInstance(classOrEnumType.Type, cArgs.Skip(1).ToArray()) : null;
+                    return cArgs[0] is Type classOrEnumType ? Activator.CreateInstance(classOrEnumType, cArgs.Skip(1).ToArray()) : null;
                 }
             },
             {
@@ -786,7 +786,7 @@ namespace Arc.UniInk
 
                                 if (exceptionVariable.Length >= 2)
                                 {
-                                    if (!((ClassOrEnumType)Evaluate(exceptionVariable[0])).Type.IsInstanceOfType(exception)) continue;
+                                    if (!((Type)Evaluate(exceptionVariable[0])).IsInstanceOfType(exception)) continue;
 
                                     exceptionName = exceptionVariable[1];
                                 }
@@ -934,8 +934,7 @@ namespace Arc.UniInk
             try
             {
                 //如果是lambda表达式，则入栈
-                if (GetLambdaExpression(expression, stack))
-                    return stack.Pop(); //然后出栈
+                if (GetLambdaExpression(expression, stack)) return stack.Pop(); //然后出栈
 
 
                 for (var i = 0; i < expression.Length; i++)
@@ -1105,17 +1104,12 @@ namespace Arc.UniInk
 
                                     if (funcArgMatch.Groups["typeName"].Success)
                                     {
-                                        var fixedType = ((ClassOrEnumType)Evaluate(funcArgMatch.Groups["typeName"].Value)).Type;
-
+                                        var fixedType = (Type)Evaluate(funcArgMatch.Groups["typeName"].Value);
                                         Variables[funArgWrapper.VariableName] = new StronglyTypedVariable
                                         {
                                             Type = fixedType,// 
                                             Value = GetDefaultValueOfType(fixedType)
                                         };
-                                    }
-                                    else if (!Variables.ContainsKey(funArgWrapper.VariableName))
-                                    {
-                                        Variables[funArgWrapper.VariableName] = null;
                                     }
 
                                     argValue = Evaluate(funcArgMatch.Groups["toEval"].Value);
@@ -1398,9 +1392,9 @@ namespace Arc.UniInk
                     {
                         stack.Push(varValueToPush);
                     }
-                    else if (Variables.TryGetValue(varFuncName, out var cusVarValueToPush) || varFuncMatch.Groups["assignOperator"].Success || (stack.Count == 1 && stack.Peek() is ClassOrEnumType && string.IsNullOrWhiteSpace(expression.Substring(i))))
+                    else if (Variables.TryGetValue(varFuncName, out var cusVarValueToPush) || varFuncMatch.Groups["assignOperator"].Success || (stack.Count == 1 && stack.Peek() is Type && string.IsNullOrWhiteSpace(expression.Substring(i))))
                     {
-                        if (stack.Count == 1 && stack.Peek() is ClassOrEnumType classOrEnum)
+                        if (stack.Count == 1 && stack.Peek() is Type classOrEnum)
                         {
                             // if (Variables.ContainsKey(varFuncName))
                             //     throw new SyntaxException($"变量名已存在：[{varFuncName}]");
@@ -1409,7 +1403,11 @@ namespace Arc.UniInk
 
                             stack.Pop();
 
-                            Variables[varFuncName] = new StronglyTypedVariable { Type = classOrEnum.Type, Value = GetDefaultValueOfType(classOrEnum.Type), };
+                            Variables[varFuncName] = new StronglyTypedVariable
+                            {
+                                Type = classOrEnum, 
+                                Value = GetDefaultValueOfType(classOrEnum),
+                            };
                         }
 
                         if (cusVarValueToPush is StronglyTypedVariable typedVariable)
@@ -1453,7 +1451,7 @@ namespace Arc.UniInk
 
                         if (staticType != null)
                         {
-                            stack.Push(new ClassOrEnumType(staticType));
+                            stack.Push(staticType);
                         }
                         else
                         {
@@ -2380,9 +2378,9 @@ namespace Arc.UniInk
                 obj = valueTypeNestingTrace.Value;
             }
 
-            if (obj is ClassOrEnumType classOrTypeName)
+            if (obj is Type classOrTypeName)
             {
-                objType = classOrTypeName.Type;
+                objType = classOrTypeName;
                 obj = null;
                 return StaticBindingFlag;
             }
@@ -2777,15 +2775,7 @@ namespace Arc.UniInk
 
         #endregion
     }
-
-
-    public struct ClassOrEnumType
-    {
-        public ClassOrEnumType(Type type) => Type = type;
-
-        public Type Type { get; set; }
-    }
-
+    
     public class StronglyTypedVariable
     {
         public Type Type { get; set; }
