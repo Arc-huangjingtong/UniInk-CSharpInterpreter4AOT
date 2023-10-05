@@ -1,13 +1,13 @@
-﻿/**********************************************************************************************************************
- *📰 Title    : UniInk (https://github.com/Arc-huangjingtong/UniInk-CSharpInterpreter4Unity)                          *
- *🔖 Version  : 1.0.0                                                                                                 *
- *👩‍💻 Author   : Arc                                                                                                   *
- *🔑 Licence  : MIT (https://github.com/Arc-huangjingtong/UniInk-CSharpInterpreter4Unity/blob/main/LICENSE)           *
- *🔍 Origin   : ExpressionEvaluator (https://github.com/codingseb/ExpressionEvaluator)                                *
- *🤝 Support  : .NET Framework 4 +  C# 8.0+                                                                           *
- *📝 Desc     : High performance .NET Simple Interpreter for IL2CPP                                                   *
- *🆘 Helper   : RegexStudy : (https://regex101.com/r/0PN0yS/1)                                                        *
-/**********************************************************************************************************************/
+﻿/************************************************************************************************************************
+ *  📰 Title    : UniInk (https://github.com/Arc-huangjingtong/UniInk-CSharpInterpreter4Unity)                          *
+ *  🔖 Version  : 1.0.0                                                                                                 *
+ *  👩‍💻 Author   : Arc (https://github.com/Arc-huangjingtong)                                                            *
+ *  🔑 Licence  : MIT (https://github.com/Arc-huangjingtong/UniInk-CSharpInterpreter4Unity/blob/main/LICENSE)           *
+ *  🔍 Origin   : ExpressionEvaluator (https://github.com/codingseb/ExpressionEvaluator)                                *
+ *  🤝 Support  : [.NET Framework 4+] [C# 8.0+] [Support IL2CPP]                                                        *
+ *  📝 Desc     : High performance & Easy-use C# Simple Interpreter                                                     *
+ *  🆘 Helper   : RegexStudy : (https://regex101.com/r/0PN0yS/1)                                                        *
+/************************************************************************************************************************/
 
 namespace Arc.UniInk
 {
@@ -61,9 +61,7 @@ namespace Arc.UniInk
         /// <item><term>genTag           </term><description> : the [&lt;] [&gt;] in Generic type                       </description></item>
         /// <item><term>isFunction       </term><description> : the [(] in function                                     </description></item> 
         /// </list></summary>
-        protected static readonly Regex regex_VarOrFunction = //
-            new(@"^((?<sign>[+-])|(?<prefixOperator>[+][+]|--)|(?<varKeyword>var)\s+|((?<nullConditional>[?])?(?<inObject>\.))?)(?<name>[\p{L}_](?>[\p{L}_0-9]*))(?>\s*)((?<assignOperator>(?<assignmentPrefix>[+\-*/%&|^]|\?\?)?=(?![=>]))|(?<postfixOperator>([+][+]|--)(?![\p{L}_0-9]))|((?<isgeneric>[<](?>([\p{L}_](?>[\p{L}_0-9]*)|(?>\s+)|[,\.])+|(?<gentag>[<])|(?<-gentag>[>]))*(?(gentag)(?!))[>])?(?<isfunction>[(])?))" //
-                , RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        protected static readonly Regex regex_VarOrFunction = new(@"^((?<sign>[+-])|(?<prefixOperator>[+][+]|--)|(?<varKeyword>var)\s+|((?<nullConditional>[?])?(?<inObject>\.))?)(?<name>[\p{L}_](?>[\p{L}_0-9]*))(?>\s*)((?<assignOperator>(?<assignmentPrefix>[+\-*/%&|^]|\?\?)?=(?![=>]))|(?<postfixOperator>([+][+]|--)(?![\p{L}_0-9]))|((?<isgeneric>[<](?>([\p{L}_](?>[\p{L}_0-9]*)|(?>\s+)|[,\.])+|(?<gentag>[<])|(?<-gentag>[>]))*(?(gentag)(?!))[>])?(?<isfunction>[(])?))", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
         /// <summary><b>Match functionArgKeywords</b><list type="table">
         /// <item><term>keyword          </term><description> : the keywords : [out] [ref] [in]                         </description></item>
@@ -72,8 +70,7 @@ namespace Arc.UniInk
         /// <item><term>toEval           </term><description> : the string to Evaluate to object                        </description></item>
         /// <item><term>varName          </term><description> : the string of arg name                                  </description></item>
         /// </list></summary>
-        protected static readonly Regex regex_funcArg = //
-            new(@"^\s*(?<keyword>out|ref|in)\s+((?<typeName>[\p{L}_][\p{L}_0-9\.\[\]<>]*[?]?)\s+(?=[\p{L}_]))?(?<toEval>(?<varName>[\p{L}_](?>[\p{L}_0-9]*))\s*(=.*)?)$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+        protected static readonly Regex regex_funcArg = new(@"^\s*(?<keyword>out|ref|in)\s+((?<typeName>[\p{L}_][\p{L}_0-9\.\[\]<>]*[?]?)\s+(?=[\p{L}_]))?(?<toEval>(?<varName>[\p{L}_](?>[\p{L}_0-9]*))\s*(=.*)?)$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
         /// <summary><b>Match number</b><list type="table">
         /// <item><term>sign             </term><description> : the [+]  or [-]  in front of number                     </description></item>
@@ -360,7 +357,6 @@ namespace Arc.UniInk
         ///复杂的基本函数
         private readonly Dictionary<string, Func<UniInk, List<string>, object>> complexStandardFuncDictionary = new()
         {
-            { "Array", (self, args) => args.ConvertAll(self.Evaluate).ToArray() },
             { "Avg", (self, args) => args.ConvertAll(arg => Convert.ToDouble(self.Evaluate(arg))).Sum() / args.Count },
             { "List", (self, args) => args.ConvertAll(self.Evaluate) },
             { "Max", (self, args) => args.ConvertAll(arg => Convert.ToDouble(self.Evaluate(arg))).Max() },
@@ -369,30 +365,7 @@ namespace Arc.UniInk
                 "new", (self, args) =>
                 {
                     var cArgs = args.ConvertAll(self.Evaluate);
-                    return cArgs[0] is Type classOrEnumType ? Activator.CreateInstance(classOrEnumType, cArgs.Skip(1).ToArray()) : null;
-                }
-            },
-            {
-                "Round", (self, args) =>
-                {
-                    if (args.Count == 3)
-                    {
-                        return Math.Round(Convert.ToDouble(self.Evaluate(args[0])), Convert.ToInt32(self.Evaluate(args[1])), (MidpointRounding)self.Evaluate(args[2]));
-                    }
-
-                    if (args.Count == 2)
-                    {
-                        var arg2 = self.Evaluate(args[1]);
-
-                        if (arg2 is MidpointRounding midpointRounding)
-                            return Math.Round(Convert.ToDouble(self.Evaluate(args[0])), midpointRounding);
-
-                        return Math.Round(Convert.ToDouble(self.Evaluate(args[0])), Convert.ToInt32(arg2));
-                    }
-
-                    if (args.Count == 1) { return Math.Round(Convert.ToDouble(self.Evaluate(args[0]))); }
-
-                    throw new ArgumentException();
+                    return cArgs[0] is Type type ? Activator.CreateInstance(type, cArgs.Skip(1).ToArray()) : null;
                 }
             },
             { "Sign", (self, args) => Math.Sign(Convert.ToDouble(self.Evaluate(args[0]))) }
@@ -1058,7 +1031,6 @@ namespace Arc.UniInk
 
             if (isFunction)
             {
-                //找到括号包裹的部分(参数)
                 var funcArgs = GetExpressionsParenthesized(expression, ref i, true);
 
                 //如果是对象的方法,或者是this的方法
@@ -1090,13 +1062,13 @@ namespace Arc.UniInk
                             {
                                 var funcArgMatch = regex_funcArg.Match(arg);
                                 object argValue;
-                                
+
                                 if (funcArgMatch.Success)
                                 {
                                     var funArgWrapper = new FunArgWrapper
                                     {
-                                        Index = argIndex,// 
-                                        Keyword = funcArgMatch.Groups["keyword"].Value, 
+                                        Index = argIndex, // 
+                                        Keyword = funcArgMatch.Groups["keyword"].Value,
                                         VariableName = funcArgMatch.Groups["varName"].Value
                                     };
 
@@ -1107,7 +1079,7 @@ namespace Arc.UniInk
                                         var fixedType = (Type)Evaluate(funcArgMatch.Groups["typeName"].Value);
                                         Variables[funArgWrapper.VariableName] = new StronglyTypedVariable
                                         {
-                                            Type = fixedType,// 
+                                            Type = fixedType, // 
                                             Value = GetDefaultValueOfType(fixedType)
                                         };
                                     }
@@ -1126,7 +1098,7 @@ namespace Arc.UniInk
                             var flag = DetermineInstanceOrStatic(out objType, ref obj, out _);
 
                             // 寻找标准实例或公共方法
-                            var methodInfo = GetRealMethod(ref objType, varFuncName, flag, oArgs, string.Empty, Type.EmptyTypes, funArgWrappers);
+                            var methodInfo = GetRealMethod(objType, varFuncName, flag, oArgs, string.Empty, Type.EmptyTypes, funArgWrappers);
 
                             // 如果找不到，检查obj是否是dictionaryObject或类似对象
                             if (obj is IDictionary<string, object> dictionaryObject && (dictionaryObject[varFuncName] is InternalDelegate || dictionaryObject[varFuncName] is Delegate)) //obj is IDynamicMetaObjectProvider &&
@@ -1155,7 +1127,7 @@ namespace Arc.UniInk
                                     for (var e = 0; e < StaticTypesForExtensionsMethods.Count && methodInfo == null; e++)
                                     {
                                         var type = StaticTypesForExtensionsMethods[e];
-                                        methodInfo = GetRealMethod(ref type, varFuncName, StaticBindingFlag, oArgs, string.Empty, Type.EmptyTypes, funArgWrappers, true);
+                                        methodInfo = GetRealMethod(type, varFuncName, StaticBindingFlag, oArgs, string.Empty, Type.EmptyTypes, funArgWrappers, true);
                                         isExtension = methodInfo != null;
                                     }
                                 }
@@ -1165,7 +1137,7 @@ namespace Arc.UniInk
                                     var argsArray = oArgs.ToArray();
                                     stack.Push(methodInfo.Invoke(isExtension ? null : obj, argsArray));
                                     funArgWrappers.FindAll(argWithKeyword => argWithKeyword.Keyword.Equals("out") // 
-                                                                               || argWithKeyword.Keyword.Equals("ref")).ForEach(outOrRefArg => AssignVariable(outOrRefArg.VariableName, argsArray[outOrRefArg.Index + (isExtension ? 1 : 0)])); //
+                                                                             || argWithKeyword.Keyword.Equals("ref")).ForEach(outOrRefArg => AssignVariable(outOrRefArg.VariableName, argsArray[outOrRefArg.Index + (isExtension ? 1 : 0)])); //
                                 }
                                 else if (objType.GetProperty(varFuncName, StaticBindingFlag) is { } staticPropertyInfo //
                                          && (staticPropertyInfo.PropertyType.IsSubclassOf(typeof(Delegate)) || staticPropertyInfo.PropertyType == typeof(Delegate)) && staticPropertyInfo.GetValue(obj) is Delegate del2) //
@@ -1403,11 +1375,7 @@ namespace Arc.UniInk
 
                             stack.Pop();
 
-                            Variables[varFuncName] = new StronglyTypedVariable
-                            {
-                                Type = classOrEnum, 
-                                Value = GetDefaultValueOfType(classOrEnum),
-                            };
+                            Variables[varFuncName] = new StronglyTypedVariable { Type = classOrEnum, Value = GetDefaultValueOfType(classOrEnum), };
                         }
 
                         if (cusVarValueToPush is StronglyTypedVariable typedVariable)
@@ -1938,7 +1906,7 @@ namespace Arc.UniInk
         {
             if (Variables.ContainsKey(varName) && Variables[varName] is StronglyTypedVariable stronglyTypedVariable)
             {
-                if (value == null && stronglyTypedVariable.Type.IsValueType && Nullable.GetUnderlyingType(stronglyTypedVariable.Type) == null)
+                if (value == null && Nullable.GetUnderlyingType(stronglyTypedVariable.Type) == null)
                 {
                     throw new SyntaxException($"不可空的类型 : 不能强制转换为 null {stronglyTypedVariable.Type}");
                 }
@@ -1956,7 +1924,7 @@ namespace Arc.UniInk
                     }
                     catch (Exception exception)
                     {
-                        throw new InvalidCastException($"对象类型:{typeToAssign}无法转换成{stronglyTypedVariable.Type}", exception);
+                        throw new InvalidCastException($"{typeToAssign} can't ChangeType: {stronglyTypedVariable.Type}", exception);
                     }
                 }
             }
@@ -2012,59 +1980,29 @@ namespace Arc.UniInk
         }
 
         /// <summary>获取方法的解释器</summary>
-        private MethodInfo GetRealMethod(ref Type type, string func, BindingFlags flag, List<object> args, string genericsTypes, Type[] inferredGenericsTypes, List<FunArgWrapper> argsWithKeywords, bool testForExtension = false)
+        private MethodInfo GetRealMethod(Type type, string func, BindingFlags flag, List<object> args, string genericsTypes, Type[] inferredGenericsTypes, List<FunArgWrapper> argsWithKeywords, bool testForExtension = false)
         {
             MethodInfo methodInfo = null;
             var modifiedArgs = new List<object>(args);
+            var modifiedArgsCache = new List<object>(args);
+            var methodsInfo = type.GetMethods(flag).Where(MethodFilter);
 
-
-            var methodsInfo = type.GetMethods(flag).Where(methodByNameFilter).OrderByDescending(m => m.GetParameters().Length).ToList();
-
-            //对于重载并可能实现lambda参数的Linq方法
-            try
+            foreach (var info in methodsInfo)
             {
-                if (methodsInfo.Count > 1 && type == typeof(Enumerable) //
-                                          && args.Count == 2 //
-                                          && args[1] is InternalDelegate internalDelegate // 
-                                          && args[0] is IEnumerable enumerable //
-                                          && enumerable.GetEnumerator() is { } enumerator // 
-                                          && enumerator.MoveNext() //
-                                          && methodsInfo.Any(m => m.GetParameters().Any(p => p.ParameterType.Name.StartsWith("Func")))) //
-                {
-                    var lambdaResultType = internalDelegate.Invoke(enumerator.Current).GetType();
+                modifiedArgsCache = new List<object>(args);
 
-                    methodInfo = methodsInfo.Find(m =>
-                    {
-                        var parameters = m.GetParameters();
+                methodInfo = TryToCastMethodParametersToMakeItCallable(info, modifiedArgsCache, genericsTypes, inferredGenericsTypes);
 
-                        return parameters.Length == 2 && parameters[1].ParameterType.Name.StartsWith("Func") && parameters[1].ParameterType.GenericTypeArguments is { Length: 2 } genericTypesArgs && genericTypesArgs[1] == lambdaResultType;
-                    });
-
-                    if (methodInfo != null)
-                    {
-                        methodInfo = TryToCastMethodParametersToMakeItCallable(methodInfo, modifiedArgs, genericsTypes, inferredGenericsTypes);
-                    }
-                }
-            }
-            catch
-            {
-                /*ignored*/
-            }
-
-            for (var m = 0; methodInfo == null && m < methodsInfo.Count; m++)
-            {
-                modifiedArgs = new List<object>(args);
-
-                methodInfo = TryToCastMethodParametersToMakeItCallable(methodsInfo[m], modifiedArgs, genericsTypes, inferredGenericsTypes);
+                if (methodInfo != null) break;
             }
 
             if (methodInfo == null) return null;
             args.Clear();
-            args.AddRange(modifiedArgs);
+            args.AddRange(modifiedArgsCache);
 
             return methodInfo;
 
-            bool methodByNameFilter(MethodInfo m) => // 
+            bool MethodFilter(MethodInfo m) => // 
                 m.Name.Equals(func) && //
                 (m.GetParameters().Length == modifiedArgs.Count //
                  || (m.GetParameters().Length > modifiedArgs.Count //
@@ -2072,25 +2010,20 @@ namespace Arc.UniInk
                      && m.GetParameters().Skip(modifiedArgs.Count).All(p => p.HasDefaultValue)) //
                  || (m.GetParameters().Length > 0 && m.GetParameters().Last().IsDefined(typeof(ParamArrayAttribute), false) && m.GetParameters().All(parameterValidate))); //
 
-            bool parameterValidate(ParameterInfo p) =>
-                p.Position >= modifiedArgs.Count //
-                || (testForExtension && p.Position == 0) // 
-                || modifiedArgs[p.Position] == null //
-                || p.ParameterType.IsInstanceOfType(modifiedArgs[p.Position]) // 
-                || typeof(Delegate).IsAssignableFrom(p.ParameterType) //
-                || p.IsDefined(typeof(ParamArrayAttribute)) //
-                || (p.ParameterType.IsByRef && argsWithKeywords.Any(a => a.Index == p.Position + (testForExtension ? 1 : 0))); //
+            bool parameterValidate(ParameterInfo p) => //
+                p.Position >= modifiedArgs.Count || (testForExtension && p.Position == 0) || modifiedArgs[p.Position] == null || p.ParameterType.IsInstanceOfType(modifiedArgs[p.Position]) || typeof(Delegate).IsAssignableFrom(p.ParameterType) || p.IsDefined(typeof(ParamArrayAttribute)) || (p.ParameterType.IsByRef && argsWithKeywords.Any(a => a.Index == p.Position + (testForExtension ? 1 : 0)));
         }
+
 
         private MethodInfo TryToCastMethodParametersToMakeItCallable(MethodInfo methodInfoToCast, List<object> modifiedArgs, string genericsTypes, Type[] inferredGenericsTypes)
         {
-            MethodInfo methodInfo = null;
+            MethodInfo result = null;
 
             var oldMethodInfo = methodInfoToCast;
 
-            if (!string.IsNullOrEmpty(genericsTypes))
+            if (!string.IsNullOrWhiteSpace(genericsTypes))
             {
-                methodInfoToCast = MakeConcreteMethodIfGeneric(methodInfoToCast, genericsTypes, inferredGenericsTypes);
+                methodInfoToCast = MakeConcreteMethodIfGeneric(methodInfoToCast, string.Empty, inferredGenericsTypes);
             }
             else if (oldMethodInfo.IsGenericMethod && oldMethodInfo.ContainsGenericParameters)
             {
@@ -2177,20 +2110,21 @@ namespace Arc.UniInk
             }
 
             var parametersCastOK = true;
+            var parameters = methodInfoToCast.GetParameters();
 
             // To manage empty params argument
-            if ((methodInfoToCast.GetParameters().LastOrDefault()?.IsDefined(typeof(ParamArrayAttribute), false) ?? false) && methodInfoToCast.GetParameters().Length == modifiedArgs.Count + 1)
+            if ((parameters.LastOrDefault()?.IsDefined(typeof(ParamArrayAttribute), false) ?? false) && parameters.Length == modifiedArgs.Count + 1)
             {
-                modifiedArgs.Add(Activator.CreateInstance(methodInfoToCast.GetParameters().Last().ParameterType, new object[] { 0 }));
+                modifiedArgs.Add(Activator.CreateInstance(parameters.Last().ParameterType, 0));
             }
-            else if (methodInfoToCast.GetParameters().Length > modifiedArgs.Count)
+            else if (parameters.Length > modifiedArgs.Count)
             {
-                modifiedArgs.AddRange(methodInfoToCast.GetParameters().Skip(modifiedArgs.Count).Select(p => p.DefaultValue));
+                modifiedArgs.AddRange(parameters.Skip(modifiedArgs.Count).Select(p => p.DefaultValue));
             }
 
             for (var a = 0; a < modifiedArgs.Count && parametersCastOK; a++)
             {
-                var parameterType = methodInfoToCast.GetParameters()[a].ParameterType;
+                var parameterType = parameters[a].ParameterType;
                 var paramTypeName = parameterType.Name;
 
                 if (modifiedArgs[a] is InternalDelegate internalDelegate)
@@ -2325,11 +2259,12 @@ namespace Arc.UniInk
             }
 
             if (parametersCastOK)
-                methodInfo = methodInfoToCast;
+                result = methodInfoToCast;
 
-            return methodInfo;
+            return result;
         }
 
+        /// 根据泛型参数类型信息生成具体的方法
         private MethodInfo MakeConcreteMethodIfGeneric(MethodInfo methodInfo, string genericsTypes, Type[] inferredGenericsTypes)
         {
             if (methodInfo.IsGenericMethod)
@@ -2775,7 +2710,7 @@ namespace Arc.UniInk
 
         #endregion
     }
-    
+
     public class StronglyTypedVariable
     {
         public Type Type { get; set; }
@@ -2863,7 +2798,6 @@ namespace Arc.UniInk
         public void Throw() => throw _exception;
     }
 
-    /// <summary>解释器执行时语法错误的异常</summary>
     public class SyntaxException : Exception
     {
         public SyntaxException(string message) : base(message) { }
@@ -3004,7 +2938,7 @@ namespace Arc.UniInk
     {
         #region Remove comments
 
-        //基于 : https://stackoverflow.com/questions/3524317/regex-to-strip-line-comments-from-c-sharp/3524689#3524689
+        //Base on : https://stackoverflow.com/questions/3524317/regex-to-strip-line-comments-from-c-sharp/3524689#3524689
         private static readonly Regex removeCommentsRegex = new($"{blockComments}|{lineComments}|{stringsIgnore}|{verbatimStringsIgnore}", RegexOptions.Singleline | RegexOptions.Compiled);
         private static readonly Regex newLineCharsRegex = new(@"\r\n|\r|\n", RegexOptions.Compiled);
 
@@ -3037,17 +2971,3 @@ namespace Arc.UniInk
         #endregion
     }
 }
-//2990 终于突破了3000行
-//3106行 --删除
-//3203行 --删除
-//3286行 --删除左操作符
-//3669行
-//3694行--删除索引器
-//3888行
-//3984行
-//4132行
-//4225行
-//4404行
-//4562行
-//优化思路：SubString()方法的使用，尽量不要使用，因为这个方法会创建一个新的字符串，而不是引用原来的字符串，这样会导致内存的浪费
-//改进：使用Span<T>结构体，这个结构体可以引用原来的字符串，而不是创建一个新的字符串，这样就不会导致内存的浪费
