@@ -9,22 +9,22 @@
 ---
 
 ```
-😮 A single script project and a single scripts NUnit project
-✒️ UniInk is a simple C# script interpreter that allows you to effortlessly integrate scripting capabilities into your projects. 🎉
+😮 A single script project and a single scripts NUnit project 
+✒️ UniInk is a simple C# script interpreter 
+🎉 Allows you to effortlessly integrate scripting capabilities into your projects. 
 ```
 
+# ✨Features
 
-# ✨Features 
+| Feature           | Description                                                                  |
+|-------------------|------------------------------------------------------------------------------|
+| Single Script     | 🧩 Seamlessly integrate UniInk into your C# projects with ease.              |
+| Light Weight      | 💪 Lightweight design ensures optimal performance.                           |
+| Rich Feature      | 📝 Supports a wide range of scripting functionalities for dynamic behavior.  |
+| Beginner-Friendly | 🙌 User-friendly interface makes it accessible for beginners.                |
+| Extensible        | 🔌 Easily extend UniInk's functionality with custom functions and libraries. |
 
-| Feature             | Description                                                                  |
-|---------------------|------------------------------------------------------------------------------|
-| Easy Integration    | 🧩 Seamlessly integrate UniInk into your C# projects with ease.              |
-| Lightweight         | 💪 Lightweight design ensures optimal performance.                           |
-| Versatile Scripting | 📝 Supports a wide range of scripting functionalities for dynamic behavior.  |
-| Beginner-Friendly   | 🙌 User-friendly interface makes it accessible for beginners.                |
-| Extensible          | 🔌 Easily extend UniInk's functionality with custom functions and libraries. |
-
-# 🚀Getting Started 
+# 🚀Getting Started
 
 Follow these simple steps to get started with UniInk:
 
@@ -38,7 +38,7 @@ Follow these simple steps to get started with UniInk:
 8. Execute the script using the `Execute` method.
 9. Enjoy the power of scripting in your project! ✨
 
-# 💡Example Usage 
+# 💡Example Usage
 
 ```csharp
 using UniInk;
@@ -47,15 +47,22 @@ class Program
 {
     static void Main()
     {
-        ScriptInterpreter interpreter = new ScriptInterpreter();
+        UniInk Ink = new()                               // Initialize a new instance;
+        int ans1 = Ink.Evaluate<int>("(45 * 2) + 3");    // ans1 = 93;
+        int ans2 = Ink.Evaluate<int>("65 > 7 ? 3 : 2");  // ans2 = 3; (supports ternary operators)
         
-        interpreter.LoadScript("script.uniink");
+        object ans = Ink.ScriptEvaluate
+            ("if(3>5){return 3;}else if(3==5){return 3;}else{return 5;}"); // ans = 5; (supports ifelse statement)
+        object ans = Ink.Evaluate
+            ("Avg (1,2,3,4,5,6,7,8,9,10   )"); // ans = 5; (supports custom functions)
+        
+        
         interpreter.Execute();
     }
 }
 ```
 
-# 🤝Contributing 
+# 🤝Contributing
 
 Contributions are welcome and encouraged! If you'd like to contribute to UniInk, please follow these steps:
 
@@ -65,12 +72,12 @@ Contributions are welcome and encouraged! If you'd like to contribute to UniInk,
 4. Push your changes to your forked repository.
 5. Submit a pull request, explaining your changes in detail.
 
-# 📝License 
+# 📝License
 
 UniInk is licensed under the [MIT License](LICENSE). Feel free to use, modify, and distribute this project as per the
 terms of the license.
 
-# 💬Support 
+# 💬Support
 
 If you have any questions, suggestions, or need assistance, please feel free
 to [open an issue](https://github.com/username/UniInk/issues) on the UniInk repository. We're here to help! 😊

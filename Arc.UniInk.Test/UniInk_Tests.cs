@@ -123,7 +123,7 @@ namespace Arc.UniInk.NunitTest
         public void Test04_Scripts(string script)
         {
             Ink.StaticTypesForExtensionsMethods.Add(typeof(ExtensionClass));
-            var ans = Ink.ScriptEvaluate($"{script}");
+            var ans = Ink.ScriptEvaluate(script);
             Assert.NotNull(ans);
             TestContext.Progress.WriteLine($"✅:{script}={ans}");
         }
