@@ -30,7 +30,7 @@ namespace Arc.UniInk
             Context = context;
             Variables = variables ?? new Dictionary<string, object>();
 
-            regex_Operator = new Regex($"^({string.Join("|", operatorsDic.Keys.Select(Regex.Escape))})", RegexOptions.Compiled);
+            regex_Operator = new Regex($"^({string.Join("|", dic_Operators.Keys.Select(Regex.Escape))})", RegexOptions.Compiled);
             ParsingMethods = new List<ParsingMethodDelegate>
             {
                 EvaluateCast,
@@ -98,54 +98,57 @@ namespace Arc.UniInk
         protected static readonly Regex regex_Char = new(@"^['](\\[\\'0abfnrtv]|[^'])[']", RegexOptions.Compiled);
 
         /// <summary><b> Match (two-dimensional) array type </b></summary>
-        protected static readonly Regex regex_ArrayTypeDetection = new(@"^(\s*(\[(?>(?>\s+)|[,])*)\])+", RegexOptions.Compiled);
+        protected static readonly Regex regex_Array = new(@"^(\s*(\[(?>(?>\s+)|[,])*)\])+", RegexOptions.Compiled);
+
+        /// <summary><b> Match Lambda Expression </b><list type="table">
+        /// <item><term>args             </term><description> : the Lambda Expression's all args                        </description></item>
+        /// <item><term>expression       </term><description> : the Lambda Expression                                   </description></item>
+        /// </list></summary>
+        protected static readonly Regex regex_LambdaExpression = new(@"^(?>\s*)(?<args>((?>\s*)[(](?>\s*)([\p{L}_](?>[\p{L}_0-9]*)(?>\s*)([,](?>\s*)[\p{L}_][\p{L}_0-9]*(?>\s*))*)?[)])|[\p{L}_](?>[\p{L}_0-9]*))(?>\s*)=>(?<expression>.*)$", RegexOptions.Singleline | RegexOptions.Compiled);
+
+        /// <summary><b> Match Lambda an arg </b></summary>
+        protected static readonly Regex regex_LambdaArg = new(@"[\p{L}_](?>[\p{L}_0-9]*)", RegexOptions.Compiled);
+
+        /// <summary><b> Match cast grammar </b><list type="table">
+        /// <item><term>typeName         </term><description> : the cast type name                                      </description></item>
+        /// </list></summary>
+        protected static readonly Regex regex_Cast = new(@"^\((?>\s*)(?<typeName>[\p{L}_][\p{L}_0-9\.\[\]<>]*[?]?)(?>\s*)\)", RegexOptions.Compiled);
+
+        /// <summary><b> Match Parentheses  block Keyword </b><list type="table">
+        /// <item><term>keyword          </term><description> : match keyword : while||for||foreach||if||else||catch    </description></item>
+        /// </list></summary>
+        protected static readonly Regex regex_BlockKeywordBegin = new(@"^(?>\s*)(?<keyword>while|for|foreach|if|else(?>\s*)if|catch)(?>\s*)[(]", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+        /// <summary><b> Match NoParentheses  block Keyword </b><list type="table">
+        /// <item><term>keyword          </term><description> : match keyword : else||do||try||finally                  </description></item>
+        /// </list></summary>
+        protected static readonly Regex regex_BlockKeywordBegin_NoParentheses = new(@"^(?>\s*)(?<keyword>else|do|try|finally)(?![\p{L}_0-9])", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+        /// <summary><b> Match block Begin [{] </b></summary>
+        protected static readonly Regex regex_BlockBegin = new(@"^(?>\s*)[{]", RegexOptions.Compiled);
+
+        /// <summary><b> Match xx in xx  [foreach] </b></summary>
+        protected static readonly Regex regex_ForeachParenThisEvaluation = new(@"^(?>\s*)(?<variableName>[\p{L}_](?>[\p{L}_0-9]*))(?>\s*)(?<in>in)(?>\s*)(?<collection>.*)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+        /// <summary><b> Match keyword [return] </b></summary>
+        protected static readonly Regex regex_Return = new(@"^return((?>\s*)|\()", RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled);
+
+        /// <summary><b> Match end [;] </b></summary>
+        protected static readonly Regex regex_ExpressionEnd = new(@"^(?>\s*)[;]", RegexOptions.Compiled);
 
 
-        protected static readonly Regex lambdaExpressionRegex = new(@"^(?>\s*)(?<args>((?>\s*)[(](?>\s*)([\p{L}_](?>[\p{L}_0-9]*)(?>\s*)([,](?>\s*)[\p{L}_][\p{L}_0-9]*(?>\s*))*)?[)])|[\p{L}_](?>[\p{L}_0-9]*))(?>\s*)=>(?<expression>.*)$", RegexOptions.Singleline | RegexOptions.Compiled);
-        protected static readonly Regex lambdaArgRegex = new(@"[\p{L}_](?>[\p{L}_0-9]*)", RegexOptions.Compiled);
-
-
-        protected static readonly Regex castRegex = new(@"^\((?>\s*)(?<typeName>[\p{L}_][\p{L}_0-9\.\[\]<>]*[?]?)(?>\s*)\)", RegexOptions.Compiled);
-
-
-        /// 匹配while||for||foreach||if||else||catch(后面跟括号的)关键字
-        protected static readonly Regex blockKeywordBeginRegex = new(@"^(?>\s*)(?<keyword>while|for|foreach|if|else(?>\s*)if|catch)(?>\s*)[(]", RegexOptions.IgnoreCase | RegexOptions.Compiled);
-
-        /// 匹配else||do||try||finally(后面不更括号的)关键字
-        protected static readonly Regex blockKeywordBeginRegex_NoParentheses = new(@"^(?>\s*)(?<keyword>else|do|try|finally)(?![\p{L}_0-9])", RegexOptions.IgnoreCase | RegexOptions.Compiled);
-
-        /// 匹配花括号的开始
-        protected static readonly Regex blockBeginRegex = new(@"^(?>\s*)[{]", RegexOptions.Compiled);
-
-        /// 匹配foreach后的括号中的内容 xx in xx
-        protected static readonly Regex foreachParenThisEvaluationRegex = new(@"^(?>\s*)(?<variableName>[\p{L}_](?>[\p{L}_0-9]*))(?>\s*)(?<in>in)(?>\s*)(?<collection>.*)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
-
-        /// 匹配return关键字
-        protected static readonly Regex returnKeywordRegex = new(@"^return((?>\s*)|\()", RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled);
-
-        /// 匹配 ; 结束符
-        protected static readonly Regex nextIsEndOfExpressionRegex = new(@"^(?>\s*)[;]", RegexOptions.Compiled);
-
-
+        /// <summary> If  Statement in Script Only</summary>
         protected enum EBlockState_If { NoBlock, If, ElseIf }
 
+        /// <summary> Try Statement in Script Only</summary>
         protected enum EBlockState_Try { NoBlock, Try, Catch }
 
 
-        private static readonly Dictionary<string, object> defaultVariables = new(StringComparer.OrdinalIgnoreCase)
-        {
-            { "Pi", Math.PI },
-            { "E", Math.E },
-            { "null", null },
-            { "true", true },
-            { "false", false },
-            { "this", null }
-        };
+        /// <summary> Catch Types in Method <see cref="GetTypeByName"/> </summary>
+        protected static readonly Dictionary<string, Type> dic_CachedTypes = new();
 
-
-        public static readonly Dictionary<string, Type> CachedTypesDic = new();
-
-        private static readonly Dictionary<string, Type> primaryTypesDic = new()
+        /// <summary> Some Primary Types in Method <see cref="GetTypeByName"/></summary>
+        protected static readonly Dictionary<string, Type> dic_PrimaryTypes = new()
         {
             { "object", typeof(object) },
             { "string", typeof(string) },
@@ -178,8 +181,19 @@ namespace Arc.UniInk
             { "void", typeof(void) }
         };
 
-        /// 数字后缀字典  Always Case insensitive, like in C#
-        private static readonly Dictionary<string, Func<string, object>> numberSuffixToParse = new()
+        /// <summary> Some custom default object in Method </summary>
+        protected static readonly Dictionary<string, object> dic_DefaultVariables = new(StringComparer.OrdinalIgnoreCase)
+        {
+            { "false", false },
+            { "true", true },
+            { "this", null },
+            { "Pi", Math.PI },
+            { "E", Math.E },
+            { "null", null },
+        };
+
+        /// <summary> Some number Suffix Parse Method  </summary>
+        protected static readonly Dictionary<string, Func<string, object>> dic_numberParseFunc = new()
         {
             { "f", number => float.Parse(number) },
             { "d", number => double.Parse(number) },
@@ -189,8 +203,8 @@ namespace Arc.UniInk
             { "m", number => decimal.Parse(number) }
         };
 
-        /// 转义字符字典
-        private static readonly Dictionary<char, char> charEscapedCharDic = new()
+        /// <summary> Some Escaped Char mapping  </summary>
+        protected static readonly Dictionary<char, char> dic_EscapedChar = new()
         {
             { '\\', '\\' },
             { '\'', '\'' },
@@ -204,9 +218,8 @@ namespace Arc.UniInk
             { 'v', '\v' }
         };
 
-
-        /// 操作符字典
-        public readonly Dictionary<string, ExpressionOperator> operatorsDic = new(StringComparer.Ordinal)
+        /// <summary> Some Operators string mapping   </summary>
+        public static readonly Dictionary<string, ExpressionOperator> dic_Operators = new(StringComparer.Ordinal)
         {
             { "+", ExpressionOperator.Plus },
             { "-", ExpressionOperator.Minus },
@@ -232,8 +245,8 @@ namespace Arc.UniInk
             { "??", ExpressionOperator.NullCoalescing },
         };
 
-        /// 一元右操作符
-        protected static readonly List<ExpressionOperator> UnaryPostfixOperators = new()
+        /// <summary> Some UnaryPostfix Operators mark</summary>
+        protected static readonly List<ExpressionOperator> Operators_UnaryPostfix = new()
         {
             ExpressionOperator.LogicalNegation, // !a 逻辑取反
             ExpressionOperator.BitwiseComplement, // ~a 位运算取反
@@ -241,8 +254,8 @@ namespace Arc.UniInk
             ExpressionOperator.UnaryMinus // -a 一元减号,表示负数符号
         };
 
-        /// 二元操作符计算逻辑
-        protected static readonly Dictionary<ExpressionOperator, Func<object, object, object>> OperatorsEvaluation = new()
+        /// <summary> Some UnaryPostfix Operators mark</summary>
+        protected static readonly Dictionary<ExpressionOperator, Func<object, object, object>> dic_OperatorsFunc = new()
         {
             { ExpressionOperator.UnaryPlus, (_, right) => +(int)right }, // 一元加号,表示正数符号
             { ExpressionOperator.UnaryMinus, (_, right) => -(int)right }, // 一元减号,表示负数符号
@@ -331,9 +344,8 @@ namespace Arc.UniInk
             { ExpressionOperator.NullCoalescing, (left, right) => left ?? right }, // 空合并
         };
 
-
-        ///简单的浮点数计算函数
-        private readonly Dictionary<string, Func<double, double>> simpleDoubleMathFuncDictionary = new()
+        /// <summary> Some simple Double MathFunc </summary>
+        protected static readonly Dictionary<string, Func<double, double>> dic_simpleDoubleMathFunc = new()
         {
             { "Abs", Math.Abs },
             { "Acos", Math.Acos },
@@ -353,9 +365,8 @@ namespace Arc.UniInk
             { "Truncate", Math.Truncate },
         };
 
-
-        ///复杂的基本函数
-        private readonly Dictionary<string, Func<UniInk, List<string>, object>> complexStandardFuncDictionary = new()
+        /// <summary> Some complex StandardFunc </summary>
+        protected static readonly Dictionary<string, Func<UniInk, List<string>, object>> dic_complexStandardFunc = new()
         {
             { "Avg", (self, args) => args.ConvertAll(arg => Convert.ToDouble(self.Evaluate(arg))).Sum() / args.Count },
             { "List", (self, args) => args.ConvertAll(self.Evaluate) },
@@ -372,23 +383,19 @@ namespace Arc.UniInk
         };
 
 
-        private static IList<Assembly> currentAssemblies => AppDomain.CurrentDomain.GetAssemblies().ToList();
-        private IList<Assembly> assemblies;
-
-        /// <summary>
-        /// 解析类型所需的所有程序集<para/>
-        /// 默认情况下，当前AppDomain中加载的所有程序集<para/>
-        /// </summary>
+        /// <summary> Custom Assembly List </summary>
         public IList<Assembly> Assemblies
         {
             get => assemblies ??= currentAssemblies;
             set => assemblies = value;
         }
 
-        /// <summary>
-        /// 在其中查找类型的所有命名空间<para/>
-        /// 等价于<c>using Namespace;</c>
-        /// </summary>
+        protected IList<Assembly> assemblies;
+
+        /// <summary> Current appDomain all assemblies </summary>
+        protected static readonly IList<Assembly> currentAssemblies = AppDomain.CurrentDomain.GetAssemblies().ToList();
+
+        /// <summary> Custom Namespaces same as <c>using Namespace;</c> </summary>
         public List<string> Namespaces { get; set; } = new()
         {
             "System",
@@ -399,11 +406,11 @@ namespace Arc.UniInk
             "System.Collections.Generic"
         };
 
-        /// <summary>添加或删除要在表达式中管理的特定类型。</summary>
+        /// <summary> Custom types in UniInk </summary>
         public List<Type> Types { get; } = new();
 
-        /// <summary>用于查找扩展方法的静态类型列表</summary>
-        public IList<Type> StaticTypesForExtensionsMethods { get; } = new List<Type>
+        /// <summary> Custom types for look for extension methods in UniInk </summary>
+        public List<Type> StaticTypesForExtensionsMethods { get; } = new()
         {
             typeof(Enumerable) // 用于Linq扩展方法
         };
@@ -419,8 +426,8 @@ namespace Arc.UniInk
         /// <summary>如果设置了，该对象将使用它的字段、属性和方法作为全局变量和函数</summary>
         public object Context
         {
-            get => defaultVariables["this"];
-            set => defaultVariables["this"] = value;
+            get => dic_DefaultVariables["this"];
+            set => dic_DefaultVariables["this"] = value;
         }
 
         /// <summary>
@@ -480,8 +487,8 @@ namespace Arc.UniInk
             //处理代码块关键字,直到遇到第一个表达式
             while (!isReturn && !isBreak && !isContinue && endIndex < scriptLength)
             {
-                var blockKeywordsBeginMatch_NoParentheses = blockKeywordBeginRegex_NoParentheses.Match(script, endIndex, scriptLength - endIndex);
-                var blockKeywordsBeginMatch = blockKeywordBeginRegex.Match(script, endIndex, scriptLength - endIndex);
+                var blockKeywordsBeginMatch_NoParentheses = regex_BlockKeywordBegin_NoParentheses.Match(script, endIndex, scriptLength - endIndex);
+                var blockKeywordsBeginMatch = regex_BlockKeywordBegin.Match(script, endIndex, scriptLength - endIndex);
                 var str = script.Substring(startIndex, endIndex - startIndex);
 
 
@@ -493,7 +500,7 @@ namespace Arc.UniInk
 
                     if (blockKeywordsBeginMatch.Success) endIndex++;
 
-                    var blockBeginningMatch = blockBeginRegex.Match(script, endIndex, scriptLength - endIndex);
+                    var blockBeginningMatch = regex_BlockBegin.Match(script, endIndex, scriptLength - endIndex);
 
                     var subScript = string.Empty;
 
@@ -581,7 +588,7 @@ namespace Arc.UniInk
                         }
                         else if (keyword.Equals("do"))
                         {
-                            if ((blockKeywordsBeginMatch = blockKeywordBeginRegex.Match(script.Substring(endIndex))).Success && blockKeywordsBeginMatch.Groups["keyword"].Value.Equals("while"))
+                            if ((blockKeywordsBeginMatch = regex_BlockKeywordBegin.Match(script.Substring(endIndex))).Success && blockKeywordsBeginMatch.Groups["keyword"].Value.Equals("while"))
                             {
                                 endIndex += blockKeywordsBeginMatch.Length;
                                 keywordAttributes = GetExpressionsParenthesized(script, ref endIndex, true, ';');
@@ -590,7 +597,7 @@ namespace Arc.UniInk
 
                                 Match nextIsEndOfExpressionMatch;
 
-                                if ((nextIsEndOfExpressionMatch = nextIsEndOfExpressionRegex.Match(script.Substring(endIndex))).Success)
+                                if ((nextIsEndOfExpressionMatch = regex_ExpressionEnd.Match(script.Substring(endIndex))).Success)
                                 {
                                     endIndex += nextIsEndOfExpressionMatch.Length;
 
@@ -664,7 +671,7 @@ namespace Arc.UniInk
                         }
                         else if (keyword.Equals("foreach"))
                         {
-                            var foreachParenthisEvaluationMatch = foreachParenThisEvaluationRegex.Match(keywordAttributes[0]);
+                            var foreachParenthisEvaluationMatch = regex_ForeachParenThisEvaluation.Match(keywordAttributes[0]);
 
                             if (!foreachParenthisEvaluationMatch.Success)
                             {
@@ -870,7 +877,7 @@ namespace Arc.UniInk
                     throw new SyntaxException("[throw]后 缺少[Exception]实例");
                 }
 
-                expression = returnKeywordRegex.Replace(expression, match =>
+                expression = regex_Return.Replace(expression, match =>
                 {
                     if (!match.Value.StartsWith("return"))
                         return match.Value;
@@ -944,7 +951,7 @@ namespace Arc.UniInk
         /// <summary>解析强转:(int)</summary>
         private bool EvaluateCast(string expression, Stack<object> stack, ref int i)
         {
-            var castMatch = castRegex.Match(expression, i, expression.Length - i);
+            var castMatch = regex_Cast.Match(expression, i, expression.Length - i);
 
             if (castMatch.Success)
             {
@@ -981,7 +988,7 @@ namespace Arc.UniInk
                     var type = numberMatch.Groups["type"].Value;
                     var numberNoType = numberMatch.Value.Replace(type, string.Empty);
 
-                    if (numberSuffixToParse.TryGetValue(type, out var parseFunc))
+                    if (dic_numberParseFunc.TryGetValue(type, out var parseFunc))
                     {
                         stack.Push(parseFunc(numberNoType));
                     }
@@ -1025,7 +1032,7 @@ namespace Arc.UniInk
 
             if (hasVar && !hasAssign) throw new SyntaxException($"The implicit variable is not initialized! [var {varFuncMatch.Groups["name"].Value}]");
             if (hasSign && stack.Count != 0 && stack.Peek() is not ExpressionOperator) return false;
-            if (!isInObject && operatorsDic.ContainsKey(varFuncName)) return false;
+            if (!isInObject && dic_Operators.ContainsKey(varFuncName)) return false;
 
             i += varFuncMatch.Length;
 
@@ -1360,7 +1367,7 @@ namespace Arc.UniInk
                 }
                 else
                 {
-                    if (defaultVariables.TryGetValue(varFuncName, out var varValueToPush))
+                    if (dic_DefaultVariables.TryGetValue(varFuncName, out var varValueToPush))
                     {
                         stack.Push(varValueToPush);
                     }
@@ -1452,7 +1459,7 @@ namespace Arc.UniInk
                     i++; //然后查看再后一个字符
                     var escapedChar = expression[i];
 
-                    if (charEscapedCharDic.TryGetValue(escapedChar, out var value))
+                    if (dic_EscapedChar.TryGetValue(escapedChar, out var value))
                     {
                         stack.Push(value);
                         i++;
@@ -1499,7 +1506,7 @@ namespace Arc.UniInk
                         stack.Push(op == "+" ? ExpressionOperator.UnaryPlus : ExpressionOperator.UnaryMinus);
                         break;
                     default:
-                        stack.Push(operatorsDic[op]);
+                        stack.Push(dic_Operators[op]);
                         break;
                 }
 
@@ -1620,7 +1627,7 @@ namespace Arc.UniInk
                     {
                         i++;
 
-                        if (charEscapedCharDic.TryGetValue(expression[i], out var escapedString))
+                        if (dic_EscapedChar.TryGetValue(expression[i], out var escapedString))
                         {
                             resultString.Append(escapedString);
                             i++;
@@ -1702,7 +1709,7 @@ namespace Arc.UniInk
 
             Match arrayTypeMatch;
 
-            if (i < expression.Length && (arrayTypeMatch = regex_ArrayTypeDetection.Match(expression.Substring(i))).Success)
+            if (i < expression.Length && (arrayTypeMatch = regex_Array.Match(expression, i, expression.Length - i)).Success)
             {
                 var arrayType = GetTypeByName(staticType + arrayTypeMatch.Value);
                 if (arrayType != null)
@@ -1745,7 +1752,7 @@ namespace Arc.UniInk
                 .Select(e => e is NullValue ? null : e).ToList(); //处理空值
 
             // 遍历所有的操作符
-            foreach (var _operatorMsg in OperatorsEvaluation)
+            foreach (var _operatorMsg in dic_OperatorsFunc)
             {
                 // 从后往前遍历
                 for (var i = list.Count - 1; i >= 0; i--)
@@ -1754,7 +1761,7 @@ namespace Arc.UniInk
                     if (!ReferenceEquals(list[i] as ExpressionOperator, _operatorMsg.Key)) continue;
 
                     // 如果当前的操作符 同时也是 是右操作符,则
-                    if (UnaryPostfixOperators.Contains(_operatorMsg.Key))
+                    if (Operators_UnaryPostfix.Contains(_operatorMsg.Key))
                     {
                         try
                         {
@@ -1764,12 +1771,12 @@ namespace Arc.UniInk
                             //定义一个方法,用于递归处理前一个操作符
                             void EvaluateFirstNextUnaryOp(int j, ref int parentIndex)
                             {
-                                if (j > 0 && list[j] is ExpressionOperator nextOp && UnaryPostfixOperators.Contains(nextOp))
+                                if (j > 0 && list[j] is ExpressionOperator nextOp && Operators_UnaryPostfix.Contains(nextOp))
                                 {
                                     EvaluateFirstNextUnaryOp(j - 1, ref j);
 
                                     //处理前一个操作符
-                                    list[j] = OperatorsEvaluation[nextOp](null, list[j - 1]);
+                                    list[j] = dic_OperatorsFunc[nextOp](null, list[j - 1]);
 
                                     //移除前一个操作符
                                     list.RemoveAt(j - 1);
@@ -1880,9 +1887,9 @@ namespace Arc.UniInk
 
             if (match.Groups["assignmentPrefix"].Success)
             {
-                var prefixOp = operatorsDic[match.Groups["assignmentPrefix"].Value];
+                var prefixOp = dic_Operators[match.Groups["assignmentPrefix"].Value];
 
-                result = OperatorsEvaluation[prefixOp](getCurrentValue(), Evaluate(rightExpression));
+                result = dic_OperatorsFunc[prefixOp](getCurrentValue(), Evaluate(rightExpression));
             }
             else
             {
@@ -1939,11 +1946,11 @@ namespace Arc.UniInk
         /// <summary>获取Lambda指类型的解释器</summary>
         private bool GetLambdaExpression(string expression, Stack<object> stack)
         {
-            var lambdaExpressionMatch = lambdaExpressionRegex.Match(expression);
+            var lambdaExpressionMatch = regex_LambdaExpression.Match(expression);
 
             if (!lambdaExpressionMatch.Success) return false;
 
-            var argsNames = lambdaArgRegex.Matches(lambdaExpressionMatch.Groups["args"].Value);
+            var argsNames = regex_LambdaArg.Matches(lambdaExpressionMatch.Groups["args"].Value);
 
 
             stack.Push(new InternalDelegate(args =>
@@ -2444,11 +2451,11 @@ namespace Arc.UniInk
         {
             var functionExists = true;
 
-            if (simpleDoubleMathFuncDictionary.TryGetValue(name, out var func))
+            if (dic_simpleDoubleMathFunc.TryGetValue(name, out var func))
             {
                 result = func(Convert.ToDouble(Evaluate(args[0])));
             }
-            else if (complexStandardFuncDictionary.TryGetValue(name, out var complexFunc))
+            else if (dic_complexStandardFunc.TryGetValue(name, out var complexFunc))
             {
                 result = complexFunc(this, args);
             }
@@ -2475,9 +2482,9 @@ namespace Arc.UniInk
 
             try
             {
-                if (primaryTypesDic.TryGetValue(fullName, out result)) { return result; } //先从基础类型字典中查找
+                if (dic_PrimaryTypes.TryGetValue(fullName, out result)) { return result; } //先从基础类型字典中查找
 
-                if (CachedTypesDic.TryGetValue(fullName, out result)) { return result; } //再从缓存字典中查找
+                if (dic_CachedTypes.TryGetValue(fullName, out result)) { return result; } //再从缓存字典中查找
 
                 result = Types.Find(type => type.Name.Equals(fullName));
 
@@ -2517,7 +2524,7 @@ namespace Arc.UniInk
             if (result == null && throwExceptionIfNotFound)
                 throw new SyntaxException($"Failed to get type or class : {typeName}{genericTypes}");
 
-            if (result != null) CachedTypesDic[fullName] = result;
+            if (result != null) dic_CachedTypes[fullName] = result;
 
             return result;
         }

@@ -70,22 +70,32 @@ namespace Arc.UniInk.NunitTest
 
         //[TestCase("(1+2)+3+4+5+6+7+8+9+10", 55)]          //Don't support this
         //[TestCase("(2+4)+6+(8+10)+(6/2)+6+(6-100)", -58)] //Don't support this
-        [TestCase(" true&&false    ", false)] //Evaluate Boolean
-        [TestCase("(45 * 2) + 3    ", 93)]//Evaluate Expression must be surrounded by parentheses
+        [TestCase(" TRUE&&false    ", false)] //Evaluate Boolean
+        [TestCase("(45 * 2) + 3    ", 93)] //Evaluate Expression must be surrounded by parentheses
         [TestCase("65 > 7 ? 3 : 2  ", 3)] //Evaluate Ternary Conditional Operator
-        [TestCase("HelperClass     ", typeof(HelperClass))]//Evaluate Type
+        [TestCase("HelperClass     ", typeof(HelperClass))] //Evaluate Type
+        [TestCase("PI+E            ", null)] //Evaluate Property
         public void Test02_SimpleExpression(string script, object answer)
         {
             var ans = Ink.Evaluate(script);
-            Assert.AreEqual(answer, ans);
+            if (answer is null)
+            {
+                Assert.NotNull(ans);
+            }
+            else
+            {
+                Assert.AreEqual(answer, ans);
+            }
+
             TestContext.Progress.WriteLine($"✅:{script}=" + $"{ans}");
         }
 
-        
+
         [TestCase("Avg (1,2,3,4,5,6,7,8,9,10   )", 5.5)]
         [TestCase("Max (1,2,3,4,5,6,7,8,9,10   )", 10)]
         [TestCase("Min (1,1,2,3,4,5,6,7,8,9,-10)", -10)]
         [TestCase("List(1,2,3,4,5,6,7,8,9,10   )", null)]
+        [TestCase("List(1,2,3,4,5,6,7,8,9,10   ).Count", 10)]
         public void Test03_MultipleArgsFunction(string script, object answer)
         {
             var ans = Ink.Evaluate(script);
@@ -97,11 +107,12 @@ namespace Arc.UniInk.NunitTest
             {
                 Assert.AreEqual(answer, ans);
             }
+
             TestContext.Progress.WriteLine($"✅:{script}=" + $"{ans}");
         }
 
-        [TestCase("var w = 2+4;        return w;")] 
-        [TestCase("var w = 4-2;               w;")] 
+        [TestCase("var w = 2+4;        return w;")]
+        [TestCase("var w = 4-2;               w;")]
         [TestCase("int w = 4-2; w +=3; return w;")]
         [TestCase("var w = 4-2;")]
         [TestCase("4/2;")]
