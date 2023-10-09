@@ -68,13 +68,13 @@ namespace Arc.UniInk.NunitTest
             TestContext.Progress.WriteLine($"✅:{expression}=" + $"{actualResult}");
         }
 
-        //[TestCase("(1+2)+3+4+5+6+7+8+9+10", 55)]          //Don't support this
-        //[TestCase("(2+4)+6+(8+10)+(6/2)+6+(6-100)", -58)] //Don't support this
+        //[TestCase("(1+2)+3+4+5+6+7+8+9+10", 55)]          //Don't support this now
+        //[TestCase("(2+4)+6+(8+10)+(6/2)+6+(6-100)", -58)] //Don't support this now
         [TestCase(" TRUE&&false    ", false)] //Evaluate Boolean
         [TestCase("(45 * 2) + 3    ", 93)] //Evaluate Expression must be surrounded by parentheses
         [TestCase("65 > 7 ? 3 : 2  ", 3)] //Evaluate Ternary Conditional Operator
         [TestCase("HelperClass     ", typeof(HelperClass))] //Evaluate Type
-        [TestCase("PI+E            ", null)] //Evaluate Property
+        [TestCase("PI+E            ", null)] //Evaluate Custom Property
         public void Test02_SimpleExpression(string script, object answer)
         {
             var ans = Ink.Evaluate(script);
@@ -96,6 +96,7 @@ namespace Arc.UniInk.NunitTest
         [TestCase("Min (1,1,2,3,4,5,6,7,8,9,-10)", -10)]
         [TestCase("List(1,2,3,4,5,6,7,8,9,10   )", null)]
         [TestCase("List(1,2,3,4,5,6,7,8,9,10   ).Count", 10)]
+        [TestCase("List(\"aaa\",\"bbb\"   )", null)]
         public void Test03_MultipleArgsFunction(string script, object answer)
         {
             var ans = Ink.Evaluate(script);
@@ -131,12 +132,20 @@ namespace Arc.UniInk.NunitTest
         [TestCase(" TestC<List<int>>(D);  ")] //测试多泛型参数
         [TestCase("if(3>5){return 3;}else{return 5;}")] //测试if else
         [TestCase("if(3>5){return 3;}else if(3==5){return 3;}else{return 5;}")] //测试if else if else
+        [TestCase("if(3>5){return \"aaa\";}else if(3==5){return \"bbb\";}else{return \"ccc\";}")] //测试if else if else
         public void Test04_Scripts(string script)
         {
             Ink.StaticTypesForExtensionsMethods.Add(typeof(ExtensionClass));
             var ans = Ink.ScriptEvaluate(script);
             Assert.NotNull(ans);
-            TestContext.Progress.WriteLine($"✅:{script}={ans}");
+            TestContext.Progress.WriteLine($"✅:{script}={ans}"+" ---  "+ans.GetType());
+
+            if (ans is string str)
+            {
+                TestContext.Progress.WriteLine($"✅:{script}={ans}"+" ---  "+str.Length);
+            }
+            
+            
         }
 
 
@@ -234,3 +243,4 @@ namespace Arc.UniInk.NunitTest
         }
     }
 }
+//2.425

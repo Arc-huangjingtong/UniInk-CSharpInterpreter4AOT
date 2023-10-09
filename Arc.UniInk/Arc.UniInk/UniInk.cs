@@ -90,9 +90,10 @@ namespace Arc.UniInk
         /// <item><term>isGeneric        </term><description> : is Generic if group match success                       </description></item>
         /// </list>⚠️the group genTag is use for balance two side</summary>
         protected static readonly Regex regex_Generics = new("(?<name>[^,<>]+)(?<isgeneric>[<](?>[^<>]+|(?<gentag>[<])|(?<-gentag>[>]))*(?(gentag)(?!))[>])?", RegexOptions.Compiled);
+        
+        /// <summary><b> Match string (excluded [\"] )</b></summary>
+        protected static readonly Regex regex_String = new("^(?<interpolated>[$])?(?<escaped>[@])?(?<string>[\"](?>([^\"])*)[\"])", RegexOptions.Compiled);
 
-        /// <summary><b> Match string's end ["] (excluded [\"] )</b></summary>
-        protected static readonly Regex regex_StringEnd = new("^[^\"]*[\"]", RegexOptions.Compiled);
 
         /// <summary><b> Match char and Escaped char ['\\'] ['\''] [\0] [\a] [\b] [\f] [\n] [\r] [\t] [\v] </b></summary>
         protected static readonly Regex regex_Char = new(@"^['](\\[\\'0abfnrtv]|[^'])[']", RegexOptions.Compiled);
@@ -382,6 +383,11 @@ namespace Arc.UniInk
             { "Sign", (self, args) => Math.Sign(Convert.ToDouble(self.Evaluate(args[0]))) }
         };
 
+        /// <summary>Custom Variables for Evaluate</summary>
+        public Dictionary<string, object> Variables { get; set; }
+
+        /// <summary> Current appDomain all assemblies </summary>
+        protected static readonly IList<Assembly> currentAssemblies = AppDomain.CurrentDomain.GetAssemblies().ToList();
 
         /// <summary> Custom Assembly List </summary>
         public IList<Assembly> Assemblies
@@ -392,8 +398,6 @@ namespace Arc.UniInk
 
         protected IList<Assembly> assemblies;
 
-        /// <summary> Current appDomain all assemblies </summary>
-        protected static readonly IList<Assembly> currentAssemblies = AppDomain.CurrentDomain.GetAssemblies().ToList();
 
         /// <summary> Custom Namespaces same as <c>using Namespace;</c> </summary>
         public List<string> Namespaces { get; set; } = new()
@@ -409,10 +413,10 @@ namespace Arc.UniInk
         /// <summary> Custom types in UniInk </summary>
         public List<Type> Types { get; } = new();
 
-        /// <summary> Custom types for look for extension methods in UniInk </summary>
+        /// <summary> Custom types looking for extension methods in UniInk </summary>
         public List<Type> StaticTypesForExtensionsMethods { get; } = new()
         {
-            typeof(Enumerable) // 用于Linq扩展方法
+            typeof(Enumerable) // Linq Extension Methods
         };
 
 
@@ -420,20 +424,15 @@ namespace Arc.UniInk
         private static BindingFlags StaticBindingFlag => BindingFlags.Public | BindingFlags.Static;
 
 
-        /// <summary>计算堆栈初始化次数，以确定是否到达了表达式入口点。在这种情况下，应该抛出传输的异常。</summary>
+        /// <summary>the Marker of evaluation ，Used to determine whether Evaluate is complete </summary>
         private int evaluationStackCount;
 
-        /// <summary>如果设置了，该对象将使用它的字段、属性和方法作为全局变量和函数</summary>
+        /// <summary>the Context is same as can be omitted [this]</summary>
         public object Context
         {
             get => dic_DefaultVariables["this"];
             set => dic_DefaultVariables["this"] = value;
         }
-
-        /// <summary>
-        /// 的当前实例计算的表达式和脚本中可以使用的变量名/值字典 <see cref="UniInk"/><para/>
-        /// </summary>
-        public Dictionary<string, object> Variables { get; set; }
 
 
         /// <summary>在函数或方法解析之前触发。</summary>
@@ -442,15 +441,15 @@ namespace Arc.UniInk
         public event EventHandler<FunctionEvaluationEventArg> PreEvaluateFunction;
 
 
-        /// <summary>解释脚本(用分号分隔的多个表达式),支持一些条件、循环等c#代码流管理关键字</summary>
-        /// <typeparam name="T">要对表达式的结果进行强制转换的类型</typeparam>
-        /// <param name="script">求值的脚本</param>
-        /// <returns>最后一次求值表达式的结果</returns>
+        /// <summary>Evaluate a Script,support [if] State and so on</summary>
+        /// <typeparam name="T">cast Type</typeparam>
+        /// <param name="script">the script string (Separator is [;])</param>
+        /// <returns>the last expression return</returns>
         public T ScriptEvaluate<T>(string script) => (T)ScriptEvaluate(script);
 
-        /// <summary>解释脚本(用分号分隔的多个表达式),支持一些条件、循环等c#代码流管理关键字</summary>
-        /// <param name="script">需要求值的脚本字符串</param>
-        /// <returns>最后一次求值表达式的结果</returns>
+        /// <summary>Evaluate a Script,support [if] State and so on</summary>
+        /// <param name="script">the script string (Separator is [;])</param>
+        /// <returns>the last expression return object</returns>
         public object ScriptEvaluate(string script)
         {
             var isReturn = false;
@@ -459,8 +458,9 @@ namespace Arc.UniInk
 
             var result = ScriptEvaluate(script, ref isReturn, ref isBreak, ref isContinue);
 
-            if (isBreak) throw new SyntaxException("无效关键字:[break]   ");
-            if (isContinue) throw new SyntaxException("无效关键字:[continue]");
+            if (isBreak) throw new SyntaxException("Invalid keyword :[break]   ");
+            if (isContinue) throw new SyntaxException("Invalid keyword :[continue]");
+
             return result;
         }
 
@@ -484,17 +484,19 @@ namespace Arc.UniInk
             var startIndex = 0;
             var endIndex = 0;
 
-            //处理代码块关键字,直到遇到第一个表达式
+
             while (!isReturn && !isBreak && !isContinue && endIndex < scriptLength)
             {
                 var blockKeywordsBeginMatch_NoParentheses = regex_BlockKeywordBegin_NoParentheses.Match(script, endIndex, scriptLength - endIndex);
                 var blockKeywordsBeginMatch = regex_BlockKeywordBegin.Match(script, endIndex, scriptLength - endIndex);
+
                 var str = script.Substring(startIndex, endIndex - startIndex);
 
 
                 if (string.IsNullOrWhiteSpace(str) && (blockKeywordsBeginMatch.Success || blockKeywordsBeginMatch_NoParentheses.Success))
                 {
                     endIndex += blockKeywordsBeginMatch.Success ? blockKeywordsBeginMatch.Length : blockKeywordsBeginMatch_NoParentheses.Length;
+
                     var keyword = blockKeywordsBeginMatch.Success ? blockKeywordsBeginMatch.Groups["keyword"].Value : blockKeywordsBeginMatch_NoParentheses?.Groups["keyword"].Value ?? string.Empty;
                     var keywordAttributes = blockKeywordsBeginMatch.Success ? GetExpressionsParenthesized(script, ref endIndex, true, ';') : null;
 
@@ -810,11 +812,11 @@ namespace Arc.UniInk
             bool TryParseStringAndParenthisAndCurlyBrackets(ref int index)
             {
                 var parsed = true;
-                var internalStringMatch = regex_StringBegin.Match(script, index, scriptLength - index);
+                var internalStringMatch = regex_String.Match(script, index, scriptLength - index);
 
                 if (internalStringMatch.Success)
                 {
-                    var innerString = internalStringMatch.Value + GetCodeUntilEndOfString(script, index + internalStringMatch.Length, internalStringMatch);
+                    var innerString = internalStringMatch.Groups["string"].Value; //TODO:当字符串没有另一边的引号时，错误不会在此处抛出
                     index += innerString.Length - 1;
                 }
                 else if (script[index] == '(')
@@ -1563,11 +1565,11 @@ namespace Arc.UniInk
                 {
                     var s2 = restOfExpression[j];
 
-                    var internalStringMatch = regex_StringBegin.Match(restOfExpression.Substring(j));
+                    var internalStringMatch = regex_String.Match(restOfExpression.Substring(j));
 
                     if (internalStringMatch.Success)
                     {
-                        var innerString = internalStringMatch.Value + GetCodeUntilEndOfString(restOfExpression, j + internalStringMatch.Length, internalStringMatch);
+                        var innerString = internalStringMatch.Groups["string"].Value;//TODO:当字符串没有另一边的引号时，错误不会在此处抛出
                         j += innerString.Length - 1;
                     }
                     else if (s2.Equals('('))
@@ -2332,52 +2334,44 @@ namespace Arc.UniInk
             return InstanceBindingFlag;
         }
 
-        /// <summary>获取两个花括号之间的脚本</summary>
+        /// <summary>get scripts between [{] and [}]</summary>
         private string GetScriptBetweenCurlyBrackets(string parentScript, ref int index)
         {
-            var currentScript = string.Empty;
+            var currentScript = new StringBuilder();
             var bracketCount = 1;
             for (; index < parentScript.Length; index++)
             {
-                var internalStringMatch = regex_StringBegin.Match(parentScript.Substring(index));
-                var internalCharMatch = regex_Char.Match(parentScript.Substring(index));
+                var internalStringMatch = regex_String.Match(parentScript, index, parentScript.Length - index);
+                var internalCharMatch = regex_Char.Match(parentScript, index, parentScript.Length - index);
 
                 if (internalStringMatch.Success)
                 {
-                    var innerString = internalStringMatch.Value + GetCodeUntilEndOfString(parentScript, index + internalStringMatch.Length, internalStringMatch);
-                    currentScript += innerString;
+                    var innerString = internalStringMatch.Groups["string"].Value; //TODO:当字符串没有另一边的引号时，错误不会在此处抛出
+                    currentScript.Append(innerString);
                     index += innerString.Length - 1;
                 }
                 else if (internalCharMatch.Success)
                 {
-                    currentScript += internalCharMatch.Value;
+                    currentScript.Append(internalCharMatch.Value);
                     index += internalCharMatch.Length - 1;
                 }
                 else
                 {
-                    var s = parentScript.Substring(index, 1);
+                    var s = parentScript[index];
 
-                    if (s.Equals("{"))
-                    {
-                        bracketCount++;
-                    }
+                    if (s.Equals('{')) bracketCount++;
+                    if (s.Equals('}')) bracketCount--;
 
-                    if (s.Equals("}"))
-                    {
-                        bracketCount--;
-                        if (bracketCount == 0)
-                            break;
-                    }
+                    if (bracketCount == 0) break;
 
-                    currentScript += s;
+                    currentScript.Append(s);
                 }
             }
 
-            if (bracketCount > 0)
-                throw new Exception($"脚本中在 [{index}] 位置中 缺少{bracketCount} 个 '}}' 字符");
+            if (bracketCount > 0) throw new Exception($"[{index}]:{bracketCount} '}}' is missing ！");
 
 
-            return currentScript;
+            return currentScript.ToString();
         }
 
         /// <summary>Get a expression list between startChar and endChar</summary>
@@ -2392,12 +2386,12 @@ namespace Arc.UniInk
             /// We must prevent the string having separator or startend char that we define
             for (; i < expression.Length; i++)
             {
-                var internalStringMatch = regex_StringBegin.Match(expression, i, expression.Length - i);
+                var internalStringMatch = regex_String.Match(expression, i, expression.Length - i);
                 var internalCharMatch = regex_Char.Match(expression, i, expression.Length - i);
 
                 if (internalStringMatch.Success)
                 {
-                    var innerString = internalStringMatch.Value + GetCodeUntilEndOfString(expression, i + internalStringMatch.Length, internalStringMatch);
+                    var innerString = internalStringMatch.Groups["string"].Value;//TODO:当字符串没有另一边的引号时，错误不会在此处抛出
                     currentExpression += innerString;
                     i += innerString.Length - 1;
                 }
@@ -2590,22 +2584,7 @@ namespace Arc.UniInk
 
             return true;
         }
-
-        ///<summary>获取字符串中的代码，直到字符串结束</summary>
-        private string GetCodeUntilEndOfString(string expression, int index, Match stringBeginningMatch)
-        {
-            if (stringBeginningMatch.Value.Contains("@") || stringBeginningMatch.Value.Contains("$")) throw new SyntaxException("not support @ or $ in string");
-
-            var codeUntilEndOfStringMatch = regex_StringEnd.Match(expression, index, expression.Length - index);
-
-            if (codeUntilEndOfStringMatch.Success)
-            {
-                return codeUntilEndOfStringMatch.Value;
-            }
-
-            throw new SyntaxException($"a [\"] is missing in {expression.Substring(index)}");
-        }
-
+        
 
         #region 用于解析和解释的受保护的工具子类
 
