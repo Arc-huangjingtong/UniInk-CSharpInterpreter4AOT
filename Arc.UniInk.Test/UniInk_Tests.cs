@@ -131,6 +131,7 @@ namespace Arc.UniInk.NunitTest
         [TestCase("TestD<TestEnum,TestEnum>(A);")] //测试多泛型参数
         [TestCase(" TestC<List<int>>(D);  ")] //测试多泛型参数
         [TestCase("if(3>5){return 3;}else{return 5;}")] //测试if else
+        [TestCase("if(3>5)return 3;else return 5;")] //测试if else
         [TestCase("if(3>5){return 3;}else if(3==5){return 3;}else{return 5;}")] //测试if else if else
         [TestCase("if(3>5){return \"aaa\";}else if(3==5){return \"bbb\";}else{return \"ccc\";}")] //测试if else if else
         public void Test04_Scripts(string script)

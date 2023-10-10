@@ -497,7 +497,7 @@ namespace Arc.UniInk
                     var keyword = bkbMatchSuss ? blockKeywordsBeginMatch.Groups["keyword"].Value : blockKeywordsBeginMatch_NoParentheses?.Groups["keyword"].Value ?? string.Empty;
                     var keywordAttributes = bkbMatchSuss ? GetExpressionsParenthesized(script, ref endIndex, true, ';') : null;
 
-                    if (bkbMatchSuss) endIndex++; // skip the [;]
+                    if (bkbMatchSuss) endIndex++; // skip the [)]
 
                     var blockBeginningMatch = regex_BlockBegin.Match(script, endIndex, scriptLength - endIndex);
 
@@ -2343,7 +2343,6 @@ namespace Arc.UniInk
 
             if (bracketCount > 0)
                 throw new SyntaxException($"[{expression}] is missing characters ['{endChar}'] ");
-
 
             return expressionsList;
         }
