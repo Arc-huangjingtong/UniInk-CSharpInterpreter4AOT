@@ -1,11 +1,11 @@
 ﻿/************************************************************************************************************************
- *📰 Title    : UniInk_NunitTest (https://github.com/Arc-huangjingtong/UniInk-CSharpInterpreter4Unity)                  *
- *🔖 Version  : 1.0.0                                                                                                   *
- *👩‍💻 Author   : Arc                                                                                                     *
- *🔑 Licence  : MIT (https://github.com/Arc-huangjingtong/UniInk-CSharpInterpreter4Unity/blob/main/LICENSE)             *
- *🔍 Origin   : ExpressionEvaluator (https://github.com/codingseb/ExpressionEvaluator)                                  *
- *🤝 Support  : Assembly: nunit.framework, Version=3.5.0.0                                                              *
- *📝 Desc     : the UniInk's unitTest                                                                                   *
+ * 📰 Title    : UniInk_NunitTest (https://github.com/Arc-huangjingtong/UniInk-CSharpInterpreter4Unity)                 *
+ * 🔖 Version  : 1.0.0                                                                                                  *
+ * 👩‍💻 Author   : Arc                                                                                                    *
+ * 🤝 Support  : Assembly: nunit.framework, Version=3.5.0.0                                                             *
+ * 📝 Desc     : the UniInk's unitTest                                                                                  *
+ * 📚 TestNum  : 33                                                                                                     *
+ * ⏱️ Speed    : 2'434 s                                                                                                *
 /************************************************************************************************************************/
 
 namespace Arc.UniInk.NunitTest
@@ -138,16 +138,22 @@ namespace Arc.UniInk.NunitTest
             Ink.StaticTypesForExtensionsMethods.Add(typeof(ExtensionClass));
             var ans = Ink.ScriptEvaluate(script);
             Assert.NotNull(ans);
-            TestContext.Progress.WriteLine($"✅:{script}={ans}"+" ---  "+ans.GetType());
+            TestContext.Progress.WriteLine($"✅:{script}={ans}" + " ---  " + ans.GetType());
 
             if (ans is string str)
             {
-                TestContext.Progress.WriteLine($"✅:{script}={ans}"+" ---  "+str.Length);
+                TestContext.Progress.WriteLine($"✅:{script}={ans}" + " ---  " + str.Length);
             }
-            
-            
         }
 
+        [Test]
+        public void Test_Custom()
+        {
+            var regex = new System.Text.RegularExpressions.Regex(@"^['](?<char>([\\][\\'0abfnrtv]|[^']|))[']");
+            var match = regex.Match("''");
+            Assert.IsTrue(match.Success);
+            Assert.AreEqual("", match.Groups["char"].Value);
+        }
 
         private static int CalculateExpectedResult(int operand1, int operand2, char @operator)
         {
@@ -232,7 +238,6 @@ namespace Arc.UniInk.NunitTest
             return "test1";
         }
     }
-
 
     public static class ExtensionClass
     {

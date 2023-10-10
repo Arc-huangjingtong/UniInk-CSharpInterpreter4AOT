@@ -6,7 +6,8 @@
  *  🔍 Origin   : ExpressionEvaluator (https://github.com/codingseb/ExpressionEvaluator)                                *
  *  🤝 Support  : [.NET Framework 4+] [C# 8.0+] [Support IL2CPP]                                                        *
  *  📝 Desc     : High performance & Easy-use C# Simple Interpreter                                                     *
- *  🆘 Helper   : RegexStudy : (https://regex101.com/r/0PN0yS/1)                                                        *
+ *  🆘 Helper   : RegexStudy      : (https://regex101.com/r/0PN0yS/1)                                                   *
+ *  🆘 Helper   : ReflectionStudy : (https://mattwarren.org/2016/12/14/Why-is-Reflection-slow/)                         *
 /************************************************************************************************************************/
 
 namespace Arc.UniInk
@@ -140,9 +141,6 @@ namespace Arc.UniInk
 
         /// <summary> If  Statement in Script Only</summary>
         protected enum EBlockState_If { NoBlock, If, ElseIf }
-
-        /// <summary> Try Statement in Script Only</summary>
-        protected enum EBlockState_Try { NoBlock, Try, Catch }
 
 
         /// <summary> Catch Types in Method <see cref="GetTypeByName"/> </summary>
@@ -472,9 +470,7 @@ namespace Arc.UniInk
             var isBreak = breakCalled;
             var isContinue = continueCalled;
             var BlockState_If = EBlockState_If.NoBlock;
-            var BlockState_Try = EBlockState_Try.NoBlock;
             var ifElseStatementsList = new List<List<string>>();
-            var tryStatementsList = new List<List<string>>();
 
             script = script.Trim();
 
@@ -555,38 +551,14 @@ namespace Arc.UniInk
                         ifElseStatementsList.Add(new List<string> { "true", subScript });
                         BlockState_If = EBlockState_If.NoBlock;
                     }
-                    else if (keyword.Equals("catch"))
-                    {
-                        if (BlockState_Try == EBlockState_Try.NoBlock)
-                            throw new SyntaxException(" [catch] 没有对应的  [try] ");
-
-                        tryStatementsList.Add(new List<string> { "catch", keywordAttributes.Count > 0 ? keywordAttributes[0] : null, subScript });
-                        BlockState_Try = EBlockState_Try.Catch;
-                    }
-                    else if (keyword.Equals("finally"))
-                    {
-                        if (BlockState_Try == EBlockState_Try.NoBlock)
-                            throw new SyntaxException(" [finally] 没有对应的  [try]");
-
-                        tryStatementsList.Add(new List<string> { "finally", subScript });
-                        BlockState_Try = EBlockState_Try.NoBlock;
-                    }
                     else
                     {
-                        ExecuteTryList();
                         ExecuteIfList();
 
                         if (keyword.Equals("if"))
                         {
                             ifElseStatementsList.Add(new List<string> { keywordAttributes[0], subScript });
                             BlockState_If = EBlockState_If.If;
-                            BlockState_Try = EBlockState_Try.NoBlock;
-                        }
-                        else if (keyword.Equals("try"))
-                        {
-                            tryStatementsList.Add(new List<string> { subScript });
-                            BlockState_If = EBlockState_If.NoBlock;
-                            BlockState_Try = EBlockState_Try.Try;
                         }
                         else if (keyword.Equals("do"))
                         {
@@ -709,7 +681,6 @@ namespace Arc.UniInk
                 }
                 else
                 {
-                    ExecuteTryList();
                     ExecuteIfList();
 
                     if (TryParseStringAndParenthisAndCurlyBrackets(ref endIndex)) { }
@@ -723,7 +694,6 @@ namespace Arc.UniInk
                     }
 
                     BlockState_If = EBlockState_If.NoBlock;
-                    BlockState_Try = EBlockState_Try.NoBlock;
 
                     endIndex++;
                 }
@@ -731,8 +701,7 @@ namespace Arc.UniInk
 
             if (!script.Substring(startIndex).Trim().Equals(string.Empty) && !isReturn && !isBreak && !isContinue)
                 throw new SyntaxException($"{script} 中缺少 [;] 字符");
-
-            ExecuteTryList();
+            
             ExecuteIfList();
 
             valueReturned = isReturn;
@@ -740,63 +709,6 @@ namespace Arc.UniInk
             continueCalled = isContinue;
 
             return lastResult;
-
-            void ExecuteTryList()
-            {
-                if (tryStatementsList.Count > 0)
-                {
-                    if (tryStatementsList.Count == 1)
-                    {
-                        throw new SyntaxException("try语句至少需要一个catch或一个finally语句。");
-                    }
-
-                    try
-                    {
-                        lastResult = ScriptEvaluate(tryStatementsList[0][0], ref isReturn, ref isBreak, ref isContinue);
-                    }
-                    catch (Exception exception)
-                    {
-                        var atLeasOneCatch = false;
-
-                        foreach (var catchStatement in tryStatementsList.Skip(1).TakeWhile(e => e[0].Equals("catch")))
-                        {
-                            if (catchStatement[1] != null)
-                            {
-                                var exceptionVariable = catchStatement[1].Trim().Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-
-                                var exceptionName = exceptionVariable[0];
-
-                                if (exceptionVariable.Length >= 2)
-                                {
-                                    if (!((Type)Evaluate(exceptionVariable[0])).IsInstanceOfType(exception)) continue;
-
-                                    exceptionName = exceptionVariable[1];
-                                }
-
-                                Variables[exceptionName] = exception;
-                            }
-
-                            lastResult = ScriptEvaluate(catchStatement[2], ref isReturn, ref isBreak, ref isContinue);
-                            atLeasOneCatch = true;
-                            break;
-                        }
-
-                        if (!atLeasOneCatch)
-                        {
-                            throw;
-                        }
-                    }
-                    finally
-                    {
-                        if (tryStatementsList.Last()[0].Equals("finally"))
-                        {
-                            lastResult = ScriptEvaluate(tryStatementsList.Last()[1], ref isReturn, ref isBreak, ref isContinue);
-                        }
-                    }
-
-                    tryStatementsList.Clear();
-                }
-            }
 
             void ExecuteIfList()
             {
@@ -1450,9 +1362,11 @@ namespace Arc.UniInk
             return true;
         }
 
-        /// <summary>解析字符Char</summary>
+        /// <summary>Evaluate Char</summary>
         private bool EvaluateChar(string expression, Stack<object> stack, ref int i)
         {
+            var charMatch = regex_Char.Match(expression, i, expression.Length - i);
+            
             if (expression[i].Equals('\''))
             {
                 i++;
@@ -1468,12 +1382,12 @@ namespace Arc.UniInk
                     }
                     else
                     {
-                        throw new SyntaxException("未知的转义方式");
+                        throw new SyntaxException("Unknown escape character : You can customize them in [dic_EscapedChar]");
                     }
                 }
                 else if (expression[i].Equals('\''))
                 {
-                    throw new SyntaxException("空字符''是非法的");
+                    throw new SyntaxException("Illegal character : ['']");
                 }
                 else
                 {
@@ -2374,7 +2288,7 @@ namespace Arc.UniInk
             return currentScript.ToString();
         }
 
-        /// <summary>Get a expression list between startChar and endChar</summary>
+        /// <summary>Get a expression list between [startChar] and [endChar]</summary>
         /// <remarks>⚠️The startChar , endChar and separator must be different</remarks>
         private List<string> GetExpressionsParenthesized(string expression, ref int i, bool checkSeparator, char separator = ',', char startChar = '(', char endChar = ')')
         {
