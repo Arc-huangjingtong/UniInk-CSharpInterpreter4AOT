@@ -1,13 +1,11 @@
-# <span style="color:yellow">"This repository is a work in progress and is not yet complete."</span> 
-
 # ✒️ UniInk - AOT C# Interpreter
-
+# <span style="color:yellow">"This repository is a work in progress and is not yet complete."</span>
 ![Stars Num](https://img.shields.io/github/stars/Arc-huangjingtong/UniInk-CSharpInterpreter4Unity?style=social&logo=github)
 ![Forks Num](https://img.shields.io/github/forks/Arc-huangjingtong/UniInk-CSharpInterpreter4Unity?style=social&logo=github)
 ![License  ](https://img.shields.io/badge/license-MIT-yellow)
 ![Version  ](https://img.shields.io/badge/version-1.0.0-green)
 ![C#       ](https://img.shields.io/badge/CSharp-8.0%20or%20later-blue)
-![Platforms](https://img.shields.io/badge/platforms-Android%20|%20Windows-lightgrey)
+![Platforms](https://img.shields.io/badge/platforms-Android%20|%20Windows%20|%20(ios)-lightgrey)
 ---
 
 ```
