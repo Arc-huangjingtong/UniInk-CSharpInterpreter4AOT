@@ -152,6 +152,7 @@ namespace Arc.UniInk.NunitTest
             var regex = new System.Text.RegularExpressions.Regex(@"^['](?<char>([\\][\\'0abfnrtv]|[^']|))[']");
             var match = regex.Match("''");
             Assert.IsTrue(match.Success);
+            Assert.IsTrue(match.Groups["char"].Success);
             Assert.AreEqual("", match.Groups["char"].Value);
         }
 

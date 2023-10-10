@@ -91,13 +91,13 @@ namespace Arc.UniInk
         /// <item><term>isGeneric        </term><description> : is Generic if group match success                       </description></item>
         /// </list>⚠️the group genTag is use for balance two side</summary>
         protected static readonly Regex regex_Generics = new("(?<name>[^,<>]+)(?<isgeneric>[<](?>[^<>]+|(?<gentag>[<])|(?<-gentag>[>]))*(?(gentag)(?!))[>])?", RegexOptions.Compiled);
-        
+
         /// <summary><b> Match string (excluded [\"] )</b></summary>
         protected static readonly Regex regex_String = new("^(?<interpolated>[$])?(?<escaped>[@])?(?<string>[\"](?>([^\"])*)[\"])", RegexOptions.Compiled);
 
 
         /// <summary><b> Match char and Escaped char ['\\'] ['\''] [\0] [\a] [\b] [\f] [\n] [\r] [\t] [\v] </b></summary>
-        protected static readonly Regex regex_Char = new(@"^['](\\[\\'0abfnrtv]|[^'])[']", RegexOptions.Compiled);
+        protected static readonly Regex regex_Char = new(@"^['](?<char>([\\][\\'0abfnrtv]|[^']))[']", RegexOptions.Compiled);
 
         /// <summary><b> Match (two-dimensional) array type </b></summary>
         protected static readonly Regex regex_Array = new(@"^(\s*(\[(?>(?>\s+)|[,])*)\])+", RegexOptions.Compiled);
@@ -487,16 +487,17 @@ namespace Arc.UniInk
                 var blockKeywordsBeginMatch = regex_BlockKeywordBegin.Match(script, endIndex, scriptLength - endIndex);
 
                 var str = script.Substring(startIndex, endIndex - startIndex);
+                var bkbnpMatchSuss = blockKeywordsBeginMatch_NoParentheses.Success;
+                var bkbMatchSuss = blockKeywordsBeginMatch.Success;
 
-
-                if (string.IsNullOrWhiteSpace(str) && (blockKeywordsBeginMatch.Success || blockKeywordsBeginMatch_NoParentheses.Success))
+                if (string.IsNullOrWhiteSpace(str) && (bkbnpMatchSuss || bkbMatchSuss))
                 {
-                    endIndex += blockKeywordsBeginMatch.Success ? blockKeywordsBeginMatch.Length : blockKeywordsBeginMatch_NoParentheses.Length;
+                    endIndex += bkbMatchSuss ? blockKeywordsBeginMatch.Length : blockKeywordsBeginMatch_NoParentheses.Length;
 
-                    var keyword = blockKeywordsBeginMatch.Success ? blockKeywordsBeginMatch.Groups["keyword"].Value : blockKeywordsBeginMatch_NoParentheses?.Groups["keyword"].Value ?? string.Empty;
-                    var keywordAttributes = blockKeywordsBeginMatch.Success ? GetExpressionsParenthesized(script, ref endIndex, true, ';') : null;
+                    var keyword = bkbMatchSuss ? blockKeywordsBeginMatch.Groups["keyword"].Value : blockKeywordsBeginMatch_NoParentheses?.Groups["keyword"].Value ?? string.Empty;
+                    var keywordAttributes = bkbMatchSuss ? GetExpressionsParenthesized(script, ref endIndex, true, ';') : null;
 
-                    if (blockKeywordsBeginMatch.Success) endIndex++;
+                    if (bkbMatchSuss) endIndex++; // skip the [;]
 
                     var blockBeginningMatch = regex_BlockBegin.Match(script, endIndex, scriptLength - endIndex);
 
@@ -699,9 +700,9 @@ namespace Arc.UniInk
                 }
             }
 
-            if (!script.Substring(startIndex).Trim().Equals(string.Empty) && !isReturn && !isBreak && !isContinue)
-                throw new SyntaxException($"{script} 中缺少 [;] 字符");
-            
+            if (!string.IsNullOrWhiteSpace(script.Substring(startIndex)) && !isReturn && !isBreak && !isContinue)
+                throw new SyntaxException($"{script} missing [;] !");
+
             ExecuteIfList();
 
             valueReturned = isReturn;
@@ -1362,32 +1363,29 @@ namespace Arc.UniInk
             return true;
         }
 
-        /// <summary>Evaluate Char</summary>
+        /// <summary>Evaluate Char & Escaped Char</summary>
         private bool EvaluateChar(string expression, Stack<object> stack, ref int i)
         {
-            var charMatch = regex_Char.Match(expression, i, expression.Length - i);
-            
             if (expression[i].Equals('\''))
             {
                 i++;
-                if (expression[i].Equals('\\')) //后一个字符只要是\就被是为转义字符
+                if (expression[i].Equals('\\'))
                 {
-                    i++; //然后查看再后一个字符
-                    var escapedChar = expression[i];
+                    i++;
 
-                    if (dic_EscapedChar.TryGetValue(escapedChar, out var value))
+                    if (dic_EscapedChar.TryGetValue(expression[i], out var value))
                     {
                         stack.Push(value);
                         i++;
                     }
                     else
                     {
-                        throw new SyntaxException("Unknown escape character : You can customize them in [dic_EscapedChar]");
+                        throw new SyntaxException($"Unknown escape character[{expression[i]}] : You can customize them in [dic_EscapedChar]");
                     }
                 }
                 else if (expression[i].Equals('\''))
                 {
-                    throw new SyntaxException("Illegal character : ['']");
+                    throw new SyntaxException($"Illegal character[{i}] : ['']");
                 }
                 else
                 {
@@ -1395,18 +1393,16 @@ namespace Arc.UniInk
                     i++;
                 }
 
-                if (expression[i].Equals('\''))
-                {
-                    return true;
-                }
+                if (expression[i].Equals('\'')) return true;
 
-                throw new SyntaxException("字符不合法,可能包含太多字符");
+
+                throw new SyntaxException($"Illegal character[{i}] : too many characters in a character literal");
             }
 
             return false;
         }
 
-        /// <summary>解析操作符</summary> 
+        /// <summary>Evaluate Operators</summary> 
         private bool EvaluateOperators(string expression, Stack<object> stack, ref int i)
         {
             var operatorMatch = regex_Operator.Match(expression, i, expression.Length - i);
@@ -1483,7 +1479,7 @@ namespace Arc.UniInk
 
                     if (internalStringMatch.Success)
                     {
-                        var innerString = internalStringMatch.Groups["string"].Value;//TODO:当字符串没有另一边的引号时，错误不会在此处抛出
+                        var innerString = internalStringMatch.Groups["string"].Value; //TODO:当字符串没有另一边的引号时，错误不会在此处抛出
                         j += innerString.Length - 1;
                     }
                     else if (s2.Equals('('))
@@ -2305,7 +2301,7 @@ namespace Arc.UniInk
 
                 if (internalStringMatch.Success)
                 {
-                    var innerString = internalStringMatch.Groups["string"].Value;//TODO:当字符串没有另一边的引号时，错误不会在此处抛出
+                    var innerString = internalStringMatch.Groups["string"].Value; //TODO:当字符串没有另一边的引号时，错误不会在此处抛出
                     currentExpression += innerString;
                     i += innerString.Length - 1;
                 }
@@ -2498,7 +2494,7 @@ namespace Arc.UniInk
 
             return true;
         }
-        
+
 
         #region 用于解析和解释的受保护的工具子类
 
