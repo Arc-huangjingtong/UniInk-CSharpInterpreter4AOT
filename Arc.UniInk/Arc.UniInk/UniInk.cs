@@ -532,13 +532,18 @@ namespace Arc.UniInk
                             endIndex++;
                         }
 
-                        if (string.IsNullOrWhiteSpace(subScript)) throw new SyntaxException($"[{keyword}] 语句后无指令");
+                        if (string.IsNullOrWhiteSpace(subScript))
+                        {
+                            throw new SyntaxException($"[{keyword}] 语句后无指令");
+                        }
                     }
 
                     if (keyword.Equals("elseif"))
                     {
                         if (BlockState_If == EBlockState_If.NoBlock)
+                        {
                             throw new SyntaxException("[else if] 没有对应的 [if]");
+                        }
 
                         ifElseStatementsList.Add(new List<string> { keywordAttributes[0], subScript });
                         BlockState_If = EBlockState_If.ElseIf;
@@ -713,7 +718,7 @@ namespace Arc.UniInk
 
             void ExecuteIfList()
             {
-                if (ifElseStatementsList.Count <= 0) return;
+                if (ifElseStatementsList.Count == 0) return;
                 var ifScript = ifElseStatementsList.Find(statement => (bool)ManageJumpStatementsOrExpressionEval(statement[0]))?[1];
 
                 if (!string.IsNullOrEmpty(ifScript))
@@ -765,10 +770,10 @@ namespace Arc.UniInk
                 return ManageJumpStatementsOrExpressionEval(expression);
             }
 
-            //管理跳转语句或表达式求值
+            //管理跳转语句或解析表达式
             object ManageJumpStatementsOrExpressionEval(string expression)
             {
-                expression = expression.Trim(); //修剪空字符串
+                expression = expression.Trim();
 
                 if (expression.Equals("break"))
                 {
@@ -784,19 +789,16 @@ namespace Arc.UniInk
 
                 if (expression.StartsWith("throw "))
                 {
-                    if (Evaluate(expression.Remove(0, 6)) is Exception exception) //移除throw 关键字
+                    if (Evaluate(expression.Substring(6)) is Exception exception)
                     {
-                        throw exception; //ExceptionDispatchInfo.Capture(exception).Throw();
+                        throw exception;
                     }
 
-                    throw new SyntaxException("[throw]后 缺少[Exception]实例");
+                    throw new SyntaxException("[throw] missing [Exception] instance");
                 }
 
                 expression = regex_Return.Replace(expression, match =>
                 {
-                    if (!match.Value.StartsWith("return"))
-                        return match.Value;
-
                     isReturn = true;
                     return match.Value.Contains("(") ? "(" : string.Empty;
                 });
