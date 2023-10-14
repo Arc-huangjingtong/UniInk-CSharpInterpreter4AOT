@@ -112,6 +112,26 @@ namespace Arc.UniInk.NunitTest
             TestContext.Progress.WriteLine($"✅:{script}=" + $"{ans}");
         }
 
+
+        [TestCase("if(3>5){return 3;}else{return 5;}")] //Test [if] [else]
+        [TestCase("if(3>5) return 3; else  return 5;")] //Test [if] [else]
+        [TestCase("if(3>5)   {return 3;}   else if   (3==5)   {return   3 ; } else {return 5;}")] //Test [if] [else] [else if]
+        [TestCase("if(3>5){return \"aaa\";}else if(3==5){return \"bbb\";}else{return \"ccc\";}")] //Test [if] [else] [else if]
+        [TestCase("var sum = 0;  for  (var i = 0 ; i < 100 ; i++)    { sum += i; } return sum;")] //Test [for]
+        public void Test04_blockKeyword(string script)
+        {
+            Ink.StaticTypesForExtensionsMethods.Add(typeof(ExtensionClass));
+            var ans = Ink.ScriptEvaluate(script);
+            TestContext.Progress.WriteLine($"✅:{ans}");
+            Assert.NotNull(ans);
+
+            if (ans is string str)
+            {
+                TestContext.Progress.WriteLine($"✅:{script}={ans}" + " ---  " + str.Length);
+            }
+        }
+
+
         [TestCase("var w = 2+4;        return w;")]
         [TestCase("var w = 4-2;               w;")]
         [TestCase("int w = 4-2; w +=3; return w;")]
@@ -130,10 +150,6 @@ namespace Arc.UniInk.NunitTest
         [TestCase("TestC<TestEnum>(A);")]
         [TestCase("TestD<TestEnum,TestEnum>(A);")] //测试多泛型参数
         [TestCase(" TestC<List<int>>(D);  ")] //测试多泛型参数
-        [TestCase("if(3>5){return 3;}else{return 5;}")] //测试if else
-        [TestCase("if(3>5)return 3;else return 5;")] //测试if else
-        [TestCase("if(3>5){return 3;}else if(3==5){return 3;}else{return 5;}")] //测试if else if else
-        [TestCase("if(3>5){return \"aaa\";}else if(3==5){return \"bbb\";}else{return \"ccc\";}")] //测试if else if else
         public void Test04_Scripts(string script)
         {
             Ink.StaticTypesForExtensionsMethods.Add(typeof(ExtensionClass));

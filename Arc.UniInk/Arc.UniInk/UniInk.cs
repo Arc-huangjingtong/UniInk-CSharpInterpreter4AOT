@@ -92,7 +92,11 @@ namespace Arc.UniInk
         /// </list>⚠️the group genTag is use for balance two side</summary>
         protected static readonly Regex regex_Generics = new("(?<name>[^,<>]+)(?<isgeneric>[<](?>[^<>]+|(?<gentag>[<])|(?<-gentag>[>]))*(?(gentag)(?!))[>])?", RegexOptions.Compiled);
 
-        /// <summary><b> Match string (excluded [\"] )</b></summary>
+        /// <summary><b> Match string (excluded [\"] ) </b><list type="table">
+        /// <item><term>interpolated     </term><description> : match the [$]                                           </description></item>
+        /// <item><term>escaped          </term><description> : match the [@]                                           </description></item>
+        /// <item><term>string           </term><description> : match the string                                        </description></item>
+        /// </list>⚠️(excluded [\"] )</summary>
         protected static readonly Regex regex_String = new("^(?<interpolated>[$])?(?<escaped>[@])?(?<string>[\"](?>([^\"])*)[\"])", RegexOptions.Compiled);
 
 
@@ -384,18 +388,12 @@ namespace Arc.UniInk
         /// <summary>Custom Variables for Evaluate</summary>
         public Dictionary<string, object> Variables { get; set; }
 
-        /// <summary> Current appDomain all assemblies </summary>
-        protected static readonly IList<Assembly> currentAssemblies = AppDomain.CurrentDomain.GetAssemblies().ToList();
-
         /// <summary> Custom Assembly List </summary>
         public IList<Assembly> Assemblies
         {
             get => assemblies ??= currentAssemblies;
             set => assemblies = value;
         }
-
-        protected IList<Assembly> assemblies;
-
 
         /// <summary> Custom Namespaces same as <c>using Namespace;</c> </summary>
         public List<string> Namespaces { get; set; } = new()
@@ -417,14 +415,6 @@ namespace Arc.UniInk
             typeof(Enumerable) // Linq Extension Methods
         };
 
-
-        private static BindingFlags InstanceBindingFlag => BindingFlags.Public | BindingFlags.Instance | BindingFlags.GetProperty | BindingFlags.Static;
-        private static BindingFlags StaticBindingFlag => BindingFlags.Public | BindingFlags.Static;
-
-
-        /// <summary>the Marker of evaluation ，Used to determine whether Evaluate is complete </summary>
-        private int evaluationStackCount;
-
         /// <summary>the Context is same as can be omitted [this]</summary>
         public object Context
         {
@@ -432,11 +422,17 @@ namespace Arc.UniInk
             set => dic_DefaultVariables["this"] = value;
         }
 
-
-        /// <summary>在函数或方法解析之前触发。</summary>
-        /// 允许动态定义函数或方法及其对应的值。<para/>
-        /// 允许取消对该函数的评估（将其视为不存在）。<para/>
         public event EventHandler<FunctionEvaluationEventArg> PreEvaluateFunction;
+
+
+        /// <summary> Current appDomain all assemblies </summary>
+        protected static readonly IList<Assembly> currentAssemblies = AppDomain.CurrentDomain.GetAssemblies().ToList();
+
+        protected IList<Assembly> assemblies;
+
+
+        private static BindingFlags InstanceBindingFlag => BindingFlags.Public | BindingFlags.Instance | BindingFlags.GetProperty | BindingFlags.Static;
+        private static BindingFlags StaticBindingFlag => BindingFlags.Public | BindingFlags.Static;
 
 
         /// <summary>Evaluate a Script,support [if] State and so on</summary>
@@ -486,11 +482,10 @@ namespace Arc.UniInk
                 var blockKeywordsBeginMatch_NoParentheses = regex_BlockKeywordBegin_NoParentheses.Match(script, endIndex, scriptLength - endIndex);
                 var blockKeywordsBeginMatch = regex_BlockKeywordBegin.Match(script, endIndex, scriptLength - endIndex);
 
-                var str = script.Substring(startIndex, endIndex - startIndex);
                 var bkbnpMatchSuss = blockKeywordsBeginMatch_NoParentheses.Success;
                 var bkbMatchSuss = blockKeywordsBeginMatch.Success;
 
-                if (string.IsNullOrWhiteSpace(str) && (bkbnpMatchSuss || bkbMatchSuss))
+                if (bkbnpMatchSuss || bkbMatchSuss)
                 {
                     endIndex += bkbMatchSuss ? blockKeywordsBeginMatch.Length : blockKeywordsBeginMatch_NoParentheses.Length;
 
@@ -507,7 +502,7 @@ namespace Arc.UniInk
                     {
                         endIndex += blockBeginningMatch.Length;
 
-                        subScript = GetScriptBetweenCurlyBrackets(script, ref endIndex);
+                        subScript = GetExpressionsParenthesized(script, ref endIndex, false, ';', '{', '}').FirstOrDefault();
 
                         endIndex++;
                     }
@@ -518,12 +513,9 @@ namespace Arc.UniInk
 
                         while (endIndex < scriptLength && continueExpressionParsing)
                         {
-                            if (TryParseStringAndParenthisAndCurlyBrackets(ref endIndex)) { }
-                            else if (scriptLength - endIndex > 2 && script.Substring(endIndex, 3).Equals("';'"))
-                            {
-                                endIndex += 2;
-                            }
-                            else if (script[endIndex] == ';')
+                            var parseResult = TryParseStringAndParenthisAndCurlyBrackets(script, ref endIndex);
+
+                            if (!parseResult && script[endIndex] == ';')
                             {
                                 subScript = script.Substring(startIndex, endIndex + 1 - startIndex);
                                 continueExpressionParsing = false;
@@ -534,25 +526,21 @@ namespace Arc.UniInk
 
                         if (string.IsNullOrWhiteSpace(subScript))
                         {
-                            throw new SyntaxException($"[{keyword}] 语句后无指令");
+                            throw new SyntaxException($" no instruction after the [{keyword}]");
                         }
                     }
 
                     if (keyword.Equals("elseif"))
                     {
-                        if (BlockState_If == EBlockState_If.NoBlock)
-                        {
-                            throw new SyntaxException("[else if] 没有对应的 [if]");
-                        }
+                        if (BlockState_If == EBlockState_If.NoBlock) throw new SyntaxException("no [if] with [else if] ");
+
 
                         ifElseStatementsList.Add(new List<string> { keywordAttributes[0], subScript });
                         BlockState_If = EBlockState_If.ElseIf;
                     }
                     else if (keyword.Equals("else"))
                     {
-                        if (BlockState_If == EBlockState_If.NoBlock)
-                            throw new SyntaxException("[else] 没有对应的 [if]");
-
+                        if (BlockState_If == EBlockState_If.NoBlock) throw new SyntaxException("no [if] with [else] ");
 
                         ifElseStatementsList.Add(new List<string> { "true", subScript });
                         BlockState_If = EBlockState_If.NoBlock;
@@ -689,12 +677,9 @@ namespace Arc.UniInk
                 {
                     ExecuteIfList();
 
-                    if (TryParseStringAndParenthisAndCurlyBrackets(ref endIndex)) { }
-                    else if (scriptLength - endIndex > 2 && script.Substring(endIndex, 3).Equals("';'"))
-                    {
-                        endIndex += 2;
-                    }
-                    else if (script[endIndex] == ';')
+                    var parseResult = TryParseStringAndParenthisAndCurlyBrackets(script, ref endIndex);
+
+                    if (!parseResult && script[endIndex] == ';')
                     {
                         lastResult = ScriptExpressionEvaluate(ref endIndex);
                     }
@@ -725,39 +710,6 @@ namespace Arc.UniInk
                     lastResult = ScriptEvaluate(ifScript, ref isReturn, ref isBreak, ref isContinue);
 
                 ifElseStatementsList.Clear();
-            }
-
-            bool TryParseStringAndParenthisAndCurlyBrackets(ref int index)
-            {
-                var parsed = true;
-                var internalStringMatch = regex_String.Match(script, index, scriptLength - index);
-
-                if (internalStringMatch.Success)
-                {
-                    var innerString = internalStringMatch.Groups["string"].Value; //TODO:当字符串没有另一边的引号时，错误不会在此处抛出
-                    index += innerString.Length - 1;
-                }
-                else if (script[index] == '(')
-                {
-                    index++;
-                    GetExpressionsParenthesized(script, ref index, false);
-                }
-                else if (script[index] == '{')
-                {
-                    index++;
-                    GetScriptBetweenCurlyBrackets(script, ref index);
-                }
-                else
-                {
-                    var charMatch = regex_Char.Match(script.Substring(index));
-
-                    if (charMatch.Success)
-                        index += charMatch.Length - 1;
-
-                    parsed = false;
-                }
-
-                return parsed;
             }
 
             //依次解释指定段落的脚本
@@ -807,56 +759,86 @@ namespace Arc.UniInk
             }
         }
 
+        /// Parse [string] and [( )] and [{ }] with start index
+        private bool TryParseStringAndParenthisAndCurlyBrackets(string script, ref int index)
+        {
+            var parsed = true;
+            var scriptLength = script.Length;
+            var internalStringMatch = regex_String.Match(script, index, scriptLength - index);
 
-        /// <summary>解释指定的数学或伪C#表达式</summary>
-        /// <typeparam name="T">将表达式的结果转换为哪种类型</typeparam>
-        /// <param name="expression">要计算的数学或伪C#表达式</param>
-        /// <returns>如果语法以指定的类型正确转换，则运算的结果</returns>
+            if (internalStringMatch.Success)
+            {
+                var innerString = internalStringMatch.Groups["string"].Value;
+                index += innerString.Length - 1;
+            }
+            else
+                switch (script[index])
+                {
+                    case '(':
+                        index++;
+                        GetExpressionsParenthesized(script, ref index, false);
+                        break;
+                    case '{':
+                        index++;
+                        GetExpressionsParenthesized(script, ref index, false, ';', '{', '}');
+                        break;
+                    default:
+                    {
+                        var charMatch = regex_Char.Match(script, index, scriptLength - index);
+
+                        if (charMatch.Success)
+                        {
+                            index += charMatch.Length - 1;
+                        }
+
+                        parsed = false;
+                        break;
+                    }
+                }
+
+            return parsed;
+        }
+
+
+        /// <summary> Evaluate a expression and cast type             </summary>
+        /// <returns> return the result cast target type if success   </returns>
         public T Evaluate<T>(string expression) => (T)Evaluate(expression);
 
-        /// <summary>解释一系列方法</summary>
-        private readonly List<ParsingMethodDelegate> ParsingMethods;
 
-
-        /// <summary>计算指定的数学表达式或伪c#表达式</summary>
-        /// <param name="expression">要计算的数学表达式或伪c#表达式</param>
-        /// <returns>如果语法正确，返回操作的结果</returns>
+        /// <summary> Evaluate a expression      </summary>
+        /// <returns> return the result object   </returns>
         public object Evaluate(string expression)
         {
-            expression = expression.Trim();
-
+            evaluationStackCount++;
             var stack = new Stack<object>();
 
-            evaluationStackCount++;
+            if (GetLambdaExpression(expression, stack))
+            {
+                return stack.Pop(); //然后出栈
+            }
+
+            expression = expression.Trim();
+
             try
             {
-                //如果是lambda表达式，则入栈
-                if (GetLambdaExpression(expression, stack)) return stack.Pop(); //然后出栈
-
-
                 for (var i = 0; i < expression.Length; i++)
                 {
-                    if (!ParsingMethods.Any(parsingMethod => parsingMethod(expression, stack, ref i)))
-                    {
-                        var s = expression[i];
-                        if (char.IsWhiteSpace(expression[i])) continue;
+                    if (ParsingMethods.Any(parsingMethod => parsingMethod(expression, stack, ref i))) continue;
+                    if (char.IsWhiteSpace(expression[i])) continue;
 
-                        throw new SyntaxException($"[{i}  {expression}]无效的字符 [{(int)s}:{s}]");
-                    }
+                    throw new SyntaxException($"[{i}  {expression}] Invalid character : [{(int)expression[i]}:{expression[i]}]");
                 }
 
                 return ProcessStack(stack);
             }
             catch (TargetInvocationException exception) when (exception.InnerException != null)
             {
-                var exceptionToThrow = exception.InnerException;
-
-                while (exceptionToThrow is TargetInvocationException && exceptionToThrow.InnerException != null)
+                while (exception is { InnerException: not null })
                 {
-                    exceptionToThrow = exceptionToThrow.InnerException;
+                    exception = exception.InnerException as TargetInvocationException;
                 }
 
-                throw exceptionToThrow;
+                throw;
             }
             finally
             {
@@ -864,8 +846,16 @@ namespace Arc.UniInk
             }
         }
 
+        private readonly List<ParsingMethodDelegate> ParsingMethods;
 
-        /// <summary>解析强转:(int)</summary>
+        /// <summary>the Marker of evaluation ，Used to determine whether Evaluate is complete </summary>
+        private int evaluationStackCount;
+
+        /// <summary>Evaluate Cast like:(int)object</summary>
+        /// <param name="expression"> the expression to Evaluate     </param>
+        /// <param name="stack"> the object stack to push or pop     </param>
+        /// <param name="i">the <see cref="expression"/> start index </param>
+        /// <returns>Evaluate is successful?</returns>
         private bool EvaluateCast(string expression, Stack<object> stack, ref int i)
         {
             var castMatch = regex_Cast.Match(expression, i, expression.Length - i);
@@ -888,19 +878,21 @@ namespace Arc.UniInk
 
             return false;
         }
-
-        /// <summary>解析数字:只能是十进制类型</summary>
+        
+        /// <summary>Evaluate Number like: -3.64f </summary>
+        /// <param name="expression"> the expression to Evaluate     </param>
+        /// <param name="stack"> the object stack to push or pop     </param>
+        /// <param name="i">the <see cref="expression"/> start index </param>
+        /// <returns>Evaluate is successful?</returns>
         private bool EvaluateNumber(string expression, Stack<object> stack, ref int i)
         {
             var numberMatch = regex_Number.Match(expression, i, expression.Length - i);
-
-
-            //匹配成功 && ( 前面无符号 || 栈为空 || 栈顶为运算符 )
+            //make sure match number sign is not a operator
             if (numberMatch.Success && (!numberMatch.Groups["sign"].Success || stack.Count == 0 || stack.Peek() is ExpressionOperator))
             {
                 i += numberMatch.Length - 1;
 
-                if (numberMatch.Groups["type"].Success) //有后缀的情况下,直接解析对应类型
+                if (numberMatch.Groups["type"].Success) 
                 {
                     var type = numberMatch.Groups["type"].Value;
                     var numberNoType = numberMatch.Value.Replace(type, string.Empty);
@@ -910,11 +902,11 @@ namespace Arc.UniInk
                         stack.Push(parseFunc(numberNoType));
                     }
                 }
-                else if (numberMatch.Groups["hasdecimal"].Success) //无后缀情况下,只要有小数点就被解析为double类型
+                else if (numberMatch.Groups["hasdecimal"].Success) //without the type suffix as double
                 {
                     stack.Push(double.Parse(numberMatch.Value));
                 }
-                else //否则默认为int类型
+                else 
                 {
                     stack.Push(int.Parse(numberMatch.Value));
                 }
@@ -925,10 +917,10 @@ namespace Arc.UniInk
             return false;
         }
 
-        /// <summary> Evaluate Function and declaration of variable in <paramref name="expression"/> </summary>
-        /// <param name="expression"> the expression to evaluate start at <paramref name="i"/> </param>
-        /// <param name="stack"> the object stack to push or pop </param>
-        /// <param name="i"> the index of the <paramref name="expression"/> , it will increase with evaluate </param>
+        /// <summary> Evaluate Function or declaration of variable like: int a (= 0) </summary>
+        /// <param name="expression"> the expression to Evaluate     </param>
+        /// <param name="stack"> the object stack to push or pop     </param>
+        /// <param name="i">the <see cref="expression"/> start index </param>
         /// <returns> the evaluate is success or not </returns>
         /// <exception cref="SyntaxException">some syntax error,those make evaluate fail</exception>
         private bool EvaluateVarOrFunc(string expression, Stack<object> stack, ref int i)
@@ -1317,15 +1309,13 @@ namespace Arc.UniInk
                         }
                         else if (varFuncMatch.Groups["postfixOperator"].Success)
                         {
-                            throw new NotImplementedException();
-                            //cusVarValueToPush = varFuncMatch.Groups["postfixOperator"].Value.Equals("++") ? (dynamic)cusVarValueToPush + 1 : (dynamic)cusVarValueToPush - 1;
+                            cusVarValueToPush = varFuncMatch.Groups["postfixOperator"].Value.Equals("++") ? (int)cusVarValueToPush + 1 : (int)cusVarValueToPush - 1;
                         }
                         else if (varFuncMatch.Groups["prefixOperator"].Success)
                         {
-                            throw new NotImplementedException();
-                            //stack.Pop();
-                            //cusVarValueToPush = varFuncMatch.Groups["prefixOperator"].Value.Equals("++") ? (dynamic)cusVarValueToPush + 1 : (dynamic)cusVarValueToPush - 1;
-                            //stack.Push(cusVarValueToPush);
+                            stack.Pop();
+                            cusVarValueToPush = varFuncMatch.Groups["prefixOperator"].Value.Equals("++") ? (int)cusVarValueToPush + 1 : (int)cusVarValueToPush - 1;
+                            stack.Push(cusVarValueToPush);
                         }
                         else
                         {
@@ -1365,7 +1355,12 @@ namespace Arc.UniInk
             return true;
         }
 
-        /// <summary>Evaluate Char & Escaped Char</summary>
+        /// <summary>Evaluate Char or Escaped Char like 'a' '\d'</summary>
+        /// <param name="expression"> the expression to Evaluate     </param>
+        /// <param name="stack"> the object stack to push or pop     </param>
+        /// <param name="i">the <see cref="expression"/> start index </param>
+        /// <returns> the evaluate is success or not </returns>
+        /// <exception cref="SyntaxException">Illegal character or Unknown escape character </exception>
         private bool EvaluateChar(string expression, Stack<object> stack, ref int i)
         {
             if (expression[i].Equals('\''))
@@ -2241,49 +2236,8 @@ namespace Arc.UniInk
                 return StaticBindingFlag;
             }
 
-
             objType = obj.GetType();
             return InstanceBindingFlag;
-        }
-
-        /// <summary>get scripts between [{] and [}]</summary>
-        private string GetScriptBetweenCurlyBrackets(string parentScript, ref int index)
-        {
-            var currentScript = new StringBuilder();
-            var bracketCount = 1;
-            for (; index < parentScript.Length; index++)
-            {
-                var internalStringMatch = regex_String.Match(parentScript, index, parentScript.Length - index);
-                var internalCharMatch = regex_Char.Match(parentScript, index, parentScript.Length - index);
-
-                if (internalStringMatch.Success)
-                {
-                    var innerString = internalStringMatch.Groups["string"].Value; //TODO:当字符串没有另一边的引号时，错误不会在此处抛出
-                    currentScript.Append(innerString);
-                    index += innerString.Length - 1;
-                }
-                else if (internalCharMatch.Success)
-                {
-                    currentScript.Append(internalCharMatch.Value);
-                    index += internalCharMatch.Length - 1;
-                }
-                else
-                {
-                    var s = parentScript[index];
-
-                    if (s.Equals('{')) bracketCount++;
-                    if (s.Equals('}')) bracketCount--;
-
-                    if (bracketCount == 0) break;
-
-                    currentScript.Append(s);
-                }
-            }
-
-            if (bracketCount > 0) throw new Exception($"[{index}]:{bracketCount} '}}' is missing ！");
-
-
-            return currentScript.ToString();
         }
 
         /// <summary>Get a expression list between [startChar] and [endChar]</summary>
@@ -2292,59 +2246,56 @@ namespace Arc.UniInk
         {
             var expressionsList = new List<string>();
 
-            var currentExpression = string.Empty;
+            var currentExpression = new StringBuilder();
             var bracketCount = 1;
 
-            /// We must prevent the string having separator or startend char that we define
             for (; i < expression.Length; i++)
             {
                 var internalStringMatch = regex_String.Match(expression, i, expression.Length - i);
-                var internalCharMatch = regex_Char.Match(expression, i, expression.Length - i);
-
                 if (internalStringMatch.Success)
                 {
-                    var innerString = internalStringMatch.Groups["string"].Value; //TODO:当字符串没有另一边的引号时，错误不会在此处抛出
-                    currentExpression += innerString;
-                    i += innerString.Length - 1;
+                    currentExpression.Append(internalStringMatch.Value);
+                    i += internalStringMatch.Length - 1;
+                    continue;
                 }
-                else if (internalCharMatch.Success)
+
+                var internalCharMatch = regex_Char.Match(expression, i, expression.Length - i);
+                if (internalCharMatch.Success)
                 {
-                    currentExpression += internalCharMatch.Value;
+                    currentExpression.Append(internalCharMatch.Value);
                     i += internalCharMatch.Length - 1;
+                    continue;
+                }
+
+                var s = expression[i];
+
+                if (s.Equals(startChar)) bracketCount++;
+                if (s.Equals(endChar)) bracketCount--;
+
+                if (bracketCount == 0)
+                {
+                    var currentExpressionStr = currentExpression.ToString().Trim();
+                    if (!string.IsNullOrWhiteSpace(currentExpressionStr))
+                        expressionsList.Add(currentExpressionStr);
+                    break;
+                }
+
+                if (bracketCount == 1 && checkSeparator && s.Equals(separator))
+                {
+                    var currentExpressionStr = currentExpression.ToString().Trim();
+                    expressionsList.Add(currentExpressionStr);
+                    currentExpression.Clear();
                 }
                 else
                 {
-                    var s = expression[i];
-
-                    if (s.Equals(startChar))
-                    {
-                        bracketCount++;
-                    }
-                    else if (s.Equals(endChar))
-                    {
-                        bracketCount--;
-                        if (bracketCount == 0)
-                        {
-                            if (!string.IsNullOrWhiteSpace(currentExpression))
-                                expressionsList.Add(currentExpression);
-                            break;
-                        }
-                    }
-
-                    if (checkSeparator && s.Equals(separator) && bracketCount == 1)
-                    {
-                        expressionsList.Add(currentExpression);
-                        currentExpression = string.Empty;
-                    }
-                    else
-                    {
-                        currentExpression += s;
-                    }
+                    currentExpression.Append(s);
                 }
             }
 
             if (bracketCount > 0)
+            {
                 throw new SyntaxException($"[{expression}] is missing characters ['{endChar}'] ");
+            }
 
             return expressionsList;
         }
@@ -2868,3 +2819,4 @@ namespace Arc.UniInk
         #endregion
     }
 }
+//2857
