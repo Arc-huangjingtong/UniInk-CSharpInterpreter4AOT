@@ -10,6 +10,9 @@
  *  🆘 Helper   : ReflectionStudy : (https://mattwarren.org/2016/12/14/Why-is-Reflection-slow/)                         *
 /************************************************************************************************************************/
 
+using System.Data;
+
+
 namespace Arc.UniInk
 {
     using System;
@@ -372,13 +375,13 @@ namespace Arc.UniInk
         protected static readonly Dictionary<string, Func<UniInk, List<string>, object>> dic_complexStandardFunc = new()
         {
             { "Avg", (self, args) => args.ConvertAll(arg => Convert.ToDouble(self.Evaluate(arg))).Sum() / args.Count },
-            { "List", (self, args) => args.ConvertAll(self.Evaluate) },
+            { "List", (self, args) => args.ConvertAll(arg => self.Evaluate(arg)) },
             { "Max", (self, args) => args.ConvertAll(arg => Convert.ToDouble(self.Evaluate(arg))).Max() },
             { "Min", (self, args) => args.ConvertAll(arg => Convert.ToDouble(self.Evaluate(arg))).Min() },
             {
                 "new", (self, args) =>
                 {
-                    var cArgs = args.ConvertAll(self.Evaluate);
+                    var cArgs = args.ConvertAll(arg => self.Evaluate(arg));
                     return cArgs[0] is Type type ? Activator.CreateInstance(type, cArgs.Skip(1).ToArray()) : null;
                 }
             },
@@ -422,8 +425,6 @@ namespace Arc.UniInk
             set => dic_DefaultVariables["this"] = value;
         }
 
-        public event EventHandler<FunctionEvaluationEventArg> PreEvaluateFunction;
-
 
         /// <summary> Current appDomain all assemblies </summary>
         protected static readonly IList<Assembly> currentAssemblies = AppDomain.CurrentDomain.GetAssemblies().ToList();
@@ -452,7 +453,7 @@ namespace Arc.UniInk
 
             var result = ScriptEvaluate(script, ref isReturn, ref isBreak, ref isContinue);
 
-            if (isBreak) throw new SyntaxException("Invalid keyword :[break]   ");
+            if (isBreak) throw new SyntaxException("Invalid keyword :[break]");
             if (isContinue) throw new SyntaxException("Invalid keyword :[continue]");
 
             return result;
@@ -802,26 +803,23 @@ namespace Arc.UniInk
 
         /// <summary> Evaluate a expression and cast type             </summary>
         /// <returns> return the result cast target type if success   </returns>
-        public T Evaluate<T>(string expression) => (T)Evaluate(expression);
-
+        public T Evaluate<T>(string expression, int startIndex = 0) => (T)Evaluate(expression, startIndex);
 
         /// <summary> Evaluate a expression      </summary>
         /// <returns> return the result object   </returns>
-        public object Evaluate(string expression)
+        public object Evaluate(string expression, int startIndex = 0)
         {
             evaluationStackCount++;
             var stack = new Stack<object>();
 
-            if (GetLambdaExpression(expression, stack))
+            if (GetLambdaExpression(expression, stack, startIndex))
             {
                 return stack.Pop(); //然后出栈
             }
 
-            expression = expression.Trim();
-
             try
             {
-                for (var i = 0; i < expression.Length; i++)
+                for (var i = startIndex; i < expression.Length; i++)
                 {
                     if (ParsingMethods.Any(parsingMethod => parsingMethod(expression, stack, ref i))) continue;
                     if (char.IsWhiteSpace(expression[i])) continue;
@@ -851,7 +849,7 @@ namespace Arc.UniInk
         /// <summary>the Marker of evaluation ，Used to determine whether Evaluate is complete </summary>
         private int evaluationStackCount;
 
-        /// <summary>Evaluate Cast like:(int)object</summary>
+        /// <summary>Evaluate Cast _eg:(int)object</summary>
         /// <param name="expression"> the expression to Evaluate     </param>
         /// <param name="stack"> the object stack to push or pop     </param>
         /// <param name="i">the <see cref="expression"/> start index </param>
@@ -878,8 +876,8 @@ namespace Arc.UniInk
 
             return false;
         }
-        
-        /// <summary>Evaluate Number like: -3.64f </summary>
+
+        /// <summary>Evaluate Number _eg: -3.64f </summary>
         /// <param name="expression"> the expression to Evaluate     </param>
         /// <param name="stack"> the object stack to push or pop     </param>
         /// <param name="i">the <see cref="expression"/> start index </param>
@@ -892,7 +890,7 @@ namespace Arc.UniInk
             {
                 i += numberMatch.Length - 1;
 
-                if (numberMatch.Groups["type"].Success) 
+                if (numberMatch.Groups["type"].Success)
                 {
                     var type = numberMatch.Groups["type"].Value;
                     var numberNoType = numberMatch.Value.Replace(type, string.Empty);
@@ -906,7 +904,7 @@ namespace Arc.UniInk
                 {
                     stack.Push(double.Parse(numberMatch.Value));
                 }
-                else 
+                else
                 {
                     stack.Push(int.Parse(numberMatch.Value));
                 }
@@ -1106,29 +1104,21 @@ namespace Arc.UniInk
                 }
                 else
                 {
-                    var functionPreEvaluationEventArg = new FunctionEvaluationEventArg(varFuncName, funcArgs, this);
-
-                    PreEvaluateFunction?.Invoke(this, functionPreEvaluationEventArg);
-
-                    if (functionPreEvaluationEventArg.FunctionReturnedValue)
-                    {
-                        stack.Push(functionPreEvaluationEventArg.Value);
-                    }
-                    else if (DefaultFunctions(varFuncName, funcArgs, out var funcResult))
+                    if (DefaultFunctions(varFuncName, funcArgs, out var funcResult))
                     {
                         stack.Push(funcResult);
                     }
                     else if (Variables.TryGetValue(varFuncName, out var o) && o is InternalDelegate lambdaExpression)
                     {
-                        stack.Push(lambdaExpression.Invoke(funcArgs.ConvertAll(Evaluate).ToArray()));
+                        stack.Push(lambdaExpression.Invoke(funcArgs.ConvertAll(str => Evaluate(str)).ToArray()));
                     }
                     else if (Variables.TryGetValue(varFuncName, out o) && o is Delegate delegateVar)
                     {
-                        stack.Push(delegateVar.DynamicInvoke(funcArgs.ConvertAll(Evaluate).ToArray()));
+                        stack.Push(delegateVar.DynamicInvoke(funcArgs.ConvertAll(str => Evaluate(str)).ToArray()));
                     }
                     else if (Variables.TryGetValue(varFuncName, out o) && o is MethodsGroupWrapper methodsGroupWrapper)
                     {
-                        var args = funcArgs.ConvertAll(Evaluate);
+                        var args = funcArgs.ConvertAll(str => Evaluate(str));
                         List<object> modifiedArgs = null;
                         MethodInfo methodInfo = null;
 
@@ -1442,7 +1432,7 @@ namespace Arc.UniInk
                     var expressionsInParenthis = GetExpressionsParenthesized(expression, ref i, true);
 
                     if (stack.Pop() is InternalDelegate lambdaDelegate)
-                        stack.Push(lambdaDelegate(expressionsInParenthis.ConvertAll(Evaluate).ToArray()));
+                        stack.Push(lambdaDelegate(expressionsInParenthis.ConvertAll(str => Evaluate(str)).ToArray()));
                 }
                 else
                 {
@@ -1853,9 +1843,9 @@ namespace Arc.UniInk
         private static object GetDefaultValueOfType(Type type) => type.IsValueType ? Activator.CreateInstance(type) : null;
 
         /// <summary>获取Lambda指类型的解释器</summary>
-        private bool GetLambdaExpression(string expression, Stack<object> stack)
+        private bool GetLambdaExpression(string expression, Stack<object> stack, int startIndex)
         {
-            var lambdaExpressionMatch = regex_LambdaExpression.Match(expression);
+            var lambdaExpressionMatch = regex_LambdaExpression.Match(expression, startIndex, expression.Length - startIndex);
 
             if (!lambdaExpressionMatch.Success) return false;
 
