@@ -10,9 +10,6 @@
  *  🆘 Helper   : ReflectionStudy : (https://mattwarren.org/2016/12/14/Why-is-Reflection-slow/)                         *
 /************************************************************************************************************************/
 
-using System.Data;
-
-
 namespace Arc.UniInk
 {
     using System;
@@ -824,16 +821,16 @@ namespace Arc.UniInk
                     if (ParsingMethods.Any(parsingMethod => parsingMethod(expression, stack, ref i))) continue;
                     if (char.IsWhiteSpace(expression[i])) continue;
 
-                    throw new SyntaxException($"[{i}  {expression}] Invalid character : [{(int)expression[i]}:{expression[i]}]");
+                    throw new SyntaxException($"Invalid character : [{(int)expression[i]}:{expression[i]}] at [{i}  {expression}] ");
                 }
 
                 return ProcessStack(stack);
             }
             catch (TargetInvocationException exception) when (exception.InnerException != null)
             {
-                while (exception is { InnerException: not null })
+                while (exception.InnerException is TargetInvocationException innerException)
                 {
-                    exception = exception.InnerException as TargetInvocationException;
+                    exception = innerException;
                 }
 
                 throw;
@@ -958,9 +955,9 @@ namespace Arc.UniInk
 
                     try
                     {
-                        if (obj is NullValue || (obj == null && hasNullConditional))
+                        if (obj is null || (obj == null && hasNullConditional))
                         {
-                            stack.Push(new NullValue());
+                            stack.Push(null);
                         }
                         else if (obj is ExceptionWrapper)
                         {
@@ -1151,13 +1148,13 @@ namespace Arc.UniInk
 
                     try
                     {
-                        if (obj is NullValue)
+                        if (obj is null)
                         {
                             stack.Push(obj);
                         }
                         else if (varFuncMatch.Groups["nullConditional"].Success && obj == null)
                         {
-                            stack.Push(new NullValue());
+                            stack.Push(null);
                         }
                         else if (obj is ExceptionWrapper)
                         {
@@ -1456,13 +1453,11 @@ namespace Arc.UniInk
             {
                 var condition = (bool)ProcessStack(stack);
 
-                var restOfExpression = expression.Substring(i + 1);
-
-                for (var j = 0; j < restOfExpression.Length; j++)
+                for (var j = i + 1; j < expression.Length; j++)
                 {
-                    var s2 = restOfExpression[j];
+                    var s2 = expression[j];
 
-                    var internalStringMatch = regex_String.Match(restOfExpression.Substring(j));
+                    var internalStringMatch = regex_String.Match(expression, j, expression.Length - j);
 
                     if (internalStringMatch.Success)
                     {
@@ -1472,13 +1467,13 @@ namespace Arc.UniInk
                     else if (s2.Equals('('))
                     {
                         j++;
-                        GetExpressionsParenthesized(restOfExpression, ref j, false);
+                        GetExpressionsParenthesized(expression, ref j, false);
                     }
                     else if (s2.Equals(':'))
                     {
                         stack.Clear();
 
-                        stack.Push(condition ? Evaluate(restOfExpression.Substring(0, j)) : Evaluate(restOfExpression.Substring(j + 1)));
+                        stack.Push(condition ? Evaluate(expression.Substring(i + 1, j - i - 1)) : Evaluate(expression, j + 1));
 
                         i = expression.Length;
 
@@ -1489,6 +1484,7 @@ namespace Arc.UniInk
 
             return false;
         }
+
 
         /// <summary>解析字符串</summary>
         private bool EvaluateString(string expression, Stack<object> stack, ref int i)
@@ -1643,12 +1639,11 @@ namespace Arc.UniInk
 
         public object ProcessStack(Stack<object> stack)
         {
-            //如果堆栈为空，则抛出异常
-            if (stack.Count == 0) throw new SyntaxException("空表达式或找不到标记");
+            if (stack.Count == 0) throw new SyntaxException("Empty expression");
 
             //将栈中的值类型,异常,空值进行处理
-            var list = stack.Select(e => e is ValueTypeNestingTrace valueTypeNestingTrace ? valueTypeNestingTrace.Value : e) //处理值类型
-                .Select(e => e is NullValue ? null : e).ToList(); //处理空值
+            var list = stack.Select(e => e is ValueTypeNestingTrace valueTypeNestingTrace ? valueTypeNestingTrace.Value : e).ToList(); //处理值类型
+
 
             // 遍历所有的操作符
             foreach (var _operatorMsg in dic_OperatorsFunc)
@@ -2465,9 +2460,6 @@ namespace Arc.UniInk
                 }
             }
         }
-
-        /// <summary> 用于?语法糖的容器 表示一个null对象 </summary>
-        private struct NullValue { }
 
         private struct FunArgWrapper
         {

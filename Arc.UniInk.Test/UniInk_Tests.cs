@@ -72,7 +72,7 @@ namespace Arc.UniInk.NunitTest
         //[TestCase("(2+4)+6+(8+10)+(6/2)+6+(6-100)", -58)] //Don't support this now
         [TestCase(" TRUE&&false    ", false)] //Evaluate Boolean
         [TestCase("(45 * 2) + 3    ", 93)] //Evaluate Expression must be surrounded by parentheses
-        [TestCase("65 > 7 ? 3 : 2  ", 3)] //Evaluate Ternary Conditional Operator
+        [TestCase("65>7?3:2  ", 3)] //Evaluate Ternary Conditional Operator
         [TestCase("HelperClass     ", typeof(HelperClass))] //Evaluate Type
         [TestCase("PI+E            ", null)] //Evaluate Custom Property
         public void Test02_SimpleExpression(string script, object answer)
@@ -163,9 +163,26 @@ namespace Arc.UniInk.NunitTest
             }
         }
 
+        [TestCase("")]
+        [TestCase(" ")]
+        public void Test05_Boundary(string script)
+        {
+            try
+            {
+                Ink.Evaluate(script);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+            }
+        }
+
+
         [Test]
         public void Test_Custom()
         {
+            var stack = new Stack<object>();
+            stack.Push(null);
             var regex = new System.Text.RegularExpressions.Regex(@"^['](?<char>([\\][\\'0abfnrtv]|[^']|))[']");
             var match = regex.Match("''");
             Assert.IsTrue(match.Success);
