@@ -4,8 +4,8 @@
  * 👩‍💻 Author   : Arc                                                                                                    *
  * 🤝 Support  : Assembly: nunit.framework, Version=3.5.0.0                                                             *
  * 📝 Desc     : the UniInk's unitTest                                                                                  *
- * 📚 TestNum  : 33                                                                                                     *
- * ⏱️ Speed    : 2'434 s                                                                                                *
+ * 📚 TestNum  : 44                                                                                                     *
+ * ⏱️ Speed    : 2'551 s                                                                                                *
 /************************************************************************************************************************/
 
 namespace Arc.UniInk.NunitTest
@@ -68,13 +68,14 @@ namespace Arc.UniInk.NunitTest
             TestContext.Progress.WriteLine($"✅:{expression}=" + $"{actualResult}");
         }
 
-        //[TestCase("(1+2)+3+4+5+6+7+8+9+10", 55)]          //Don't support this now
-        //[TestCase("(2+4)+6+(8+10)+(6/2)+6+(6-100)", -58)] //Don't support this now
-        [TestCase(" TRUE&&false    ", false)] //Evaluate Boolean
-        [TestCase("(45 * 2) + 3    ", 93)] //Evaluate Expression must be surrounded by parentheses
-        [TestCase("65>7?3:2  ", 3)] //Evaluate Ternary Conditional Operator
-        [TestCase("HelperClass     ", typeof(HelperClass))] //Evaluate Type
-        [TestCase("PI+E            ", null)] //Evaluate Custom Property
+        [TestCase("(1+2)+3+4+5+6+7+8+9+10", 55)]
+        [TestCase("(2+4)+6+(8+10)+(6/2)+6+(6-100)", -55)]
+        [TestCase(" !TRUE&&false    ", false)] //Evaluate Boolean
+        [TestCase("(45 * 2) + 3     ", 93)] //Evaluate Expression must be surrounded by parentheses
+        [TestCase("-45 * 2 + 3      ", -87)] //Evaluate Expression must be surrounded by parentheses
+        [TestCase("65>7?3:2         ", 3)] //Evaluate Ternary Conditional Operator
+        [TestCase("HelperClass      ", typeof(HelperClass))] //Evaluate Type
+        [TestCase("PI+E             ", null)] //Evaluate Custom Property
         public void Test02_SimpleExpression(string script, object answer)
         {
             var ans = Ink.Evaluate(script);
@@ -119,6 +120,20 @@ namespace Arc.UniInk.NunitTest
         [TestCase("if(3>5){return \"aaa\";}else if(3==5){return \"bbb\";}else{return \"ccc\";}")] //Test [if] [else] [else if]
         [TestCase("var sum = 0;  for  (var i = 0 ; i < 100 ; i++)    { sum += i; } return sum;")] //Test [for]
         public void Test04_blockKeyword(string script)
+        {
+            Ink.StaticTypesForExtensionsMethods.Add(typeof(ExtensionClass));
+            var ans = Ink.ScriptEvaluate(script);
+            TestContext.Progress.WriteLine($"✅:{ans}");
+            Assert.NotNull(ans);
+
+            if (ans is string str)
+            {
+                TestContext.Progress.WriteLine($"✅:{script}={ans}" + " ---  " + str.Length);
+            }
+        }
+
+     //   [TestCase("List<int> list = D; ")] //Test [if] [else]
+        public void Test05_Type(string script)
         {
             Ink.StaticTypesForExtensionsMethods.Add(typeof(ExtensionClass));
             var ans = Ink.ScriptEvaluate(script);
