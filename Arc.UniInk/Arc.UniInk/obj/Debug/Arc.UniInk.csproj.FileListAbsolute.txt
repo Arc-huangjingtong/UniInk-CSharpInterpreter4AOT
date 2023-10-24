@@ -4,3 +4,9 @@ D:\Project\UniInk\Arc.UniInk\Arc.UniInk\obj\Debug\Arc.UniInk.csproj.AssemblyRefe
 D:\Project\UniInk\Arc.UniInk\Arc.UniInk\obj\Debug\Arc.UniInk.csproj.CoreCompileInputs.cache
 D:\Project\UniInk\Arc.UniInk\Arc.UniInk\obj\Debug\Arc.UniInk.dll
 D:\Project\UniInk\Arc.UniInk\Arc.UniInk\obj\Debug\Arc.UniInk.pdb
+F:\UniInk-CSharpInterpreter4AOT\Arc.UniInk\Arc.UniInk\bin\Debug\Arc.UniInk.dll
+F:\UniInk-CSharpInterpreter4AOT\Arc.UniInk\Arc.UniInk\bin\Debug\Arc.UniInk.pdb
+F:\UniInk-CSharpInterpreter4AOT\Arc.UniInk\Arc.UniInk\obj\Debug\Arc.UniInk.csproj.AssemblyReference.cache
+F:\UniInk-CSharpInterpreter4AOT\Arc.UniInk\Arc.UniInk\obj\Debug\Arc.UniInk.csproj.CoreCompileInputs.cache
+F:\UniInk-CSharpInterpreter4AOT\Arc.UniInk\Arc.UniInk\obj\Debug\Arc.UniInk.dll
+F:\UniInk-CSharpInterpreter4AOT\Arc.UniInk\Arc.UniInk\obj\Debug\Arc.UniInk.pdb

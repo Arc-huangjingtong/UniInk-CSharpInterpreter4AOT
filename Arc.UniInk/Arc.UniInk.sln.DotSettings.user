@@ -2,12 +2,12 @@
 	<s:String x:Key="/Default/Environment/AssemblyExplorer/XmlDocument/@EntryValue">&lt;AssemblyExplorer&gt;&#xD;
   &lt;Assembly Path="D:\Project\UniInk\Arc.UniInk\packages\NUnit.3.5.0\lib\net45\nunit.framework.dll" /&gt;&#xD;
 &lt;/AssemblyExplorer&gt;</s:String>
-	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=7cb7a5f6_002Dfeba_002D4270_002D8ae6_002D8e14a15e17a8/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="Test02_SimpleExpression" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;&#xD;
+	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=7cb7a5f6_002Dfeba_002D4270_002D8ae6_002D8e14a15e17a8/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" Name="Test02_SimpleExpression" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;&#xD;
   &lt;TestAncestor&gt;&#xD;
     &lt;TestId&gt;NUnit3x::D4E69C6F-59C7-4687-B3E4-646E26C9A7FE::.NETFramework,Version=v4.7.1::Arc.UniInk.NunitTest.UniInk_NunitTest&lt;/TestId&gt;&#xD;
   &lt;/TestAncestor&gt;&#xD;
 &lt;/SessionState&gt;</s:String>
-	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=ccec989f_002D7d40_002D40fe_002D8c98_002D01b63101250a/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" Name="Test04_blockKeyword" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;&#xD;
+	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=ccec989f_002D7d40_002D40fe_002D8c98_002D01b63101250a/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="Test04_blockKeyword" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;&#xD;
   &lt;TestAncestor&gt;&#xD;
     &lt;TestId&gt;NUnit3x::D4E69C6F-59C7-4687-B3E4-646E26C9A7FE::.NETFramework,Version=v4.7.1::Arc.UniInk.NunitTest.UniInk_NunitTest&lt;/TestId&gt;&#xD;
   &lt;/TestAncestor&gt;&#xD;

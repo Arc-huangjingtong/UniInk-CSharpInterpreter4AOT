@@ -7,7 +7,7 @@
  *  🤝 Support  : [.NET Framework 4+] [C# 8.0+] [Support IL2CPP]                                                        *
  *  📝 Desc     : High performance & Easy-use C# Simple Interpreter                                                     *
  *  🆘 Helper   : RegexStudy      : (https://regex101.com/r/0PN0yS/1)                                                   *
- *  🆘 Helper   : ReflectionStudy : (https://mattwarren.org/2016/12/14/Why-is-Reflection-slow/)                         *
+ *  🆘 Helper   : Reflection      : (https://mattwarren.org/2016/12/14/Why-is-Reflection-slow/)                         *
 /************************************************************************************************************************/
 
 namespace Arc.UniInk

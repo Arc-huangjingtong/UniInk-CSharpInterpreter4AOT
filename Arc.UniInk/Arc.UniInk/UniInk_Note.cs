@@ -1,5 +1,5 @@
 ﻿/************************************************************************************************************************
- * UniInk_NoteHub : use for note code and test code                                                                     *
+ * UniInk_Note : use for note code and test code                                                                     *
  * In reality, it is difficult to satisfy everyone's script writing requirements through a unified abstract design.     *
  * Therefore, we must strike a balance between feature support and interpreter performance.                             *
 /************************************************************************************************************************/

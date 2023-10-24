@@ -9,3 +9,14 @@ D:\Project\UniInk\Arc.UniInk.Test\obj\Debug\Arc.UniInk.Test.dll
 D:\Project\UniInk\Arc.UniInk.Test\obj\Debug\Arc.UniInk.Test.pdb
 D:\Project\UniInk\Arc.UniInk.Test\bin\Debug\Arc.UniInk.dll
 D:\Project\UniInk\Arc.UniInk.Test\bin\Debug\Arc.UniInk.pdb
+F:\UniInk-CSharpInterpreter4AOT\Arc.UniInk.Test\bin\Debug\Arc.UniInk.Test.dll
+F:\UniInk-CSharpInterpreter4AOT\Arc.UniInk.Test\bin\Debug\Arc.UniInk.Test.pdb
+F:\UniInk-CSharpInterpreter4AOT\Arc.UniInk.Test\bin\Debug\Arc.UniInk.dll
+F:\UniInk-CSharpInterpreter4AOT\Arc.UniInk.Test\bin\Debug\nunit.framework.dll
+F:\UniInk-CSharpInterpreter4AOT\Arc.UniInk.Test\bin\Debug\Arc.UniInk.pdb
+F:\UniInk-CSharpInterpreter4AOT\Arc.UniInk.Test\bin\Debug\nunit.framework.xml
+F:\UniInk-CSharpInterpreter4AOT\Arc.UniInk.Test\obj\Debug\Arc.UniInk.Test.csproj.AssemblyReference.cache
+F:\UniInk-CSharpInterpreter4AOT\Arc.UniInk.Test\obj\Debug\Arc.UniInk.Test.csproj.CoreCompileInputs.cache
+F:\UniInk-CSharpInterpreter4AOT\Arc.UniInk.Test\obj\Debug\Arc.UniInk.Test.csproj.CopyComplete
+F:\UniInk-CSharpInterpreter4AOT\Arc.UniInk.Test\obj\Debug\Arc.UniInk.Test.dll
+F:\UniInk-CSharpInterpreter4AOT\Arc.UniInk.Test\obj\Debug\Arc.UniInk.Test.pdb
