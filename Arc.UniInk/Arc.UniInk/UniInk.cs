@@ -68,7 +68,7 @@ namespace Arc.UniInk
         /// <item><term>keyword          </term><description> : the keywords : [out] [ref] [in]                         </description></item>
         /// <item><term>typeName         </term><description> : made up of : letter[a-z] [.] [[]] [?]                   <para/>
         ///                                                     you can Declare variables in function args              </description></item>
-        /// <item><term>toEval           </term><description> : the string to Evaluate to object                        </description></item>
+        /// <item><term>toEval           </term><description> : the string will to Evaluate to object                   </description></item>
         /// <item><term>varName          </term><description> : the string of arg name                                  </description></item>
         /// </list></summary>
         protected static readonly Regex regex_funcArg = new(@"^\s*(?<keyword>out|ref|in)\s+((?<typeName>[\p{L}_][\p{L}_0-9\.\[\]<>]*[?]?)\s+(?=[\p{L}_]))?(?<toEval>(?<varName>[\p{L}_](?>[\p{L}_0-9]*))\s*(=.*)?)$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
@@ -393,8 +393,15 @@ namespace Arc.UniInk
         public object Context
         {
             get => dic_DefaultVariables["this"];
-            set => dic_DefaultVariables["this"] = value;
+            set
+            {
+                dic_DefaultVariables["this"] = value;
+                ContextMethods.Clear();
+                ContextMethods.AddRange(value?.GetType().GetMethods(InstanceBindingFlag) ?? Array.Empty<MethodInfo>());
+            }
         }
+
+        public List<MethodInfo> ContextMethods { get; } = new();
 
 
         /// <summary> Current appDomain all assemblies </summary>
@@ -403,10 +410,9 @@ namespace Arc.UniInk
         protected IList<Assembly> assemblies;
 
 
-        private static BindingFlags InstanceBindingFlag => BindingFlags.Public | BindingFlags.Instance | BindingFlags.GetProperty | BindingFlags.Static;
+        private static BindingFlags BindingFlag => BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance | BindingFlags.GetProperty | BindingFlags.GetField;
+        private static BindingFlags InstanceBindingFlag => BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance | BindingFlags.GetProperty;
         private static BindingFlags StaticBindingFlag => BindingFlags.Public | BindingFlags.Static;
-
-        private static BindingFlags BindingFlag => BindingFlags.Public | BindingFlags.Instance | BindingFlags.GetProperty | BindingFlags.Static | BindingFlags.GetField;
 
 
         /// <summary>Evaluate a Script,support [if] State and so on</summary>
@@ -893,18 +899,20 @@ namespace Arc.UniInk
 
             if (!varFuncMatch.Success) return false;
 
-            var hasSign = varFuncMatch.Groups["sign"].Success;
             var hasVar = varFuncMatch.Groups["varKeyword"].Success;
             var hasAssign = varFuncMatch.Groups["assignOperator"].Success;
-            var hasNullConditional = varFuncMatch.Groups["nullConditional"].Success;
+
+            if (hasVar && !hasAssign) throw new SyntaxException($"The implicit variable is not initialized! [var {varFuncMatch.Groups["name"].Value}]");
+
+            var hasSign = varFuncMatch.Groups["sign"].Success;
+            if (hasSign && stack.Count != 0 && stack.Peek() is not ExpressionOperator) return false;
+
 
             var isInObject = varFuncMatch.Groups["inObject"].Success;
             var isFunction = varFuncMatch.Groups["isfunction"].Success;
 
             var varFuncName = varFuncMatch.Groups["name"].Value;
 
-            if (hasVar && !hasAssign) throw new SyntaxException($"The implicit variable is not initialized! [var {varFuncMatch.Groups["name"].Value}]");
-            if (hasSign && stack.Count != 0 && stack.Peek() is not ExpressionOperator) return false;
             if (!isInObject && dic_Operators.ContainsKey(varFuncName)) return false;
 
             i += varFuncMatch.Length;
@@ -914,18 +922,22 @@ namespace Arc.UniInk
                 var funcArgs = GetExpressionsParenthesized(expression, ref i, true);
 
                 //如果是对象的方法,或者是this的方法
-                if (isInObject || (Context?.GetType().GetMethods(InstanceBindingFlag).Any(methodInfo => methodInfo.Name.Equals(varFuncName)) ?? false))
+                if (isInObject || ContextMethods.Any(methodInfo => methodInfo.Name.Equals(varFuncName)))
                 {
                     if (isInObject && (stack.Count == 0 || stack.Peek() is ExpressionOperator))
                         throw new SyntaxException($"[{varFuncMatch.Value})] must follow a object"); //只有点
 
                     var obj = isInObject ? stack.Pop() : Context;
-                    var objType = obj?.GetType();
 
 
-                    if (obj is null || (obj == null && hasNullConditional))
+                    if (obj is null)
                     {
-                        stack.Push(null);
+                        var hasNullConditional = varFuncMatch.Groups["nullConditional"].Success;
+                        if (hasNullConditional)
+                        {
+                            stack.Push(null);
+                        }
+                        else throw new SyntaxException($"[{varFuncMatch.Value}] is null!");
                     }
                     else
                     {
@@ -935,44 +947,36 @@ namespace Arc.UniInk
                         var oArgs = funcArgs.ConvertAll(arg =>
                         {
                             var funcArgMatch = regex_funcArg.Match(arg);
-                            object argValue;
+                            var toEval = arg;
 
                             if (funcArgMatch.Success)
                             {
-                                var funArgWrapper = new FunArgWrapper
-                                {
-                                    Index = argIndex, // 
-                                    Keyword = funcArgMatch.Groups["keyword"].Value,
-                                    VariableName = funcArgMatch.Groups["varName"].Value
-                                };
+                                var keyword = funcArgMatch.Groups["keyword"].Value;
+                                var varName = funcArgMatch.Groups["varName"].Value;
+
+                                var funArgWrapper = new FunArgWrapper(argIndex, keyword, varName);
 
                                 funArgWrappers.Add(funArgWrapper);
 
                                 if (funcArgMatch.Groups["typeName"].Success)
                                 {
-                                    var fixedType = (Type)Evaluate(funcArgMatch.Groups["typeName"].Value);
-                                    Variables[funArgWrapper.VariableName] = new StronglyTypedVariable
-                                    {
-                                        Type = fixedType, // 
-                                        Value = GetDefaultValueOfType(fixedType)
-                                    };
+                                    var typeName = funcArgMatch.Groups["typeName"].Value;
+                                    var fixedType = (Type)Evaluate(typeName);
+                                    Variables[funArgWrapper.VariableName] = new StronglyTypedVariable(fixedType, GetDefaultValueOfType(fixedType));
                                 }
 
-                                argValue = Evaluate(funcArgMatch.Groups["toEval"].Value);
-                            }
-                            else
-                            {
-                                argValue = Evaluate(arg);
+                                toEval = funcArgMatch.Groups["toEval"].Value;
                             }
 
                             argIndex++;
-                            return argValue;
+
+                            return Evaluate(toEval);
                         });
 
-                        var flag = DetermineInstanceOrStatic(out objType, ref obj, out _);
+                        DetermineInstanceOrStatic(out var objType, ref obj, out _);
 
                         // 寻找标准实例或公共方法
-                        var methodInfo = GetRealMethod(objType, varFuncName, flag, oArgs, string.Empty, Type.EmptyTypes, funArgWrappers);
+                        var methodInfo = GetMethod(objType, varFuncName, oArgs, string.Empty, Type.EmptyTypes);
 
                         // 如果找不到，检查obj是否是dictionaryObject或类似对象
                         if (obj is IDictionary<string, object> dictionaryObject && (dictionaryObject[varFuncName] is InternalDelegate || dictionaryObject[varFuncName] is Delegate)) //obj is IDynamicMetaObjectProvider &&
@@ -1001,7 +1005,7 @@ namespace Arc.UniInk
                                 for (var e = 0; e < StaticTypesForExtensionsMethods.Count && methodInfo == null; e++)
                                 {
                                     var type = StaticTypesForExtensionsMethods[e];
-                                    methodInfo = GetRealMethod(type, varFuncName, StaticBindingFlag, oArgs, string.Empty, Type.EmptyTypes, funArgWrappers, true);
+                                    methodInfo = GetMethod(type, varFuncName, oArgs, string.Empty, Type.EmptyTypes, true);
                                     isExtension = methodInfo != null;
                                 }
                             }
@@ -1049,37 +1053,13 @@ namespace Arc.UniInk
                 }
                 else
                 {
-                    if (DefaultFunctions(varFuncName, funcArgs, out var funcResult))
+                    if (TryGetFunctions(varFuncName, funcArgs, out var funcResult))
                     {
                         stack.Push(funcResult);
                     }
-                    else if (Variables.TryGetValue(varFuncName, out var o) && o is InternalDelegate lambdaExpression)
-                    {
-                        stack.Push(lambdaExpression.Invoke(funcArgs.ConvertAll(str => Evaluate(str)).ToArray()));
-                    }
-                    else if (Variables.TryGetValue(varFuncName, out o) && o is Delegate delegateVar)
-                    {
-                        stack.Push(delegateVar.DynamicInvoke(funcArgs.ConvertAll(str => Evaluate(str)).ToArray()));
-                    }
-                    else if (Variables.TryGetValue(varFuncName, out o) && o is MethodsGroupWrapper methodsGroupWrapper)
-                    {
-                        var args = funcArgs.ConvertAll(str => Evaluate(str));
-                        List<object> modifiedArgs = null;
-                        MethodInfo methodInfo = null;
-
-                        for (var m = 0; methodInfo == null && m < methodsGroupWrapper.MethodsGroup.Length; m++)
-                        {
-                            modifiedArgs = new List<object>(args);
-
-                            methodInfo = TryToCastMethodParametersToMakeItCallable(methodsGroupWrapper.MethodsGroup[m], modifiedArgs, string.Empty, Type.EmptyTypes);
-                        }
-
-                        if (methodInfo != null)
-                            stack.Push(methodInfo.Invoke(methodsGroupWrapper.ContainerObject, modifiedArgs.ToArray()));
-                    }
                     else
                     {
-                        throw new SyntaxException($"[{varFuncName}]:函数在脚本中未知: [{expression}]");
+                        throw new SyntaxException($"unknown function : [{varFuncName}] in [{i}] [{expression}]");
                     }
                 }
             }
@@ -1207,7 +1187,7 @@ namespace Arc.UniInk
 
                             stack.Pop();
 
-                            Variables[varFuncName] = new StronglyTypedVariable { Type = classOrEnum, Value = GetDefaultValueOfType(classOrEnum), };
+                            Variables[varFuncName] = new StronglyTypedVariable(classOrEnum, GetDefaultValueOfType(classOrEnum));
                         }
 
                         if (cusVarValueToPush is StronglyTypedVariable typedVariable)
@@ -1506,13 +1486,14 @@ namespace Arc.UniInk
                 var subIndex = 0;
                 var typeMatch = regex_VarOrFunction.Match(expression, i, expression.Length - i);
 
-                if (typeMatch.Success && !typeMatch.Groups["sign"].Success //
-                                      && !typeMatch.Groups["assignOperator"].Success //
-                                      && !typeMatch.Groups["postfixOperator"].Success // 
-                                      && !typeMatch.Groups["isfunction"].Success // 
-                                      && !typeMatch.Groups["inObject"].Success // 
-                                      && i < expression.Length //
-                                      && !typeName.EndsWith("?")) //
+                if (typeMatch.Success // 
+                    && !typeMatch.Groups["sign"].Success //
+                    && !typeMatch.Groups["assignOperator"].Success //
+                    && !typeMatch.Groups["postfixOperator"].Success // 
+                    && !typeMatch.Groups["isfunction"].Success // 
+                    && !typeMatch.Groups["inObject"].Success // 
+                    && !typeName.EndsWith("?") //
+                    && i < expression.Length) //
                 {
                     subIndex += typeMatch.Length;
                     typeName += $"{typeMatch.Groups["name"].Value}{(i + subIndex < expression.Length && expression.Substring(i + subIndex)[0] == '?' ? "?" : "")}";
@@ -1744,12 +1725,11 @@ namespace Arc.UniInk
         }
 
         /// <summary>获取方法的解释器</summary>
-        private MethodInfo GetRealMethod(Type type, string func, BindingFlags flag, List<object> args, string genericsTypes, Type[] inferredGenericsTypes, List<FunArgWrapper> argsWithKeywords, bool testForExtension = false)
+        private MethodInfo GetMethod(Type type, string funcName, List<object> args, string genericsTypes, Type[] inferredGenericsTypes, bool testForExtension = false)
         {
             MethodInfo methodInfo = null;
-            var modifiedArgs = new List<object>(args);
             var modifiedArgsCache = new List<object>(args);
-            var methodsInfo = type.GetMethods(flag).Where(MethodFilter);
+            var methodsInfo = type.GetMethods(InstanceBindingFlag).Where(MethodFilter);
 
             foreach (var info in methodsInfo)
             {
@@ -1767,15 +1747,21 @@ namespace Arc.UniInk
             return methodInfo;
 
             bool MethodFilter(MethodInfo m) => // 
-                m.Name.Equals(func) && //
-                (m.GetParameters().Length == modifiedArgs.Count //
-                 || (m.GetParameters().Length > modifiedArgs.Count //
-                     && m.GetParameters().Take(modifiedArgs.Count).All(p => modifiedArgs[p.Position] == null || p.ParameterType.IsInstanceOfType(modifiedArgs[p.Position])) // 
-                     && m.GetParameters().Skip(modifiedArgs.Count).All(p => p.HasDefaultValue)) //
-                 || (m.GetParameters().Length > 0 && m.GetParameters().Last().IsDefined(typeof(ParamArrayAttribute), false) && m.GetParameters().All(parameterValidate))); //
+                m.Name.Equals(funcName) // name 相等
+                && (m.GetParameters().Length == args.Count // 个数相等
+                    ||    (m.GetParameters().Length > args.Count //
+                        && m.GetParameters().Take(args.Count).All(p => args[p.Position] == null || p.ParameterType.IsInstanceOfType(args[p.Position])) // 
+                        && m.GetParameters().Skip(args.Count).All(p => p.HasDefaultValue)) //
+                    || (m.GetParameters().Length > 0 && m.GetParameters().Last().IsDefined(typeof(ParamArrayAttribute), false) && m.GetParameters().All(parameterValidate))); //
 
             bool parameterValidate(ParameterInfo p) => //
-                p.Position >= modifiedArgs.Count || (testForExtension && p.Position == 0) || modifiedArgs[p.Position] == null || p.ParameterType.IsInstanceOfType(modifiedArgs[p.Position]) || typeof(Delegate).IsAssignableFrom(p.ParameterType) || p.IsDefined(typeof(ParamArrayAttribute)) || (p.ParameterType.IsByRef && argsWithKeywords.Any(a => a.Index == p.Position + (testForExtension ? 1 : 0)));
+                p.Position >= args.Count //
+                || (testForExtension && p.Position == 0) // 
+                || args[p.Position] == null //
+                || p.ParameterType.IsInstanceOfType(args[p.Position]) // 
+                || typeof(Delegate).IsAssignableFrom(p.ParameterType) // 
+                || p.IsDefined(typeof(ParamArrayAttribute)) // 
+                || (p.ParameterType.IsByRef && (args.Count >= p.Position + (testForExtension ? 1 : 0)));
         }
 
 
@@ -2151,7 +2137,7 @@ namespace Arc.UniInk
         /// <summary>去默认函数列表内寻找并执行对应的函数</summary>
         /// <returns>函数是否存在</returns>
         /// <param name="result">返回函数的结果</param>
-        private bool DefaultFunctions(string name, List<string> args, out object result)
+        private bool TryGetFunctions(string name, List<string> args, out object result)
         {
             var functionExists = true;
 
@@ -2162,6 +2148,10 @@ namespace Arc.UniInk
             else if (dic_complexStandardFunc.TryGetValue(name, out var complexFunc))
             {
                 result = complexFunc(this, args);
+            }
+            else if (Variables.TryGetValue(name, out var o) && o is Delegate delegateVar)
+            {
+                result = delegateVar.DynamicInvoke(args.ConvertAll(str => Evaluate(str)).ToArray());
             }
             else
             {
@@ -2327,6 +2317,13 @@ namespace Arc.UniInk
             public int Index { get; set; }
             public string Keyword { get; set; }
             public string VariableName { get; set; }
+
+            public FunArgWrapper(int index, string keyword, string variableName)
+            {
+                Index = index;
+                Keyword = keyword;
+                VariableName = variableName;
+            }
         }
 
         private class DelegateWrapper
@@ -2407,6 +2404,12 @@ namespace Arc.UniInk
         public Type Type { get; set; }
 
         public object Value { get; set; }
+
+        public StronglyTypedVariable(Type type, object value)
+        {
+            Type = type;
+            Value = value;
+        }
     }
 
     /// <summary>表示一组方法，其中要调用的重载方法尚未确定。该类可以被用来模拟委托。</summary>
@@ -2644,5 +2647,6 @@ namespace Arc.UniInk
         #endregion
     }
 }
+//2646
 //2732
 //2857
