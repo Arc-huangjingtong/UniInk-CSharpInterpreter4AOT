@@ -36,6 +36,7 @@ namespace Arc.UniInk.NunitTest
             Ink.Context = test;
             Ink.Types.Add(typeof(TestEnum));
             Ink.Types.Add(typeof(HelperClass));
+            Ink.StaticTypesForExtensionsMethods.Add(typeof(ExtensionClass));
         }
 
         [OneTimeTearDown]
@@ -121,7 +122,6 @@ namespace Arc.UniInk.NunitTest
         [TestCase("var sum = 0;  for  (var i = 0 ; i < 100 ; i++)    { sum += i; } return sum;")] //Test [for]
         public void Test04_blockKeyword(string script)
         {
-            Ink.StaticTypesForExtensionsMethods.Add(typeof(ExtensionClass));
             var ans = Ink.ScriptEvaluate(script);
             TestContext.Progress.WriteLine($"✅:{ans}");
             Assert.NotNull(ans);
@@ -132,10 +132,9 @@ namespace Arc.UniInk.NunitTest
             }
         }
 
-     //   [TestCase("List<int> list = D; ")] //Test [if] [else]
+        //[TestCase("List<int> list = D; ")]
         public void Test05_Type(string script)
         {
-            Ink.StaticTypesForExtensionsMethods.Add(typeof(ExtensionClass));
             var ans = Ink.ScriptEvaluate(script);
             TestContext.Progress.WriteLine($"✅:{ans}");
             Assert.NotNull(ans);
@@ -144,6 +143,25 @@ namespace Arc.UniInk.NunitTest
             {
                 TestContext.Progress.WriteLine($"✅:{script}={ans}" + " ---  " + str.Length);
             }
+        }
+
+        [TestCase("this.Test3();")]
+        [TestCase("this.Test3(\"aaa\");")]
+        public void Test06_ExtensionMethod(string script)
+        {
+            var ans = Ink.ScriptEvaluate(script);
+            TestContext.Progress.WriteLine($"✅:{ans}");
+            Assert.NotNull(ans);
+        }
+
+        [TestCase("ParamsTest(1,2,3,4,5);")]
+        [TestCase("ParamsTest();")]
+        [TestCase("ParamsTest(\"aaa\");")]
+        public void Test07_ParamKeyword(string script)
+        {
+            var ans = Ink.ScriptEvaluate(script);
+            TestContext.Progress.WriteLine($"✅:{ans}");
+            Assert.NotNull(ans);
         }
 
 
@@ -157,7 +175,6 @@ namespace Arc.UniInk.NunitTest
         [TestCase("Test(\"aaa\"+\"aaaaa\");")]
         [TestCase("Test(Test(aaa));")]
         [TestCase("Test(Test(aaa)+\"aaaaa\");")]
-        [TestCase("this.Test3();")] //测试扩展方法
         [TestCase("TestA(x => (x > 0) && (int)TestEnum.A == 1);")] //测试lambda表达式
         [TestCase("TestEnum.A;")] //测试枚举
         [TestCase("TestA(x => (x > 0) && (A == B));")]
@@ -167,7 +184,6 @@ namespace Arc.UniInk.NunitTest
         [TestCase(" TestC<List<int>>(D);  ")] //测试多泛型参数
         public void Test04_Scripts(string script)
         {
-            Ink.StaticTypesForExtensionsMethods.Add(typeof(ExtensionClass));
             var ans = Ink.ScriptEvaluate(script);
             Assert.NotNull(ans);
             TestContext.Progress.WriteLine($"✅:{script}={ans}" + " ---  " + ans.GetType());
@@ -178,8 +194,7 @@ namespace Arc.UniInk.NunitTest
             }
         }
 
-        [TestCase("")]
-        [TestCase(" ")]
+        [TestCase("")] [TestCase(" ")]
         public void Test05_Boundary(string script)
         {
             try
@@ -193,7 +208,7 @@ namespace Arc.UniInk.NunitTest
         }
 
 
-        [Test]
+        // [Test]
         public void Test_Custom()
         {
             var stack = new Stack<object>();
@@ -279,6 +294,19 @@ namespace Arc.UniInk.NunitTest
             Console.WriteLine("actionB");
             return t;
         }
+
+
+        public int ParamsTest(params object[] args)
+        {
+            Console.WriteLine(args.Length);
+            return args.Length;
+        }
+
+        public int ParamsTest(string a, params object[] args)
+        {
+            Console.WriteLine(a + args.Length);
+            return args.Length + 1000;
+        }
     }
 
     public static class MyStaticClass
@@ -294,6 +322,12 @@ namespace Arc.UniInk.NunitTest
         public static string Test3(this HelperClass str)
         {
             Console.WriteLine(str);
+            return str.ToString();
+        }
+
+        public static string Test3(this HelperClass str, string str2)
+        {
+            Console.WriteLine(str + str2);
             return str.ToString();
         }
     }

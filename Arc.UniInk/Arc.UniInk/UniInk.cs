@@ -1005,7 +1005,7 @@ namespace Arc.UniInk
                                 for (var e = 0; e < StaticTypesForExtensionsMethods.Count && methodInfo == null; e++)
                                 {
                                     var type = StaticTypesForExtensionsMethods[e];
-                                    methodInfo = GetMethod(type, varFuncName, oArgs, string.Empty, Type.EmptyTypes, true);
+                                    methodInfo = GetMethod(type, varFuncName, oArgs, string.Empty, Type.EmptyTypes);
                                     isExtension = methodInfo != null;
                                 }
                             }
@@ -1725,7 +1725,7 @@ namespace Arc.UniInk
         }
 
         /// <summary>获取方法的解释器</summary>
-        private MethodInfo GetMethod(Type type, string funcName, List<object> args, string genericsTypes, Type[] inferredGenericsTypes, bool testForExtension = false)
+        private MethodInfo GetMethod(Type type, string funcName, List<object> args, string genericsTypes, Type[] inferredGenericsTypes)
         {
             MethodInfo methodInfo = null;
             var modifiedArgsCache = new List<object>(args);
@@ -1746,22 +1746,16 @@ namespace Arc.UniInk
 
             return methodInfo;
 
-            bool MethodFilter(MethodInfo m) => // 
-                m.Name.Equals(funcName) // name 相等
-                && (m.GetParameters().Length == args.Count // 个数相等
-                    ||    (m.GetParameters().Length > args.Count //
-                        && m.GetParameters().Take(args.Count).All(p => args[p.Position] == null || p.ParameterType.IsInstanceOfType(args[p.Position])) // 
-                        && m.GetParameters().Skip(args.Count).All(p => p.HasDefaultValue)) //
-                    || (m.GetParameters().Length > 0 && m.GetParameters().Last().IsDefined(typeof(ParamArrayAttribute), false) && m.GetParameters().All(parameterValidate))); //
-
-            bool parameterValidate(ParameterInfo p) => //
-                p.Position >= args.Count //
-                || (testForExtension && p.Position == 0) // 
-                || args[p.Position] == null //
-                || p.ParameterType.IsInstanceOfType(args[p.Position]) // 
-                || typeof(Delegate).IsAssignableFrom(p.ParameterType) // 
-                || p.IsDefined(typeof(ParamArrayAttribute)) // 
-                || (p.ParameterType.IsByRef && (args.Count >= p.Position + (testForExtension ? 1 : 0)));
+            bool MethodFilter(MethodInfo m)
+            {
+                if (!m.Name.Equals(funcName)) return false;
+                var parameterInfos = m.GetParameters();
+                if (parameterInfos.Length == args.Count) return true;
+                if (parameterInfos.Length > 0 && parameterInfos.Last().IsDefined(typeof(ParamArrayAttribute), false)) return true;
+                return parameterInfos.Length > args.Count 
+                       && parameterInfos.Take(args.Count).All(p => args[p.Position] == null || p.ParameterType.IsInstanceOfType(args[p.Position])) 
+                       && parameterInfos.Skip(args.Count).All(p => p.HasDefaultValue);
+            }
         }
 
 
