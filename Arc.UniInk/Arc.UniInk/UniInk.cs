@@ -383,7 +383,7 @@ namespace Arc.UniInk
         /// <summary> Custom types in UniInk </summary>
         public List<Type> Types { get; } = new();
 
-        /// <summary> Custom types looking for extension methods in UniInk </summary>
+        /// <summary> Custom static types looking for extension methods in UniInk </summary>
         public List<Type> StaticTypesForExtensionsMethods { get; } = new()
         {
             typeof(Enumerable) // Linq Extension Methods
@@ -397,11 +397,14 @@ namespace Arc.UniInk
             {
                 dic_DefaultVariables["this"] = value;
                 ContextMethods.Clear();
+                ContextMembers.Clear();
                 ContextMethods.AddRange(value?.GetType().GetMethods(InstanceBindingFlag) ?? Array.Empty<MethodInfo>());
+                ContextMembers.AddRange(value?.GetType().GetMembers(BindingFlag) ?? Array.Empty<MemberInfo>());
             }
         }
 
         public List<MethodInfo> ContextMethods { get; } = new();
+        public List<MemberInfo> ContextMembers { get; } = new();
 
 
         /// <summary> Current appDomain all assemblies </summary>
@@ -901,6 +904,7 @@ namespace Arc.UniInk
 
             var hasVar = varFuncMatch.Groups["varKeyword"].Success;
             var hasAssign = varFuncMatch.Groups["assignOperator"].Success;
+            var hasPostfix = varFuncMatch.Groups["postfixOperator"].Success;
 
             if (hasVar && !hasAssign) throw new SyntaxException($"The implicit variable is not initialized! [var {varFuncMatch.Groups["name"].Value}]");
 
@@ -925,7 +929,9 @@ namespace Arc.UniInk
                 if (isInObject || ContextMethods.Any(methodInfo => methodInfo.Name.Equals(varFuncName)))
                 {
                     if (isInObject && (stack.Count == 0 || stack.Peek() is ExpressionOperator))
-                        throw new SyntaxException($"[{varFuncMatch.Value})] must follow a object"); //只有点
+                    {
+                        throw new SyntaxException($"[{varFuncMatch.Value})] must follow a object");
+                    }
 
                     var obj = isInObject ? stack.Pop() : Context;
 
@@ -973,81 +979,41 @@ namespace Arc.UniInk
                             return Evaluate(toEval);
                         });
 
-                        DetermineInstanceOrStatic(out var objType, ref obj, out _);
+                        DetermineInstanceOrStatic(ref obj, out var objType, out _);
 
                         // 寻找标准实例或公共方法
                         var methodInfo = GetMethod(objType, varFuncName, oArgs, string.Empty, Type.EmptyTypes);
 
-                        // 如果找不到，检查obj是否是dictionaryObject或类似对象
-                        if (obj is IDictionary<string, object> dictionaryObject && (dictionaryObject[varFuncName] is InternalDelegate || dictionaryObject[varFuncName] is Delegate)) //obj is IDynamicMetaObjectProvider &&
+
+                        var isExtension = false;
+
+
+                        if (methodInfo == null)
                         {
-                            if (dictionaryObject[varFuncName] is InternalDelegate internalDelegate)
-                                stack.Push(internalDelegate(oArgs.ToArray()));
-                            else if (dictionaryObject[varFuncName] is Delegate del)
-                                stack.Push(del.DynamicInvoke(oArgs.ToArray()));
+                            oArgs.Insert(0, obj);
+                            objType = obj.GetType();
+
+                            foreach (var type in StaticTypesForExtensionsMethods)
+                            {
+                                methodInfo = GetMethod(type, varFuncName, oArgs, string.Empty, Type.EmptyTypes);
+                                if (methodInfo != null)
+                                {
+                                    isExtension = true;
+                                    break;
+                                }
+                            }
                         }
-                        else if (objType.GetProperty(varFuncName, InstanceBindingFlag) is { } instancePropertyInfo //
-                                 && (instancePropertyInfo.PropertyType.IsSubclassOf(typeof(Delegate)) || instancePropertyInfo.PropertyType == typeof(Delegate)) // 
-                                 && instancePropertyInfo.GetValue(obj) is Delegate del) //
+
+                        if (methodInfo != null) //如果找到了方法，则更具是否是扩展方法来传参调用
                         {
-                            stack.Push(del.DynamicInvoke(oArgs.ToArray()));
+                            var argsArray = oArgs.ToArray();
+                            stack.Push(methodInfo.Invoke(isExtension ? null : obj, argsArray));
+                            var argsKeyword = funArgWrappers.FindAll(argWithKeyword => argWithKeyword.Keyword.Equals("out") || argWithKeyword.Keyword.Equals("ref"));
+                            argsKeyword.ForEach(outOrRefArg => AssignVariable(outOrRefArg.VariableName, argsArray[outOrRefArg.Index + (isExtension ? 1 : 0)]));
                         }
                         else
                         {
-                            var isExtension = false;
-
-                            // if not found try to Find extension methods.
-                            if (methodInfo == null && obj != null)
-                            {
-                                oArgs.Insert(0, obj);
-                                objType = obj.GetType();
-
-                                for (var e = 0; e < StaticTypesForExtensionsMethods.Count && methodInfo == null; e++)
-                                {
-                                    var type = StaticTypesForExtensionsMethods[e];
-                                    methodInfo = GetMethod(type, varFuncName, oArgs, string.Empty, Type.EmptyTypes);
-                                    isExtension = methodInfo != null;
-                                }
-                            }
-
-                            if (methodInfo != null)
-                            {
-                                var argsArray = oArgs.ToArray();
-                                stack.Push(methodInfo.Invoke(isExtension ? null : obj, argsArray));
-                                funArgWrappers.FindAll(argWithKeyword => argWithKeyword.Keyword.Equals("out") // 
-                                                                         || argWithKeyword.Keyword.Equals("ref")).ForEach(outOrRefArg => AssignVariable(outOrRefArg.VariableName, argsArray[outOrRefArg.Index + (isExtension ? 1 : 0)])); //
-                            }
-                            else if (objType.GetProperty(varFuncName, StaticBindingFlag) is { } staticPropertyInfo //
-                                     && (staticPropertyInfo.PropertyType.IsSubclassOf(typeof(Delegate)) || staticPropertyInfo.PropertyType == typeof(Delegate)) && staticPropertyInfo.GetValue(obj) is Delegate del2) //
-                            {
-                                stack.Push(del2.DynamicInvoke(oArgs.ToArray()));
-                            }
-                            else
-                            {
-                                var query = from type in StaticTypesForExtensionsMethods
-                                    where !type.IsGenericType && type.IsSealed && !type.IsNested
-                                    from method in type.GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)
-                                    where method.GetParameters()[0].ParameterType == objType // static extMethod(this outType, ...)
-                                    select method;
-
-                                var methodInfos = query as MethodInfo[] ?? query.ToArray();
-                                if (methodInfos.Any())
-                                {
-                                    var fnArgsPrint = string.Join(",", funcArgs);
-                                    var fnOverloadsPrint = "";
-
-                                    foreach (var mi in methodInfos)
-                                    {
-                                        var parInfo = mi.GetParameters();
-                                        fnOverloadsPrint += string.Join(",", parInfo.Select(x => x.ParameterType.FullName ?? x.ParameterType.Name)) + "\n";
-                                    }
-
-                                    throw new SyntaxException($"[{objType}] 的扩展方法 \"{varFuncName}\"没有参数重载: {fnArgsPrint}. 候选: {fnOverloadsPrint}");
-                                }
-
-
-                                throw new SyntaxException($"[{objType}] 对象方法  [{varFuncName}] ");
-                            }
+                            throw new SyntaxException($"[{objType}] don‘t find  [{varFuncName}] ");
                         }
                     }
                 }
@@ -1063,62 +1029,49 @@ namespace Arc.UniInk
                     }
                 }
             }
-            //是变量，对象的情况
-            else
+            else //是变量，对象的情况
             {
-                if (isInObject || Context?.GetType().GetMember(varFuncName, BindingFlag).Length > 0)
+                if (isInObject || ContextMembers.Any(memberInfo => memberInfo.Name.Equals(varFuncName)))
                 {
                     if (isInObject && (stack.Count == 0 || stack.Peek() is ExpressionOperator))
-                        throw new SyntaxException($"[{varFuncMatch.Value}] 后面必须有一个对象");
+                    {
+                        throw new SyntaxException($"[{varFuncMatch.Value}] must follow a object");
+                    }
 
                     var obj = isInObject ? stack.Pop() : Context;
-                    var objType = obj?.GetType();
-
 
                     if (obj is null)
                     {
-                        stack.Push(obj);
-                    }
-                    else if (varFuncMatch.Groups["nullConditional"].Success && obj == null)
-                    {
-                        stack.Push(null);
+                        var hasNullConditional = varFuncMatch.Groups["nullConditional"].Success;
+                        if (hasNullConditional)
+                        {
+                            stack.Push(null);
+                        }
+                        else throw new SyntaxException($"[{varFuncMatch.Value}] is null!");
                     }
                     else
                     {
-                        var flag = DetermineInstanceOrStatic(out objType, ref obj, out var valueTypeNestingTrace);
+                        DetermineInstanceOrStatic(ref obj, out var objType, out var valueTypeNestingTrace);
 
-
-                        var isDynamic = (flag & BindingFlags.Instance) != 0 && obj is IDictionary<string, object>; //&& obj is IDynamicMetaObjectProvider
-                        var dictionaryObject = obj as IDictionary<string, object>;
-
-                        MemberInfo member = isDynamic ? null : objType?.GetProperty(varFuncName, flag);
+                        MemberInfo member = objType?.GetProperty(varFuncName, BindingFlag);
+                        member ??= objType?.GetField(varFuncName, BindingFlag);
                         object varValue = null; //TODO:
                         var assign = true;
 
 
-                        if (member == null && !isDynamic)
-                            member = objType?.GetField(varFuncName, flag);
-
-                        if (member == null && !isDynamic)
+                        if (member == null)
                         {
-                            var methodsGroup = objType?.GetMember(varFuncName, flag).OfType<MethodInfo>().ToArray();
-
+                            var methodsGroup = objType?.GetMethods(BindingFlag).Where(methodInfo => methodInfo.Name.Equals(varFuncName)).ToArray();
                             if (methodsGroup is { Length: > 0 })
+                            {
                                 varValue = new MethodsGroupWrapper { ContainerObject = obj, MethodsGroup = methodsGroup };
+                            }
                         }
 
                         var pushVarValue = true;
 
-                        if (isDynamic)
-                        {
-                            if (!varFuncMatch.Groups["assignOperator"].Success || varFuncMatch.Groups["assignmentPrefix"].Success)
-                                varValue = dictionaryObject.TryGetValue(varFuncName, out var value) ? value : null;
-                            else
-                                pushVarValue = false;
-                        }
-
-                        //Var去设置值 且 不是动态的 且 值为null 且 pushVarValue为true
-                        if (!isDynamic && varValue == null)
+                        //Var去设置值  且 值为null 且 pushVarValue为true
+                        if (varValue == null)
                         {
                             varValue = (member as PropertyInfo)?.GetValue(obj);
                             varValue ??= (member as FieldInfo)?.GetValue(obj);
@@ -1135,16 +1088,18 @@ namespace Arc.UniInk
                         if (pushVarValue) stack.Push(varValue);
 
 
-                        if (varFuncMatch.Groups["assignOperator"].Success)
+                        if (hasAssign)
                         {
                             var value = varValue;
                             varValue = ManageKindOfAssignation(expression, ref i, varFuncMatch, () => value, stack);
                         }
-                        else if (varFuncMatch.Groups["postfixOperator"].Success)
+                        else if (hasPostfix)
                         {
                             //不是++就是--;
                             if (varValue != null)
+                            {
                                 varValue = varFuncMatch.Groups["postfixOperator"].Value.Equals("++") ? (int)varValue + 1 : (int)varValue - 1;
+                            }
                         }
                         else
                         {
@@ -1153,11 +1108,7 @@ namespace Arc.UniInk
 
                         if (assign)
                         {
-                            if (isDynamic)
-                            {
-                                dictionaryObject[varFuncName] = varValue;
-                            }
-                            else if (valueTypeNestingTrace != null)
+                            if (valueTypeNestingTrace != null)
                             {
                                 valueTypeNestingTrace.Value = varValue;
                                 valueTypeNestingTrace.AssignValue();
@@ -1172,6 +1123,7 @@ namespace Arc.UniInk
                 }
                 else
                 {
+                    //  TryGetVariable(varFuncName, out var varValue);
                     if (dic_DefaultVariables.TryGetValue(varFuncName, out var varValueToPush))
                     {
                         stack.Push(varValueToPush);
@@ -1616,7 +1568,7 @@ namespace Arc.UniInk
         private delegate object InternalDelegate(params object[] args);
 
         /// <summary>管理分配类型</summary>
-        private object ManageKindOfAssignation(string expression, ref int index, Match match, Func<object> getCurrentValue, Stack<object> stack = null)
+        private object ManageKindOfAssignation(string expression, ref int index, Match match, Func<object> getCurrentValue, Stack<object> stack)
         {
             if (stack?.Count > 1) throw new SyntaxException($"{expression}赋值的左边部分必须是变量,属性或索引器");
 
@@ -1752,9 +1704,7 @@ namespace Arc.UniInk
                 var parameterInfos = m.GetParameters();
                 if (parameterInfos.Length == args.Count) return true;
                 if (parameterInfos.Length > 0 && parameterInfos.Last().IsDefined(typeof(ParamArrayAttribute), false)) return true;
-                return parameterInfos.Length > args.Count 
-                       && parameterInfos.Take(args.Count).All(p => args[p.Position] == null || p.ParameterType.IsInstanceOfType(args[p.Position])) 
-                       && parameterInfos.Skip(args.Count).All(p => p.HasDefaultValue);
+                return parameterInfos.Length > args.Count && parameterInfos.Take(args.Count).All(p => args[p.Position] == null || p.ParameterType.IsInstanceOfType(args[p.Position])) && parameterInfos.Skip(args.Count).All(p => p.HasDefaultValue);
             }
         }
 
@@ -2048,7 +1998,7 @@ namespace Arc.UniInk
             return concreteTypes.ToArray();
         }
 
-        private static BindingFlags DetermineInstanceOrStatic(out Type objType, ref object obj, out ValueTypeNestingTrace valueTypeNestingTrace)
+        private static BindingFlags DetermineInstanceOrStatic(ref object obj, out Type objType, out ValueTypeNestingTrace valueTypeNestingTrace)
         {
             valueTypeNestingTrace = obj as ValueTypeNestingTrace;
 
@@ -2155,6 +2105,15 @@ namespace Arc.UniInk
 
             return functionExists;
         }
+
+
+        private bool TryGetVariable(string name, out object result)
+        {
+            dic_DefaultVariables.TryGetValue(name, out result);
+
+            return false;
+        }
+
 
         /// <summary>Get type by the type name</summary>
         /// <remarks>support (nested) generic type </remarks>

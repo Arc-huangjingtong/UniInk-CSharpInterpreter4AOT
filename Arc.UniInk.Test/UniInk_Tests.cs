@@ -4,8 +4,8 @@
  * 👩‍💻 Author   : Arc                                                                                                    *
  * 🤝 Support  : Assembly: nunit.framework, Version=3.5.0.0                                                             *
  * 📝 Desc     : the UniInk's unitTest                                                                                  *
- * 📚 TestNum  : 41                                                                                                     *
- * ⏱️ Speed    : 2'551 s                                                                                                *
+ * 📚 TestNum  : 44                                                                                                     *
+ * ⏱️ Speed    : 2'682 s                                                                                                *
 /************************************************************************************************************************/
 
 namespace Arc.UniInk.NunitTest
@@ -166,7 +166,8 @@ namespace Arc.UniInk.NunitTest
 
 
         [TestCase("var w = 2+4;        return w;")]
-        [TestCase("var w = 4-2;               w;")]
+        [TestCase("var w = 2+4; var c =+w+++w;        return c;")]
+        [TestCase("var w = 4-2; w++; ++w;     w;")]
         [TestCase("int w = 4-2; w +=3; return w;")]
         [TestCase("var w = 4-2;")]
         [TestCase("4/2;")]
