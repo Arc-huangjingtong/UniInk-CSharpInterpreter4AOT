@@ -1054,7 +1054,7 @@ namespace Arc.UniInk
                             //TODO: 这里有问题
                             if (varValue?.GetType().IsPrimitive ?? false)
                             {
-                                stack.Push(valueTypeNestingTrace = new ValueTypeNestingTrace { Container = valueTypeNestingTrace ?? obj, Member = member, Value = varValue });
+                                stack.Push(valueTypeNestingTrace = new ValueTypeWrapper { Container = valueTypeNestingTrace ?? obj, Member = member, Value = varValue });
 
                                 pushVarValue = false;
                             }
@@ -1498,7 +1498,7 @@ namespace Arc.UniInk
         {
             if (stack.Count == 0) throw new SyntaxException("Empty expression and Empty stack");
 
-            var list = stack.Select(e => e is ValueTypeNestingTrace valueTypeNestingTrace ? valueTypeNestingTrace.Value : e); //处理值类型
+            var list = stack.Select(e => e is ValueTypeWrapper valueTypeNestingTrace ? valueTypeNestingTrace.Value : e); //处理值类型
 
             stack = new Stack<object>(list);
 
@@ -1990,13 +1990,13 @@ namespace Arc.UniInk
             return concreteTypes.ToArray();
         }
 
-        private static BindingFlags DetermineInstanceOrStatic(ref object obj, out Type objType, out ValueTypeNestingTrace valueTypeNestingTrace)
+        private static BindingFlags DetermineInstanceOrStatic(ref object obj, out Type objType, out ValueTypeWrapper valueTypeWrapper)
         {
-            valueTypeNestingTrace = obj as ValueTypeNestingTrace;
+            valueTypeWrapper = obj as ValueTypeWrapper;
 
-            if (valueTypeNestingTrace != null)
+            if (valueTypeWrapper != null)
             {
-                obj = valueTypeNestingTrace.Value;
+                obj = valueTypeWrapper.Value;
             }
 
             if (obj is Type classOrTypeName)
@@ -2235,7 +2235,7 @@ namespace Arc.UniInk
         #region 用于解析和解释的受保护的工具子类
 
         /// <summary> 值类型嵌套跟踪 </summary>
-        private class ValueTypeNestingTrace
+        private class ValueTypeWrapper
         {
             public object Container { get; set; }
 
@@ -2246,7 +2246,7 @@ namespace Arc.UniInk
             /// <summary> 赋值 </summary>
             public void AssignValue()
             {
-                if (Container is ValueTypeNestingTrace valueTypeNestingTrace)
+                if (Container is ValueTypeWrapper valueTypeNestingTrace)
                 {
                     var propertyInfo = Member as PropertyInfo;
                     propertyInfo?.SetValue(valueTypeNestingTrace.Value, Value);
