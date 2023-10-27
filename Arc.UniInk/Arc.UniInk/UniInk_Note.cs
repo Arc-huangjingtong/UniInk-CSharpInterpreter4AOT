@@ -7,8 +7,48 @@
 
 namespace Arc.UniInk
 {
+    using System.Text.RegularExpressions;
+
     public class UniInk_Note
     {
+        public static class UniInkHelper
+        {
+            #region Remove comments
+
+            //Base on : https://stackoverflow.com/questions/3524317/regex-to-strip-line-comments-from-c-sharp/3524689#3524689
+            private static readonly Regex removeCommentsRegex = new($"{blockComments}|{lineComments}|{stringsIgnore}|{verbatimStringsIgnore}", RegexOptions.Singleline | RegexOptions.Compiled);
+            private static readonly Regex newLineCharsRegex = new(@"\r\n|\r|\n", RegexOptions.Compiled);
+
+            private const string verbatimStringsIgnore = @"@(""[^""]*"")+"; //language=regex
+            private const string stringsIgnore = @"""((\\[^\n]|[^""\n])*)"""; //language=regex
+            private const string blockComments = @"/\*(.*?)\*/"; //language=regex
+            private const string lineComments = @"//[^\r\n]*"; //language=regex
+
+
+            /// <summary>移除指定C#脚本的所有行和块注释</summary>
+            /// <param name="scriptWithComments">含有注释的C#代码</param>
+            /// <returns> 移除掉注释的C#代码 </returns>
+            public static string RemoveComments(string scriptWithComments)
+            {
+                return removeCommentsRegex.Replace(scriptWithComments, Evaluator);
+
+                string Evaluator(Match match)
+                {
+                    if (match.Value.StartsWith("/"))
+                    {
+                        var newLineCharsMatch = newLineCharsRegex.Match(match.Value);
+
+                        return match.Value.StartsWith("/*") && newLineCharsMatch.Success ? newLineCharsMatch.Value : " ";
+                    }
+
+                    return match.Value;
+                }
+            }
+
+            #endregion
+        }
+
+
         // /// <summary>get scripts between [{] and [}]</summary>
         // /// <remarks>exclude [{] and [}] in string or char</remarks>
         // /// <param name="parentScript">the parent scripts </param>
@@ -54,8 +94,8 @@ namespace Arc.UniInk
         //
         //     return currentScript.ToString();
         // }
-        
-        
+
+
         //      /// <summary>Get a expression list between [startChar] and [endChar]</summary>
         // /// <remarks>⚠️The startChar , endChar and separator must be different</remarks>
         // private List<string> GetExpressionsParenthesized(string expression, ref int i, bool checkSeparator, char separator = ',', char startChar = '(', char endChar = ')')
@@ -115,6 +155,5 @@ namespace Arc.UniInk
         //
         //     return expressionsList;
         // }
-        
     }
 }

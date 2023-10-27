@@ -12,10 +12,11 @@
 ! This repository is a work in progress and is not yet complete.
 ```
 
-# 📝Next Steps
+# 📝RoadMap
 
 - [x] Add support for custom functions.
-- [ ] Delete some useless features.
+- [x] Delete some useless features.
+- [ ] Zero reflection model
 - [ ] Optimize reflection performance.
 - [ ] Add high performance model.
 
@@ -29,15 +30,6 @@
 | Beginner-Friendly | 🙌 User-friendly Comment makes it accessible for beginners.                  |
 | Extensible        | 🔌 Easily extend UniInk's functionality with custom functions and libraries. |
 
-# 🚀Getting Started
-
-1. Copy the [only scripts](./Arc.UniInk/Arc.UniInk/UniInk.cs) to your local project.
-2. Reference the UniInk library in your desired project.
-3. Import the UniInk namespace: `using UniInk;`
-4. Initialize an instance of the `ScriptInterpreter` class.
-5. Load your script using the `LoadScript` method.
-6. Execute the script using the `Execute` method.
-7. Enjoy the power of scripting in your project! ✨
 
 # 💡Example Usage
 

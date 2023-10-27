@@ -1501,27 +1501,7 @@ namespace Arc.UniInk
             return staticType;
         }
 
-
-        /// <summary>加减号转换为正负号</summary>
-        private void ChangeToUnaryPlusOrMinus(Stack<object> stack)
-        {
-            if (stack.Count > 0 && stack.Peek() is ExpressionOperator op && (op.Equals(ExpressionOperator.Plus) || op.Equals(ExpressionOperator.Minus)))
-            {
-                stack.Pop();
-
-                if (stack.Count == 0 || stack.Peek() is ExpressionOperator)
-                {
-                    stack.Push(op.Equals(ExpressionOperator.Plus) ? ExpressionOperator.UnaryPlus : ExpressionOperator.UnaryMinus);
-                }
-                else
-                {
-                    stack.Push(op);
-                }
-            }
-        }
-
-
-        public object ProcessStack(Stack<object> stack)
+ public object ProcessStack(Stack<object> stack)
         {
             if (stack.Count == 0) throw new SyntaxException("Empty expression or Empty stack");
 
@@ -1558,6 +1538,29 @@ namespace Arc.UniInk
 
             return stackCache;
         }
+        
+        
+        
+        /// <summary>加减号转换为正负号</summary>
+        private void ChangeToUnaryPlusOrMinus(Stack<object> stack)
+        {
+            if (stack.Count > 0 && stack.Peek() is ExpressionOperator op && (op.Equals(ExpressionOperator.Plus) || op.Equals(ExpressionOperator.Minus)))
+            {
+                stack.Pop();
+
+                if (stack.Count == 0 || stack.Peek() is ExpressionOperator)
+                {
+                    stack.Push(op.Equals(ExpressionOperator.Plus) ? ExpressionOperator.UnaryPlus : ExpressionOperator.UnaryMinus);
+                }
+                else
+                {
+                    stack.Push(op);
+                }
+            }
+        }
+
+
+       
 
 
         /// <summary>用于解析方法的委托</summary>
@@ -2562,43 +2565,7 @@ namespace Arc.UniInk
 
     #endregion
 
-
-    public static class UniInkHelper
-    {
-        #region Remove comments
-
-        //Base on : https://stackoverflow.com/questions/3524317/regex-to-strip-line-comments-from-c-sharp/3524689#3524689
-        private static readonly Regex removeCommentsRegex = new($"{blockComments}|{lineComments}|{stringsIgnore}|{verbatimStringsIgnore}", RegexOptions.Singleline | RegexOptions.Compiled);
-        private static readonly Regex newLineCharsRegex = new(@"\r\n|\r|\n", RegexOptions.Compiled);
-
-        private const string verbatimStringsIgnore = @"@(""[^""]*"")+"; //language=regex
-        private const string stringsIgnore = @"""((\\[^\n]|[^""\n])*)"""; //language=regex
-        private const string blockComments = @"/\*(.*?)\*/"; //language=regex
-        private const string lineComments = @"//[^\r\n]*"; //language=regex
-
-
-        /// <summary>移除指定C#脚本的所有行和块注释</summary>
-        /// <param name="scriptWithComments">含有注释的C#代码</param>
-        /// <returns> 移除掉注释的C#代码 </returns>
-        public static string RemoveComments(string scriptWithComments)
-        {
-            return removeCommentsRegex.Replace(scriptWithComments, Evaluator);
-
-            string Evaluator(Match match)
-            {
-                if (match.Value.StartsWith("/"))
-                {
-                    var newLineCharsMatch = newLineCharsRegex.Match(match.Value);
-
-                    return match.Value.StartsWith("/*") && newLineCharsMatch.Success ? newLineCharsMatch.Value : " ";
-                }
-
-                return match.Value;
-            }
-        }
-
-        #endregion
-    }
+    
 }
 //2646
 //2732
