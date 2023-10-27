@@ -396,10 +396,13 @@ namespace Arc.UniInk
             set
             {
                 dic_DefaultVariables["this"] = value;
-                ContextMethods.Clear();
-                ContextMembers.Clear();
-                ContextMethods.AddRange(value?.GetType().GetMethods(InstanceBindingFlag) ?? Array.Empty<MethodInfo>());
-                ContextMembers.AddRange(value?.GetType().GetMembers(BindingFlag) ?? Array.Empty<MemberInfo>());
+                if (value != null)
+                {
+                    ContextMethods.Clear();
+                    ContextMembers.Clear();
+                    ContextMethods.AddRange(value.GetType().GetMethods(InstanceBindingFlag));
+                    ContextMembers.AddRange(value.GetType().GetMembers(BindingFlag));
+                }
             }
         }
 
@@ -905,6 +908,8 @@ namespace Arc.UniInk
             var hasVar = varFuncMatch.Groups["varKeyword"].Success;
             var hasAssign = varFuncMatch.Groups["assignOperator"].Success;
             var hasPostfix = varFuncMatch.Groups["postfixOperator"].Success;
+            var hasPrefix = varFuncMatch.Groups["prefixOperator"].Success;
+            var hsaNullConditional = varFuncMatch.Groups["nullConditional"].Success;
 
             if (hasVar && !hasAssign) throw new SyntaxException($"The implicit variable is not initialized! [var {varFuncMatch.Groups["name"].Value}]");
 
@@ -928,24 +933,9 @@ namespace Arc.UniInk
                 //如果是对象的方法,或者是this的方法
                 if (isInObject || ContextMethods.Any(methodInfo => methodInfo.Name.Equals(varFuncName)))
                 {
-                    if (isInObject && (stack.Count == 0 || stack.Peek() is ExpressionOperator))
-                    {
-                        throw new SyntaxException($"[{varFuncMatch.Value})] must follow a object");
-                    }
+                    var hasPush = HandleInObjectMember(isInObject, hsaNullConditional, stack, varFuncMatch, out var obj);
 
-                    var obj = isInObject ? stack.Pop() : Context;
-
-
-                    if (obj is null)
-                    {
-                        var hasNullConditional = varFuncMatch.Groups["nullConditional"].Success;
-                        if (hasNullConditional)
-                        {
-                            stack.Push(null);
-                        }
-                        else throw new SyntaxException($"[{varFuncMatch.Value}] is null!");
-                    }
-                    else
+                    if (!hasPush)
                     {
                         var argIndex = 0;
                         var funArgWrappers = new List<FunArgWrapper>();
@@ -1033,23 +1023,8 @@ namespace Arc.UniInk
             {
                 if (isInObject || ContextMembers.Any(memberInfo => memberInfo.Name.Equals(varFuncName)))
                 {
-                    if (isInObject && (stack.Count == 0 || stack.Peek() is ExpressionOperator))
-                    {
-                        throw new SyntaxException($"[{varFuncMatch.Value}] must follow a object");
-                    }
-
-                    var obj = isInObject ? stack.Pop() : Context;
-
-                    if (obj is null)
-                    {
-                        var hasNullConditional = varFuncMatch.Groups["nullConditional"].Success;
-                        if (hasNullConditional)
-                        {
-                            stack.Push(null);
-                        }
-                        else throw new SyntaxException($"[{varFuncMatch.Value}] is null!");
-                    }
-                    else
+                    var hasPush = HandleInObjectMember(isInObject, hsaNullConditional, stack, varFuncMatch, out var obj);
+                    if (!hasPush)
                     {
                         DetermineInstanceOrStatic(ref obj, out var objType, out var valueTypeNestingTrace);
 
@@ -1090,8 +1065,7 @@ namespace Arc.UniInk
 
                         if (hasAssign)
                         {
-                            var value = varValue;
-                            varValue = ManageKindOfAssignation(expression, ref i, varFuncMatch, () => value, stack);
+                            varValue = ManageKindOfAssignation(expression, ref i, varFuncMatch, varValue, stack);
                         }
                         else if (hasPostfix)
                         {
@@ -1123,77 +1097,54 @@ namespace Arc.UniInk
                 }
                 else
                 {
-                    //  TryGetVariable(varFuncName, out var varValue);
-                    if (dic_DefaultVariables.TryGetValue(varFuncName, out var varValueToPush))
+                    if (TryGetVariable(varFuncName, out var varValue))
                     {
-                        stack.Push(varValueToPush);
+                        stack.Push(varValue);
                     }
-                    else if (Variables.TryGetValue(varFuncName, out var cusVarValueToPush) || varFuncMatch.Groups["assignOperator"].Success || (stack.Count == 1 && stack.Peek() is Type && string.IsNullOrWhiteSpace(expression.Substring(i))))
+                    else if (Variables.TryGetValue(varFuncName, out var cusVarValueToPush) || hasAssign || (stack.Count == 1 && stack.Peek() is Type))
                     {
-                        if (stack.Count == 1 && stack.Peek() is Type classOrEnum)
+                        if (stack.Count == 1 && stack.Peek() is Type type)
                         {
-                            // if (Variables.ContainsKey(varFuncName))
-                            //     throw new SyntaxException($"变量名已存在：[{varFuncName}]");
-                            if (varFuncMatch.Groups["varKeyword"].Success)
-                                throw new SyntaxException("无法使用type和var关键字的变量");
-
                             stack.Pop();
 
-                            Variables[varFuncName] = new StronglyTypedVariable(classOrEnum, GetDefaultValueOfType(classOrEnum));
+                            Variables[varFuncName] = new StronglyTypedVariable(type, GetDefaultValueOfType(type));
                         }
 
                         if (cusVarValueToPush is StronglyTypedVariable typedVariable)
+                        {
                             cusVarValueToPush = typedVariable.Value;
+                        }
 
                         stack.Push(cusVarValueToPush);
 
-
-                        var assign = true;
-
-                        if (varFuncMatch.Groups["assignOperator"].Success)
+                        if (hasAssign)
                         {
-                            var push = cusVarValueToPush;
-                            cusVarValueToPush = ManageKindOfAssignation(expression, ref i, varFuncMatch, () => push, stack);
+                            cusVarValueToPush = ManageKindOfAssignation(expression, ref i, varFuncMatch, cusVarValueToPush, stack);
+                            AssignVariable(varFuncName, cusVarValueToPush);
                         }
-                        else if (varFuncMatch.Groups["postfixOperator"].Success)
+                        else if (hasPostfix)
                         {
                             cusVarValueToPush = varFuncMatch.Groups["postfixOperator"].Value.Equals("++") ? (int)cusVarValueToPush + 1 : (int)cusVarValueToPush - 1;
+                            AssignVariable(varFuncName, cusVarValueToPush);
                         }
-                        else if (varFuncMatch.Groups["prefixOperator"].Success)
+                        else if (hasPrefix)
                         {
                             stack.Pop();
                             cusVarValueToPush = varFuncMatch.Groups["prefixOperator"].Value.Equals("++") ? (int)cusVarValueToPush + 1 : (int)cusVarValueToPush - 1;
                             stack.Push(cusVarValueToPush);
-                        }
-                        else
-                        {
-                            assign = false;
-                        }
-
-                        if (assign)
-                        {
                             AssignVariable(varFuncName, cusVarValueToPush);
                         }
                     }
                     else
                     {
-                        var staticType = EvaluateType(expression, ref i, varFuncName, string.Empty);
-
-                        if (staticType != null)
-                        {
-                            stack.Push(staticType);
-                        }
-                        else
-                        {
-                            throw new SyntaxException($"变量 [{varFuncName}] 在脚本中未知 : [{expression}]");
-                        }
+                        TryGetStaticType(expression, ref i, varFuncName, stack);
                     }
                 }
 
                 i--;
             }
 
-            if (varFuncMatch.Groups["sign"].Success)
+            if (hasSign)
             {
                 var temp = stack.Pop();
                 stack.Push(varFuncMatch.Groups["sign"].Value.Equals("+") ? ExpressionOperator.UnaryPlus : ExpressionOperator.UnaryMinus);
@@ -1202,6 +1153,48 @@ namespace Arc.UniInk
 
             return true;
         }
+
+        private void TryGetStaticType(string expression, ref int i, string varFuncName, Stack<object> stack)
+        {
+            var staticType = EvaluateType(expression, ref i, varFuncName, string.Empty);
+
+            if (staticType != null)
+            {
+                stack.Push(staticType);
+            }
+            else
+            {
+                throw new SyntaxException($"变量 [{varFuncName}] 在脚本中未知 : [{expression}]");
+            }
+        }
+
+
+        private bool HandleInObjectMember(bool isInObject, bool hasNullConditional, Stack<object> stack, Match varFuncMatch, out object obj)
+        {
+            if (isInObject && (stack.Count == 0 || stack.Peek() is ExpressionOperator))
+            {
+                throw new SyntaxException($"[{varFuncMatch.Value})] must follow a object");
+            }
+
+            obj = isInObject ? stack.Pop() : Context;
+
+
+            if (obj is null)
+            {
+                if (hasNullConditional)
+                {
+                    stack.Push(null);
+                    return true;
+                }
+                else
+                {
+                    throw new SyntaxException($"[{varFuncMatch.Value}] is null!");
+                }
+            }
+
+            return false;
+        }
+
 
         /// <summary>Evaluate Char or Escaped Char  _eg: 'a' '\d'</summary>
         /// <param name="expression"> the expression to Evaluate     </param>
@@ -1501,9 +1494,9 @@ namespace Arc.UniInk
             return staticType;
         }
 
- public object ProcessStack(Stack<object> stack)
+        public object ProcessStack(Stack<object> stack)
         {
-            if (stack.Count == 0) throw new SyntaxException("Empty expression or Empty stack");
+            if (stack.Count == 0) throw new SyntaxException("Empty expression and Empty stack");
 
             var list = stack.Select(e => e is ValueTypeNestingTrace valueTypeNestingTrace ? valueTypeNestingTrace.Value : e); //处理值类型
 
@@ -1538,9 +1531,8 @@ namespace Arc.UniInk
 
             return stackCache;
         }
-        
-        
-        
+
+
         /// <summary>加减号转换为正负号</summary>
         private void ChangeToUnaryPlusOrMinus(Stack<object> stack)
         {
@@ -1560,9 +1552,6 @@ namespace Arc.UniInk
         }
 
 
-       
-
-
         /// <summary>用于解析方法的委托</summary>
         private delegate bool ParsingMethodDelegate(string expression, Stack<object> stack, ref int i);
 
@@ -1571,21 +1560,21 @@ namespace Arc.UniInk
         private delegate object InternalDelegate(params object[] args);
 
         /// <summary>管理分配类型</summary>
-        private object ManageKindOfAssignation(string expression, ref int index, Match match, Func<object> getCurrentValue, Stack<object> stack)
+        private object ManageKindOfAssignation(string expression, ref int index, Match match, object getCurrentValue, Stack<object> stack)
         {
             if (stack?.Count > 1) throw new SyntaxException($"{expression}赋值的左边部分必须是变量,属性或索引器");
 
-            object result;
             var rightExpression = expression.Substring(index);
+
+            if (string.IsNullOrWhiteSpace(rightExpression)) throw new SyntaxException("分配中缺少右部分");
+
             index = expression.Length;
-
-            if (rightExpression.Trim().Equals(string.Empty)) throw new SyntaxException("分配中缺少右部分");
-
+            object result;
             if (match.Groups["assignmentPrefix"].Success)
             {
                 var prefixOp = dic_Operators[match.Groups["assignmentPrefix"].Value];
 
-                result = dic_OperatorsFunc[prefixOp](getCurrentValue(), Evaluate(rightExpression));
+                result = dic_OperatorsFunc[prefixOp](getCurrentValue, Evaluate(rightExpression));
             }
             else
             {
@@ -2096,10 +2085,6 @@ namespace Arc.UniInk
             {
                 result = complexFunc(this, args);
             }
-            else if (Variables.TryGetValue(name, out var o) && o is Delegate delegateVar)
-            {
-                result = delegateVar.DynamicInvoke(args.ConvertAll(str => Evaluate(str)).ToArray());
-            }
             else
             {
                 result = null;
@@ -2110,9 +2095,16 @@ namespace Arc.UniInk
         }
 
 
-        private bool TryGetVariable(string name, out object result)
+        private bool TryGetVariable(string name, out object result) //,string expression=null,ref int i)
         {
-            dic_DefaultVariables.TryGetValue(name, out result);
+            if (dic_DefaultVariables.TryGetValue(name, out result))
+            {
+                return true;
+            }
+            // else if
+            // {
+            //     
+            // }
 
             return false;
         }
@@ -2564,9 +2556,8 @@ namespace Arc.UniInk
     }
 
     #endregion
-
-    
 }
+//2556
 //2646
 //2732
 //2857

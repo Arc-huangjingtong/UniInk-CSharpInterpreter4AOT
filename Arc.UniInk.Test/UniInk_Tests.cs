@@ -195,7 +195,8 @@ namespace Arc.UniInk.NunitTest
             }
         }
 
-        [TestCase("")] [TestCase(" ")]
+        [TestCase("")]
+        [TestCase(" ")]
         public void Test05_Boundary(string script)
         {
             try
