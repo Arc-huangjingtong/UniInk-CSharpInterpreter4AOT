@@ -96,9 +96,9 @@ namespace Arc.UniInk.NunitTest
         [TestCase("Avg (1,2,3,4,5,6,7,8,9,10   )", 5.5)]
         [TestCase("Max (1,2,3,4,5,6,7,8,9,10   )", 10)]
         [TestCase("Min (1,1,2,3,4,5,6,7,8,9,-10)", -10)]
-        [TestCase("List(1,2,3,4,5,6,7,8,9,10   )", null)]
-        [TestCase("List(1,2,3,4,5,6,7,8,9,10   ).Count", 10)]
-        [TestCase("List(\"aaa\",\"bbb\"   )", null)]
+        [TestCase("AList(1,2,3,4,5,6,7,8,9,10   )", null)]
+        [TestCase("AList(1,2,3,4,5,6,7,8,9,10   ).Count", 10)]
+        [TestCase("AList(\"aaa\",\"bbb\"   )", null)]
         public void Test03_MultipleArgsFunction(string script, object answer)
         {
             var ans = Ink.Evaluate(script);
@@ -132,7 +132,7 @@ namespace Arc.UniInk.NunitTest
             }
         }
 
-        //[TestCase("List<int> list = D; ")]
+        //[TestCase("List<int> list = D;list.Add(1);list.Add(2);list.Add(3);list.Add(4);list.Add(5);return list;")]
         public void Test05_Type(string script)
         {
             var ans = Ink.ScriptEvaluate(script);
@@ -163,6 +163,14 @@ namespace Arc.UniInk.NunitTest
             TestContext.Progress.WriteLine($"✅:{ans}");
             Assert.NotNull(ans);
         }
+        
+        [TestCase("OutTest(out int a);return a;")]
+        public void Test08_OutKeyword(string script)
+        {
+            var ans = Ink.ScriptEvaluate(script);
+            TestContext.Progress.WriteLine($"✅:{ans}");
+            Assert.NotNull(ans);
+        }
 
 
         [TestCase("var w = 2+4;        return w;")]
@@ -180,6 +188,7 @@ namespace Arc.UniInk.NunitTest
         [TestCase("TestEnum.A;")] //测试枚举
         [TestCase("TestA(x => (x > 0) && (A == B));")]
         [TestCase("TestA(x => x == D);")]
+        [TestCase("OutTest(out int a);return a;")]
         [TestCase("TestC<TestEnum>(A);")]
         [TestCase("TestD<TestEnum,TestEnum>(A);")] //测试多泛型参数
         [TestCase(" TestC<List<int>>(D);  ")] //测试多泛型参数
@@ -256,7 +265,7 @@ namespace Arc.UniInk.NunitTest
         public static int Test()
         {
             Console.WriteLine("test");
-
+           
 
             return 1;
         }
@@ -300,6 +309,7 @@ namespace Arc.UniInk.NunitTest
 
         public int ParamsTest(params object[] args)
         {
+            
             Console.WriteLine(args.Length);
             return args.Length;
         }
@@ -308,6 +318,12 @@ namespace Arc.UniInk.NunitTest
         {
             Console.WriteLine(a + args.Length);
             return args.Length + 1000;
+        }
+        
+        public int OutTest(out int a)
+        {
+            a = 1;
+            return 1;
         }
     }
 

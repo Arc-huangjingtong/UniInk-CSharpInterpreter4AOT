@@ -62,7 +62,7 @@ namespace Arc.UniInk
         /// <item><term>genTag           </term><description> : the [&lt;] [&gt;] in Generic type                       </description></item>
         /// <item><term>isFunction       </term><description> : the [(] in function                                     </description></item> 
         /// </list></summary>
-        protected static readonly Regex regex_VarOrFunction = new(@"^((?<sign>[+-])|(?<prefixOperator>[+][+]|--)|(?<varKeyword>var)\s+|((?<nullConditional>[?])?(?<inObject>\.))?)(?<name>[\p{L}_](?>[\p{L}_0-9]*))(?>\s*)((?<assignOperator>(?<assignmentPrefix>[+\-*/%&|^]|\?\?)?=(?![=>]))|(?<postfixOperator>([+][+]|--)(?![\p{L}_0-9]))|((?<isgeneric>[<](?>([\p{L}_](?>[\p{L}_0-9]*)|(?>\s+)|[,\.])+|(?<gentag>[<])|(?<-gentag>[>]))*(?(gentag)(?!))[>])?(?<isfunction>[(])?))", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        protected static readonly Regex regex_VarOrFunction = new(@"^((?<prefixOperator>[+][+]|--)|(?<varKeyword>var)\s+|((?<nullConditional>[?])?(?<inObject>\.))?)(?<name>[\p{L}_](?>[\p{L}_0-9]*))(?>\s*)((?<assignOperator>(?<assignmentPrefix>[+\-*/%&|^]|\?\?)?=(?![=>]))|(?<postfixOperator>([+][+]|--)(?![\p{L}_0-9]))|((?<isgeneric>[<](?>([\p{L}_](?>[\p{L}_0-9]*)|(?>\s+)|[,\.])+|(?<gentag>[<])|(?<-gentag>[>]))*(?(gentag)(?!))[>])?(?<isfunction>[(])?))", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
         /// <summary><b>Match functionArgKeywords</b><list type="table">
         /// <item><term>keyword          </term><description> : the keywords : [out] [ref] [in]                         </description></item>
@@ -346,7 +346,7 @@ namespace Arc.UniInk
         protected static readonly Dictionary<string, Func<UniInk, List<string>, object>> dic_complexStandardFunc = new()
         {
             { "Avg", (self, args) => args.ConvertAll(arg => Convert.ToDouble(self.Evaluate(arg))).Sum() / args.Count },
-            { "List", (self, args) => args.ConvertAll(arg => self.Evaluate(arg)) },
+            { "AList", (self, args) => args.ConvertAll(arg => self.Evaluate(arg)) },
             { "Max", (self, args) => args.ConvertAll(arg => Convert.ToDouble(self.Evaluate(arg))).Max() },
             { "Min", (self, args) => args.ConvertAll(arg => Convert.ToDouble(self.Evaluate(arg))).Min() },
             {
@@ -909,12 +909,9 @@ namespace Arc.UniInk
             var hasAssign = varFuncMatch.Groups["assignOperator"].Success;
             var hasPostfix = varFuncMatch.Groups["postfixOperator"].Success;
             var hasPrefix = varFuncMatch.Groups["prefixOperator"].Success;
-            var hsaNullConditional = varFuncMatch.Groups["nullConditional"].Success;
+            var hasNullConditional = varFuncMatch.Groups["nullConditional"].Success;
 
             if (hasVar && !hasAssign) throw new SyntaxException($"The implicit variable is not initialized! [var {varFuncMatch.Groups["name"].Value}]");
-
-            var hasSign = varFuncMatch.Groups["sign"].Success;
-            if (hasSign && stack.Count != 0 && stack.Peek() is not ExpressionOperator) return false;
 
 
             var isInObject = varFuncMatch.Groups["inObject"].Success;
@@ -933,7 +930,7 @@ namespace Arc.UniInk
                 //如果是对象的方法,或者是this的方法
                 if (isInObject || ContextMethods.Any(methodInfo => methodInfo.Name.Equals(varFuncName)))
                 {
-                    var hasPush = HandleInObjectMember(isInObject, hsaNullConditional, stack, varFuncMatch, out var obj);
+                    var hasPush = HandleInObjectMember(isInObject, hasNullConditional, stack, varFuncMatch, out var obj);
 
                     if (!hasPush)
                     {
@@ -969,7 +966,7 @@ namespace Arc.UniInk
                             return Evaluate(toEval);
                         });
 
-                        DetermineInstanceOrStatic(ref obj, out var objType, out _);
+                        HandleTypeObject(ref obj, out var objType, out _);
 
                         // 寻找标准实例或公共方法
                         var methodInfo = GetMethod(objType, varFuncName, oArgs, string.Empty, Type.EmptyTypes);
@@ -996,10 +993,9 @@ namespace Arc.UniInk
 
                         if (methodInfo != null) //如果找到了方法，则更具是否是扩展方法来传参调用
                         {
-                            var argsArray = oArgs.ToArray();
-                            stack.Push(methodInfo.Invoke(isExtension ? null : obj, argsArray));
+                            stack.Push(methodInfo.Invoke(isExtension ? null : obj, oArgs.ToArray()));
                             var argsKeyword = funArgWrappers.FindAll(argWithKeyword => argWithKeyword.Keyword.Equals("out") || argWithKeyword.Keyword.Equals("ref"));
-                            argsKeyword.ForEach(outOrRefArg => AssignVariable(outOrRefArg.VariableName, argsArray[outOrRefArg.Index + (isExtension ? 1 : 0)]));
+                            argsKeyword.ForEach(outOrRefArg => AssignVariable(outOrRefArg.VariableName, oArgs[outOrRefArg.Index + (isExtension ? 1 : 0)]));
                         }
                         else
                         {
@@ -1023,10 +1019,10 @@ namespace Arc.UniInk
             {
                 if (isInObject || ContextMembers.Any(memberInfo => memberInfo.Name.Equals(varFuncName)))
                 {
-                    var hasPush = HandleInObjectMember(isInObject, hsaNullConditional, stack, varFuncMatch, out var obj);
+                    var hasPush = HandleInObjectMember(isInObject, hasNullConditional, stack, varFuncMatch, out var obj);
                     if (!hasPush)
                     {
-                        DetermineInstanceOrStatic(ref obj, out var objType, out var valueTypeNestingTrace);
+                        HandleTypeObject(ref obj, out var objType, out var valueTypeNestingTrace);
 
                         MemberInfo member = objType?.GetProperty(varFuncName, BindingFlag);
                         member ??= objType?.GetField(varFuncName, BindingFlag);
@@ -1137,26 +1133,20 @@ namespace Arc.UniInk
                     }
                     else
                     {
-                        TryGetStaticType(expression, ref i, varFuncName, stack);
+                        var genericTypes = varFuncMatch.Groups["isgeneric"].Value;
+                        TryGetStaticType(expression, ref i, varFuncName, stack, genericTypes);
                     }
                 }
 
                 i--;
             }
 
-            if (hasSign)
-            {
-                var temp = stack.Pop();
-                stack.Push(varFuncMatch.Groups["sign"].Value.Equals("+") ? ExpressionOperator.UnaryPlus : ExpressionOperator.UnaryMinus);
-                stack.Push(temp);
-            }
-
             return true;
         }
 
-        private void TryGetStaticType(string expression, ref int i, string varFuncName, Stack<object> stack)
+        private void TryGetStaticType(string expression, ref int i, string varFuncName, Stack<object> stack, string genericTypes = "")
         {
-            var staticType = EvaluateType(expression, ref i, varFuncName, string.Empty);
+            var staticType = EvaluateType(expression, ref i, varFuncName, genericTypes);
 
             if (staticType != null)
             {
@@ -1432,7 +1422,6 @@ namespace Arc.UniInk
                 var typeMatch = regex_VarOrFunction.Match(expression, i, expression.Length - i);
 
                 if (typeMatch.Success // 
-                    && !typeMatch.Groups["sign"].Success //
                     && !typeMatch.Groups["assignOperator"].Success //
                     && !typeMatch.Groups["postfixOperator"].Success // 
                     && !typeMatch.Groups["isfunction"].Success // 
@@ -1456,7 +1445,7 @@ namespace Arc.UniInk
             if (staticType != null)
             {
                 var nestedTypeMatch = regex_VarOrFunction.Match(expression.Substring(i));
-                while (nestedTypeMatch.Success && !nestedTypeMatch.Groups["sign"].Success && !nestedTypeMatch.Groups["assignOperator"].Success && !nestedTypeMatch.Groups["postfixOperator"].Success && !nestedTypeMatch.Groups["isfunction"].Success)
+                while (nestedTypeMatch.Success && !nestedTypeMatch.Groups["assignOperator"].Success && !nestedTypeMatch.Groups["postfixOperator"].Success && !nestedTypeMatch.Groups["isfunction"].Success)
                 {
                     var subIndex = nestedTypeMatch.Length;
                     typeName += $"+{nestedTypeMatch.Groups["name"].Value}{(i + subIndex < expression.Length && expression.Substring(i + subIndex)[0] == '?' ? "?" : "")}";
@@ -1673,15 +1662,31 @@ namespace Arc.UniInk
         {
             MethodInfo methodInfo = null;
             var modifiedArgsCache = new List<object>(args);
-            var methodsInfo = type.GetMethods(InstanceBindingFlag).Where(MethodFilter);
+            var methodsInfo = ContextMethods.Where(MethodFilter);
 
             foreach (var info in methodsInfo)
             {
-                modifiedArgsCache = new List<object>(args);
+                modifiedArgsCache.Clear();
+                modifiedArgsCache.AddRange(args);
 
                 methodInfo = TryToCastMethodParametersToMakeItCallable(info, modifiedArgsCache, genericsTypes, inferredGenericsTypes);
 
                 if (methodInfo != null) break;
+            }
+
+            if (methodInfo == null)
+            {
+                methodsInfo = type.GetMethods(InstanceBindingFlag).Where(MethodFilter);
+
+                foreach (var info in methodsInfo)
+                {
+                    modifiedArgsCache.Clear();
+                    modifiedArgsCache.AddRange(args);
+
+                    methodInfo = TryToCastMethodParametersToMakeItCallable(info, modifiedArgsCache, genericsTypes, inferredGenericsTypes);
+
+                    if (methodInfo != null) break;
+                }
             }
 
             if (methodInfo == null) return null;
@@ -1990,7 +1995,7 @@ namespace Arc.UniInk
             return concreteTypes.ToArray();
         }
 
-        private static BindingFlags DetermineInstanceOrStatic(ref object obj, out Type objType, out ValueTypeWrapper valueTypeWrapper)
+        private static void HandleTypeObject(ref object obj, out Type objType, out ValueTypeWrapper valueTypeWrapper)
         {
             valueTypeWrapper = obj as ValueTypeWrapper;
 
@@ -2003,11 +2008,10 @@ namespace Arc.UniInk
             {
                 objType = classOrTypeName;
                 obj = null;
-                return StaticBindingFlag;
+                return;
             }
 
             objType = obj.GetType();
-            return InstanceBindingFlag;
         }
 
         /// <summary>Get a expression list between [startChar] and [endChar]</summary>
@@ -2192,11 +2196,6 @@ namespace Arc.UniInk
                 return primitiveExplicitCastMethodInfo.MakeGenericMethod(conversionType).Invoke(null, new object[] { value });
             }
 
-            if (DynamicCast(value, conversionType, out var ret))
-            {
-                return ret;
-            }
-
             return conversionType != null ? Convert.ChangeType(value, conversionType) : null;
         }
 
@@ -2204,32 +2203,6 @@ namespace Arc.UniInk
         private static readonly MethodInfo primitiveExplicitCastMethodInfo = typeof(UniInk).GetMethod(nameof(PrimitiveExplicitCast), BindingFlags.Static | BindingFlags.NonPublic);
 
         private static object PrimitiveExplicitCast<T>(object value) => (T)value;
-
-        private static bool DynamicCast(object source, Type destType, out object result)
-        {
-            var srcType = source.GetType();
-            if (srcType == destType)
-            {
-                result = source;
-                return true;
-            }
-
-            result = null;
-
-            const BindingFlags bindingFlags = BindingFlags.Static | BindingFlags.Public | BindingFlags.FlattenHierarchy;
-            var castOperator = destType.GetMethods(bindingFlags).Union(srcType.GetMethods(bindingFlags)).Where(methodInfo => methodInfo.Name is "op_Explicit" or "op_Implicit").Where(methodInfo =>
-            {
-                var pars = methodInfo.GetParameters();
-                return pars.Length == 1 && pars[0].ParameterType == srcType;
-            }).FirstOrDefault(mi => mi.ReturnType == destType);
-
-            if (castOperator != null)
-                result = castOperator.Invoke(null, new[] { source });
-            else
-                return false;
-
-            return true;
-        }
 
 
         #region 用于解析和解释的受保护的工具子类
