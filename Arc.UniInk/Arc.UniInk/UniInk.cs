@@ -181,7 +181,8 @@ namespace Arc.UniInk
             { "uint?", typeof(uint?) },
             { "ulong", typeof(ulong) },
             { "ulong?", typeof(ulong?) },
-            { "void", typeof(void) }
+            { "void", typeof(void) },
+            { "List<int>", typeof(List<int>) }
         };
 
         /// <summary> Some custom default object in Method </summary>
@@ -253,15 +254,13 @@ namespace Arc.UniInk
         {
             ExpressionOperator.LogicalNegation, // !a 逻辑取反
             ExpressionOperator.BitwiseComplement, // ~a 位运算取反
-            ExpressionOperator.UnaryPlus, // +a 一元加号,表示正数符号
-            ExpressionOperator.UnaryMinus // -a 一元减号,表示负数符号
+            // ExpressionOperator.UnaryPlus, // +a 一元加号,表示正数符号
+            // ExpressionOperator.UnaryMinus // -a 一元减号,表示负数符号
         };
 
         /// <summary> Some UnaryPostfix Operators mark</summary>
         protected static readonly Dictionary<ExpressionOperator, Func<object, object, object>> dic_OperatorsFunc = new()
         {
-            { ExpressionOperator.UnaryPlus, (_, right) => +(int)right }, // 一元加号,表示正数符号
-            { ExpressionOperator.UnaryMinus, (_, right) => -(int)right }, // 一元减号,表示负数符号
             { ExpressionOperator.LogicalNegation, (_, right) => !(bool)right }, // 逻辑取反
             { ExpressionOperator.BitwiseComplement, (_, right) => ~(int)right }, // 位运算取反
             { ExpressionOperator.Cast, (left, right) => ChangeType(right, (Type)left) }, // 强制类型转换
@@ -271,6 +270,11 @@ namespace Arc.UniInk
             {
                 ExpressionOperator.Plus, (left, right) =>
                 {
+                    if (left is null)
+                    {
+                        return right;
+                    }
+
                     if (right is string rightStr && left is string leftStr)
                     {
                         return leftStr + rightStr;
@@ -291,7 +295,28 @@ namespace Arc.UniInk
                     return (int)left + (int)right; //报错InvalidCastException: Specified cast is not valid.
                 }
             }, // 加法
-            { ExpressionOperator.Minus, (left, right) => (int)left - (int)right }, // 减法
+            {
+                ExpressionOperator.Minus, (left, right) =>
+                {
+                    if (left is null)
+                    {
+                        return -(int)right;
+                    }
+
+                    if (!left.GetType().IsValueType || !right.GetType().IsValueType) return null;
+                    if (left is IConvertible leftConvertible)
+                    {
+                        left = leftConvertible.ToInt32(null);
+                    }
+
+                    if (right is IConvertible rightConvertible)
+                    {
+                        right = rightConvertible.ToInt32(null);
+                    }
+
+                    return (int)left - (int)right;
+                }
+            }, // 减法
             { ExpressionOperator.ShiftBitsLeft, (left, right) => (int)left << (int)right }, // 左移 
             { ExpressionOperator.ShiftBitsRight, (left, right) => (int)left >> (int)right }, // 右移
             { ExpressionOperator.Lower, (left, right) => (int)left < (int)right }, // 小于
@@ -380,8 +405,10 @@ namespace Arc.UniInk
             "System.Collections.Generic"
         };
 
+        
         /// <summary> Custom types in UniInk </summary>
-        public List<Type> Types { get; } = new();
+        public Dictionary<string, Type> Types { get; } = new();
+
 
         /// <summary> Custom static types looking for extension methods in UniInk </summary>
         public List<Type> StaticTypesForExtensionsMethods { get; } = new()
@@ -418,7 +445,6 @@ namespace Arc.UniInk
 
         private static BindingFlags BindingFlag => BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance | BindingFlags.GetProperty | BindingFlags.GetField;
         private static BindingFlags InstanceBindingFlag => BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance | BindingFlags.GetProperty;
-        private static BindingFlags StaticBindingFlag => BindingFlags.Public | BindingFlags.Static;
 
 
         /// <summary>Evaluate a Script,support [if] State and so on</summary>
@@ -805,7 +831,17 @@ namespace Arc.UniInk
             {
                 for (var i = startIndex; i < expression.Length; i++)
                 {
-                    if (ParsingMethods.Any(parsingMethod => parsingMethod(expression, stack, ref i))) continue;
+                    var any = false;
+                    foreach (var parsingMethod in ParsingMethods)
+                    {
+                        if (parsingMethod(expression, stack, ref i))
+                        {
+                            any = true;
+                            break;
+                        }
+                    }
+
+                    if (any) continue;
                     if (char.IsWhiteSpace(expression[i])) continue;
 
                     throw new SyntaxException($"Invalid character : [{(int)expression[i]}:{expression[i]}] at [{i}  {expression}] ");
@@ -1086,7 +1122,6 @@ namespace Arc.UniInk
                             else
                             {
                                 throw new NotImplementedException();
-                                //((dynamic)member).SetValue(obj, varValue);
                             }
                         }
                     }
@@ -1245,10 +1280,10 @@ namespace Arc.UniInk
 
                 switch (op)
                 {
-                    //排除一元运算符的可能性
-                    case "+" or "-" when stack.Count == 0 || stack.Peek() is ExpressionOperator:
-                        stack.Push(op == "+" ? ExpressionOperator.UnaryPlus : ExpressionOperator.UnaryMinus);
-                        break;
+                    // //排除一元运算符的可能性
+                    // case "+" or "-" when stack.Count == 0 || stack.Peek() is ExpressionOperator:
+                    //     stack.Push(op == "+" ? ExpressionOperator.UnaryPlus : ExpressionOperator.UnaryMinus);
+                    //     break;
                     default:
                         stack.Push(dic_Operators[op]);
                         break;
@@ -1286,8 +1321,6 @@ namespace Arc.UniInk
                 }
                 else
                 {
-                    ChangeToUnaryPlusOrMinus(stack);
-
                     var expressionsInParenthis = GetExpressionsParenthesized(expression, ref i, false);
 
                     stack.Push(Evaluate(expressionsInParenthis[0]));
@@ -1519,25 +1552,6 @@ namespace Arc.UniInk
             }
 
             return stackCache;
-        }
-
-
-        /// <summary>加减号转换为正负号</summary>
-        private void ChangeToUnaryPlusOrMinus(Stack<object> stack)
-        {
-            if (stack.Count > 0 && stack.Peek() is ExpressionOperator op && (op.Equals(ExpressionOperator.Plus) || op.Equals(ExpressionOperator.Minus)))
-            {
-                stack.Pop();
-
-                if (stack.Count == 0 || stack.Peek() is ExpressionOperator)
-                {
-                    stack.Push(op.Equals(ExpressionOperator.Plus) ? ExpressionOperator.UnaryPlus : ExpressionOperator.UnaryMinus);
-                }
-                else
-                {
-                    stack.Push(op);
-                }
-            }
         }
 
 
@@ -2014,41 +2028,48 @@ namespace Arc.UniInk
             objType = obj.GetType();
         }
 
+
+        private readonly StringBuilder stringBuilderCache = new();
+
         /// <summary>Get a expression list between [startChar] and [endChar]</summary>
         /// <remarks>⚠️The startChar , endChar and separator must be different</remarks>
         private List<string> GetExpressionsParenthesized(string expression, ref int i, bool checkSeparator, char separator = ',', char startChar = '(', char endChar = ')')
         {
             var expressionsList = new List<string>();
 
-            var currentExpression = new StringBuilder();
+            stringBuilderCache.Clear();
             var bracketCount = 1;
 
             for (; i < expression.Length; i++)
             {
-                var internalStringMatch = regex_String.Match(expression, i, expression.Length - i);
-                if (internalStringMatch.Success)
-                {
-                    currentExpression.Append(internalStringMatch.Value);
-                    i += internalStringMatch.Length - 1;
-                    continue;
-                }
-
-                var internalCharMatch = regex_Char.Match(expression, i, expression.Length - i);
-                if (internalCharMatch.Success)
-                {
-                    currentExpression.Append(internalCharMatch.Value);
-                    i += internalCharMatch.Length - 1;
-                    continue;
-                }
-
                 var s = expression[i];
+
+                if (s is '\'' or '\"')
+                {
+                    var internalStringMatch = regex_String.Match(expression, i, expression.Length - i);
+                    if (internalStringMatch.Success)
+                    {
+                        stringBuilderCache.Append(internalStringMatch.Value);
+                        i += internalStringMatch.Length - 1;
+                        continue;
+                    }
+
+                    var internalCharMatch = regex_Char.Match(expression, i, expression.Length - i);
+                    if (internalCharMatch.Success)
+                    {
+                        stringBuilderCache.Append(internalCharMatch.Value);
+                        i += internalCharMatch.Length - 1;
+                        continue;
+                    }
+                }
+
 
                 if (s.Equals(startChar)) bracketCount++;
                 if (s.Equals(endChar)) bracketCount--;
 
                 if (bracketCount == 0)
                 {
-                    var currentExpressionStr = currentExpression.ToString().Trim();
+                    var currentExpressionStr = stringBuilderCache.ToString().Trim();
                     if (!string.IsNullOrWhiteSpace(currentExpressionStr))
                         expressionsList.Add(currentExpressionStr);
                     break;
@@ -2056,13 +2077,13 @@ namespace Arc.UniInk
 
                 if (bracketCount == 1 && checkSeparator && s.Equals(separator))
                 {
-                    var currentExpressionStr = currentExpression.ToString().Trim();
+                    var currentExpressionStr = stringBuilderCache.ToString().Trim();
                     expressionsList.Add(currentExpressionStr);
-                    currentExpression.Clear();
+                    stringBuilderCache.Clear();
                 }
                 else
                 {
-                    currentExpression.Append(s);
+                    stringBuilderCache.Append(s);
                 }
             }
 
@@ -2128,21 +2149,17 @@ namespace Arc.UniInk
 
             if (dic_CachedTypes.TryGetValue(fullName, out result)) return result;
 
-            result = Types.Find(type => type.Name.Equals(fullName));
+            if (Types.TryGetValue(fullName, out result)) return result;
 
             try
             {
-                if (result == null)
+                if (!string.IsNullOrEmpty(genericTypes))
                 {
-                    if (!string.IsNullOrWhiteSpace(genericTypes))
-                    {
-                        var types = GetConcreteTypes(genericTypes);
-                        formattedGenericTypes = $"`{types.Length}[{string.Join(", ", types.Select(type => $"[{type.AssemblyQualifiedName}]"))}]";
-                    }
-
-                    result = Type.GetType(typeName + formattedGenericTypes, false, false);
+                    var types = GetConcreteTypes(genericTypes);
+                    formattedGenericTypes = $"`{types.Length}[{string.Join(", ", types.Select(type => $"[{type.AssemblyQualifiedName}]"))}]";
                 }
-                //再从当前程序集中查找
+
+                result = Type.GetType(typeName + formattedGenericTypes, false, false);
 
 
                 for (var a = 0; a < Assemblies.Count && result == null; a++)
@@ -2172,31 +2189,30 @@ namespace Arc.UniInk
 
             return result;
         }
-
-        /// <summary>改变类型</summary>
-        private static object ChangeType(object value, Type conversionType)
+        
+        private static object ChangeType(object value, Type castType)
         {
-            if (conversionType == null) throw new ArgumentNullException(nameof(conversionType));
+            if (castType == null) throw new ArgumentNullException(nameof(castType));
 
             // 泛型类型 且 定义的泛型类型可以为 null
-            if (conversionType.IsGenericType && conversionType.GetGenericTypeDefinition() == typeof(Nullable<>))
+            if (castType.IsGenericType && castType.GetGenericTypeDefinition() == typeof(Nullable<>))
             {
                 if (value == null) return null;
 
-                conversionType = Nullable.GetUnderlyingType(conversionType);
+                castType = Nullable.GetUnderlyingType(castType);
             }
 
-            if (conversionType is { IsEnum: true })
+            if (castType is { IsEnum: true })
             {
-                return Enum.ToObject(conversionType, value);
+                return Enum.ToObject(castType, value);
             }
 
-            if (conversionType != null && value.GetType().IsPrimitive && conversionType.IsPrimitive)
+            if (castType != null && value.GetType().IsPrimitive && castType.IsPrimitive)
             {
-                return primitiveExplicitCastMethodInfo.MakeGenericMethod(conversionType).Invoke(null, new object[] { value });
+                return primitiveExplicitCastMethodInfo.MakeGenericMethod(castType).Invoke(null, new object[] { value });
             }
 
-            return conversionType != null ? Convert.ChangeType(value, conversionType) : null;
+            return castType != null ? Convert.ChangeType(value, castType) : null;
         }
 
 
@@ -2349,8 +2365,6 @@ namespace Arc.UniInk
     {
         public static readonly ExpressionOperator Plus = new();
         public static readonly ExpressionOperator Minus = new();
-        public static readonly ExpressionOperator UnaryPlus = new();
-        public static readonly ExpressionOperator UnaryMinus = new();
         public static readonly ExpressionOperator Multiply = new();
         public static readonly ExpressionOperator Divide = new();
         public static readonly ExpressionOperator Modulo = new();
@@ -2395,14 +2409,11 @@ namespace Arc.UniInk
     }
 
 
-    #region Exceptions
-
     public class SyntaxException : Exception
     {
         public SyntaxException(string message) : base(message) { }
     }
 
-    #endregion
 
     #region EventArgs
 

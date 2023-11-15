@@ -64,7 +64,7 @@ namespace Arc.UniInk
         //         var internalStringMatch = regex_String.Match(parentScript, index, parentScript.Length - index);
         //         if (internalStringMatch.Success)
         //         {
-        //             var innerString = internalStringMatch.Value; //TODO:当字符串没有另一边的引号时，错误不会在此处抛出
+        //             var innerString = internalStringMatch.Value; 
         //             currentScript.Append(innerString);
         //             index += innerString.Length - 1;
         //             continue;

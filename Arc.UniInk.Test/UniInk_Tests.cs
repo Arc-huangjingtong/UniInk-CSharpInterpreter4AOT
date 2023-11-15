@@ -34,8 +34,8 @@ namespace Arc.UniInk.NunitTest
 
             var test = new HelperClass();
             Ink.Context = test;
-            Ink.Types.Add(typeof(TestEnum));
-            Ink.Types.Add(typeof(HelperClass));
+            Ink.Types.Add("TestEnum", typeof(TestEnum));
+            Ink.Types.Add("HelperClass", typeof(HelperClass));
             Ink.StaticTypesForExtensionsMethods.Add(typeof(ExtensionClass));
         }
 
@@ -59,14 +59,14 @@ namespace Arc.UniInk.NunitTest
             char[] operators = { '+', '-', '*', '/' };
             var randomOperator = operators[random.Next(0, operators.Length)];
 
-            string expression = $"{operand1} {randomOperator} {operand2}";
+            var expression = $"{operand1} {randomOperator} {operand2}";
 
             var expectedResult = CalculateExpectedResult(operand1, operand2, randomOperator);
 
             var actualResult = Ink.Evaluate<int>(expression);
 
             Assert.AreEqual(expectedResult, actualResult);
-            TestContext.Progress.WriteLine($"✅:{expression}=" + $"{actualResult}");
+            TestContext.Progress.WriteLine($"✅:{expression} = " + $"{actualResult}");
         }
 
         [TestCase("(1+2)+3+4+5+6+7+8+9+10", 55)]
@@ -120,6 +120,7 @@ namespace Arc.UniInk.NunitTest
         [TestCase("if(3>5)   {return 3;}   else if   (3==5)   {return   3 ; } else {return 5;}")] //Test [if] [else] [else if]
         [TestCase("if(3>5){return \"aaa\";}else if(3==5){return \"bbb\";}else{return \"ccc\";}")] //Test [if] [else] [else if]
         [TestCase("var sum = 0;  for  (var i = 0 ; i < 100 ; i++)    { sum += i; } return sum;")] //Test [for]
+        
         public void Test04_blockKeyword(string script)
         {
             var ans = Ink.ScriptEvaluate(script);
@@ -132,9 +133,10 @@ namespace Arc.UniInk.NunitTest
             }
         }
 
-        //[TestCase("List<int> list = D;list.Add(1);list.Add(2);list.Add(3);list.Add(4);list.Add(5);return list;")]
+        [TestCase("List<int> list = D;list.Add(1);list.Add(2);list.Add(3);list.Add(4);list.Add(5);return list;")]
         public void Test05_Type(string script)
         {
+            Ink.Types.Add("List<int>", typeof(List<int>));
             var ans = Ink.ScriptEvaluate(script);
             TestContext.Progress.WriteLine($"✅:{ans}");
             Assert.NotNull(ans);
@@ -147,6 +149,7 @@ namespace Arc.UniInk.NunitTest
 
         [TestCase("this.Test3();")]
         [TestCase("this.Test3(\"aaa\");")]
+        
         public void Test06_ExtensionMethod(string script)
         {
             var ans = Ink.ScriptEvaluate(script);
@@ -163,7 +166,7 @@ namespace Arc.UniInk.NunitTest
             TestContext.Progress.WriteLine($"✅:{ans}");
             Assert.NotNull(ans);
         }
-        
+
         [TestCase("OutTest(out int a);return a;")]
         public void Test08_OutKeyword(string script)
         {
@@ -178,6 +181,7 @@ namespace Arc.UniInk.NunitTest
         [TestCase("var w = 4-2; w++; ++w;     w;")]
         [TestCase("int w = 4-2; w +=3; return w;")]
         [TestCase("var w = 4-2;")]
+        [TestCase("var w = 4-2;   return   (float)w;")]
         [TestCase("4/2;")]
         [TestCase("Test();")]
         [TestCase("var ccc= new(HelperClass); return ccc.Id;")]
@@ -219,16 +223,12 @@ namespace Arc.UniInk.NunitTest
         }
 
 
-        // [Test]
+        [Test]
         public void Test_Custom()
         {
-            var stack = new Stack<object>();
-            stack.Push(null);
-            var regex = new System.Text.RegularExpressions.Regex(@"^['](?<char>([\\][\\'0abfnrtv]|[^']|))[']");
-            var match = regex.Match("''");
-            Assert.IsTrue(match.Success);
-            Assert.IsTrue(match.Groups["char"].Success);
-            Assert.AreEqual("", match.Groups["char"].Value);
+            var script = "3.65";
+            float.TryParse(script, out var f);
+            Console.WriteLine(f);
         }
 
         private static int CalculateExpectedResult(int operand1, int operand2, char @operator)
@@ -265,7 +265,7 @@ namespace Arc.UniInk.NunitTest
         public static int Test()
         {
             Console.WriteLine("test");
-           
+
 
             return 1;
         }
@@ -309,7 +309,6 @@ namespace Arc.UniInk.NunitTest
 
         public int ParamsTest(params object[] args)
         {
-            
             Console.WriteLine(args.Length);
             return args.Length;
         }
@@ -319,7 +318,7 @@ namespace Arc.UniInk.NunitTest
             Console.WriteLine(a + args.Length);
             return args.Length + 1000;
         }
-        
+
         public int OutTest(out int a)
         {
             a = 1;
