@@ -181,8 +181,7 @@ namespace Arc.UniInk
             { "uint?", typeof(uint?) },
             { "ulong", typeof(ulong) },
             { "ulong?", typeof(ulong?) },
-            { "void", typeof(void) },
-            { "List<int>", typeof(List<int>) }
+            { "void", typeof(void) }
         };
 
         /// <summary> Some custom default object in Method </summary>
@@ -223,52 +222,52 @@ namespace Arc.UniInk
         };
 
         /// <summary> Some Operators string mapping   </summary>
-        public static readonly Dictionary<string, ExpressionOperator> dic_Operators = new(StringComparer.Ordinal)
+        public static readonly Dictionary<string, InkOperator> dic_Operators = new(StringComparer.Ordinal)
         {
-            { "+", ExpressionOperator.Plus },
-            { "-", ExpressionOperator.Minus },
-            { "*", ExpressionOperator.Multiply },
-            { "/", ExpressionOperator.Divide },
-            { "%", ExpressionOperator.Modulo },
-            { "<", ExpressionOperator.Lower },
-            { ">", ExpressionOperator.Greater },
-            { "<=", ExpressionOperator.LowerOrEqual },
-            { ">=", ExpressionOperator.GreaterOrEqual },
-            { "is", ExpressionOperator.Is },
-            { "==", ExpressionOperator.Equal },
-            { "!=", ExpressionOperator.NotEqual },
-            { "&&", ExpressionOperator.ConditionalAnd },
-            { "||", ExpressionOperator.ConditionalOr },
-            { "!", ExpressionOperator.LogicalNegation },
-            { "~", ExpressionOperator.BitwiseComplement },
-            { "&", ExpressionOperator.LogicalAnd },
-            { "|", ExpressionOperator.LogicalOr },
-            { "^", ExpressionOperator.LogicalXor },
-            { "<<", ExpressionOperator.ShiftBitsLeft },
-            { ">>", ExpressionOperator.ShiftBitsRight },
-            { "??", ExpressionOperator.NullCoalescing },
+            { "+", InkOperator.Plus },
+            { "-", InkOperator.Minus },
+            { "*", InkOperator.Multiply },
+            { "/", InkOperator.Divide },
+            { "%", InkOperator.Modulo },
+            { "<", InkOperator.Lower },
+            { ">", InkOperator.Greater },
+            { "<=", InkOperator.LowerOrEqual },
+            { ">=", InkOperator.GreaterOrEqual },
+            { "is", InkOperator.Is },
+            { "==", InkOperator.Equal },
+            { "!=", InkOperator.NotEqual },
+            { "&&", InkOperator.ConditionalAnd },
+            { "||", InkOperator.ConditionalOr },
+            { "!", InkOperator.LogicalNegation },
+            { "~", InkOperator.BitwiseComplement },
+            { "&", InkOperator.LogicalAnd },
+            { "|", InkOperator.LogicalOr },
+            { "^", InkOperator.LogicalXor },
+            { "<<", InkOperator.ShiftBitsLeft },
+            { ">>", InkOperator.ShiftBitsRight },
+            { "??", InkOperator.NullCoalescing },
         };
 
         /// <summary> Some UnaryPostfix Operators mark</summary>
-        protected static readonly List<ExpressionOperator> Operators_UnaryPostfix = new()
+        protected static readonly List<InkOperator> Operators_UnaryPostfix = new()
         {
-            ExpressionOperator.LogicalNegation, // !a 逻辑取反
-            ExpressionOperator.BitwiseComplement, // ~a 位运算取反
+            InkOperator.LogicalNegation, // !a 逻辑取反
+            InkOperator.BitwiseComplement, // ~a 位运算取反
             // ExpressionOperator.UnaryPlus, // +a 一元加号,表示正数符号
             // ExpressionOperator.UnaryMinus // -a 一元减号,表示负数符号
         };
 
         /// <summary> Some UnaryPostfix Operators mark</summary>
-        protected static readonly Dictionary<ExpressionOperator, Func<object, object, object>> dic_OperatorsFunc = new()
+        protected static readonly Dictionary<InkOperator, Func<object, object, object>> dic_OperatorsFunc = new()
         {
-            { ExpressionOperator.LogicalNegation, (_, right) => !(bool)right }, // 逻辑取反
-            { ExpressionOperator.BitwiseComplement, (_, right) => ~(int)right }, // 位运算取反
-            { ExpressionOperator.Cast, (left, right) => ChangeType(right, (Type)left) }, // 强制类型转换
-            { ExpressionOperator.Multiply, (left, right) => (int)left * (int)right }, // 乘法
-            { ExpressionOperator.Divide, (left, right) => (int)left / (int)right }, // 除法
-            { ExpressionOperator.Modulo, (left, right) => (int)left % (int)right }, // 取余
+            { InkOperator.LogicalNegation, (_, right) => !(bool)right }, // 逻辑取反
+            { InkOperator.BitwiseComplement, (_, right) => ~(int)right }, // 位运算取反
+            { InkOperator.Cast, (left, right) => ChangeType(right, (Type)left) }, // 强制类型转换
+            { InkOperator.Multiply, (left, right) => (int)left * (int)right }, // 乘法
+            { InkOperator.Divide, (left, right) => (int)left / (int)right }, // 除法
+            { InkOperator.Modulo, (left, right) => (int)left % (int)right }, // 取余
             {
-                ExpressionOperator.Plus, (left, right) =>
+                InkOperator.Plus, (left, right) =>
                 {
                     if (left is null)
                     {
@@ -296,7 +295,7 @@ namespace Arc.UniInk
                 }
             }, // 加法
             {
-                ExpressionOperator.Minus, (left, right) =>
+                InkOperator.Minus, (left, right) =>
                 {
                     if (left is null)
                     {
@@ -317,33 +316,33 @@ namespace Arc.UniInk
                     return (int)left - (int)right;
                 }
             }, // 减法
-            { ExpressionOperator.ShiftBitsLeft, (left, right) => (int)left << (int)right }, // 左移 
-            { ExpressionOperator.ShiftBitsRight, (left, right) => (int)left >> (int)right }, // 右移
-            { ExpressionOperator.Lower, (left, right) => (int)left < (int)right }, // 小于
-            { ExpressionOperator.Greater, (left, right) => (int)left > (int)right }, // 大于
-            { ExpressionOperator.LowerOrEqual, (left, right) => (int)left <= (int)right }, // 小于等于
-            { ExpressionOperator.GreaterOrEqual, (left, right) => (int)left >= (int)right }, // 大于等于
-            { ExpressionOperator.Is, (left, right) => left != null && ((Type)right).IsInstanceOfType(left) }, // 类型判断
-            { ExpressionOperator.Equal, (left, right) => left == right }, // 等于
-            { ExpressionOperator.NotEqual, (left, right) => left != right }, // 不等于
-            { ExpressionOperator.LogicalAnd, (left, right) => (int)left & (int)right }, // 逻辑与
-            { ExpressionOperator.LogicalXor, (left, right) => (int)left ^ (int)right }, // 逻辑异或
-            { ExpressionOperator.LogicalOr, (left, right) => (int)left | (int)right }, // 逻辑或
+            { InkOperator.ShiftBitsLeft, (left, right) => (int)left << (int)right }, // 左移 
+            { InkOperator.ShiftBitsRight, (left, right) => (int)left >> (int)right }, // 右移
+            { InkOperator.Lower, (left, right) => (int)left < (int)right }, // 小于
+            { InkOperator.Greater, (left, right) => (int)left > (int)right }, // 大于
+            { InkOperator.LowerOrEqual, (left, right) => (int)left <= (int)right }, // 小于等于
+            { InkOperator.GreaterOrEqual, (left, right) => (int)left >= (int)right }, // 大于等于
+            { InkOperator.Is, (left, right) => left != null && ((Type)right).IsInstanceOfType(left) }, // 类型判断
+            { InkOperator.Equal, (left, right) => left == right }, // 等于
+            { InkOperator.NotEqual, (left, right) => left != right }, // 不等于
+            { InkOperator.LogicalAnd, (left, right) => (int)left & (int)right }, // 逻辑与
+            { InkOperator.LogicalXor, (left, right) => (int)left ^ (int)right }, // 逻辑异或
+            { InkOperator.LogicalOr, (left, right) => (int)left | (int)right }, // 逻辑或
             {
-                ExpressionOperator.ConditionalAnd, (left, right) =>
+                InkOperator.ConditionalAnd, (left, right) =>
                 {
                     if (!(bool)left) return false;
                     return (bool)left && (bool)right; // 条件与
                 }
             },
             {
-                ExpressionOperator.ConditionalOr, (left, right) =>
+                InkOperator.ConditionalOr, (left, right) =>
                 {
                     if ((bool)left) return true;
                     return (bool)left || (bool)right; // 条件或
                 }
             },
-            { ExpressionOperator.NullCoalescing, (left, right) => left ?? right }, // 空合并
+            { InkOperator.NullCoalescing, (left, right) => left ?? right }, // 空合并
         };
 
         /// <summary> Some simple Double MathFunc </summary>
@@ -405,7 +404,7 @@ namespace Arc.UniInk
             "System.Collections.Generic"
         };
 
-        
+
         /// <summary> Custom types in UniInk </summary>
         public Dictionary<string, Type> Types { get; } = new();
 
@@ -883,7 +882,7 @@ namespace Arc.UniInk
                 {
                     i += castMatch.Length - 1;
                     stack.Push(type);
-                    stack.Push(ExpressionOperator.Cast);
+                    stack.Push(InkOperator.Cast);
                     return true;
                 }
             }
@@ -900,7 +899,7 @@ namespace Arc.UniInk
         {
             var numberMatch = regex_Number.Match(expression, i, expression.Length - i);
             //make sure match number sign is not a operator
-            if (numberMatch.Success && (!numberMatch.Groups["sign"].Success || stack.Count == 0 || stack.Peek() is ExpressionOperator))
+            if (numberMatch.Success && (!numberMatch.Groups["sign"].Success || stack.Count == 0 || stack.Peek() is InkOperator))
             {
                 i += numberMatch.Length - 1;
 
@@ -1196,7 +1195,7 @@ namespace Arc.UniInk
 
         private bool HandleInObjectMember(bool isInObject, bool hasNullConditional, Stack<object> stack, Match varFuncMatch, out object obj)
         {
-            if (isInObject && (stack.Count == 0 || stack.Peek() is ExpressionOperator))
+            if (isInObject && (stack.Count == 0 || stack.Peek() is InkOperator))
             {
                 throw new SyntaxException($"[{varFuncMatch.Value})] must follow a object");
             }
@@ -1274,21 +1273,11 @@ namespace Arc.UniInk
         {
             var operatorMatch = regex_Operator.Match(expression, i, expression.Length - i);
 
+
             if (operatorMatch.Success)
             {
                 var op = operatorMatch.Value;
-
-                switch (op)
-                {
-                    // //排除一元运算符的可能性
-                    // case "+" or "-" when stack.Count == 0 || stack.Peek() is ExpressionOperator:
-                    //     stack.Push(op == "+" ? ExpressionOperator.UnaryPlus : ExpressionOperator.UnaryMinus);
-                    //     break;
-                    default:
-                        stack.Push(dic_Operators[op]);
-                        break;
-                }
-
+                stack.Push(dic_Operators[op]);
                 i += op.Length - 1;
                 return true;
             }
@@ -1529,12 +1518,12 @@ namespace Arc.UniInk
             {
                 var pop = stack.Pop();
 
-                if (pop is not ExpressionOperator)
+                if (pop is not InkOperator)
                 {
                     stackCache = pop;
                 }
 
-                else if (pop is ExpressionOperator @operator)
+                else if (pop is InkOperator @operator)
                 {
                     if (Operators_UnaryPostfix.Contains(@operator))
                     {
@@ -2151,45 +2140,41 @@ namespace Arc.UniInk
 
             if (Types.TryGetValue(fullName, out result)) return result;
 
-            try
+
+            if (!string.IsNullOrEmpty(genericTypes))
             {
-                if (!string.IsNullOrEmpty(genericTypes))
-                {
-                    var types = GetConcreteTypes(genericTypes);
-                    formattedGenericTypes = $"`{types.Length}[{string.Join(", ", types.Select(type => $"[{type.AssemblyQualifiedName}]"))}]";
-                }
-
-                result = Type.GetType(typeName + formattedGenericTypes, false, false);
-
-
-                for (var a = 0; a < Assemblies.Count && result == null; a++)
-                {
-                    if (typeName.Contains('.'))
-                    {
-                        result = Type.GetType($"{typeName}{formattedGenericTypes},{Assemblies[a].FullName}", false, false);
-                    }
-                    else
-                    {
-                        for (var i = 0; i < Namespaces.Count && result == null; i++)
-                        {
-                            result = Type.GetType($"{Namespaces[i]}.{typeName}{formattedGenericTypes},{Assemblies[a].FullName}", false, false);
-                        }
-                    }
-                }
+                var types = GetConcreteTypes(genericTypes);
+                formattedGenericTypes = $"`{types.Length}[{string.Join(", ", types.Select(type => $"[{type.AssemblyQualifiedName}]"))}]";
             }
-            catch
+
+            result = Type.GetType(typeName + formattedGenericTypes, false, false);
+
+
+            for (var a = 0; a < Assemblies.Count && result == null; a++)
             {
-                throw new SyntaxException($"Failed to get type or class : {typeName}{genericTypes}");
+                if (typeName.Contains('.'))
+                {
+                    result = Type.GetType($"{typeName}{formattedGenericTypes},{Assemblies[a].FullName}", false, false);
+                }
+                else
+                {
+                    for (var i = 0; i < Namespaces.Count && result == null; i++)
+                    {
+                        result = Type.GetType($"{Namespaces[i]}.{typeName}{formattedGenericTypes},{Assemblies[a].FullName}", false, false);
+                    }
+                }
             }
 
             if (result == null && throwExceptionIfNotFound)
+            {
                 throw new SyntaxException($"Failed to get type or class : {typeName}{genericTypes}");
+            }
 
             if (result != null) dic_CachedTypes[fullName] = result;
 
             return result;
         }
-        
+
         private static object ChangeType(object value, Type castType)
         {
             if (castType == null) throw new ArgumentNullException(nameof(castType));
@@ -2361,51 +2346,31 @@ namespace Arc.UniInk
 
 
     /// <summary>用于解释的操作符</summary>
-    public class ExpressionOperator
+    public class InkOperator
     {
-        public static readonly ExpressionOperator Plus = new();
-        public static readonly ExpressionOperator Minus = new();
-        public static readonly ExpressionOperator Multiply = new();
-        public static readonly ExpressionOperator Divide = new();
-        public static readonly ExpressionOperator Modulo = new();
-        public static readonly ExpressionOperator Lower = new();
-        public static readonly ExpressionOperator Greater = new();
-        public static readonly ExpressionOperator Equal = new();
-        public static readonly ExpressionOperator LowerOrEqual = new();
-        public static readonly ExpressionOperator GreaterOrEqual = new();
-        public static readonly ExpressionOperator Is = new();
-        public static readonly ExpressionOperator NotEqual = new();
-        public static readonly ExpressionOperator LogicalNegation = new();
-        public static readonly ExpressionOperator BitwiseComplement = new();
-        public static readonly ExpressionOperator ConditionalAnd = new();
-        public static readonly ExpressionOperator ConditionalOr = new();
-        public static readonly ExpressionOperator LogicalAnd = new();
-        public static readonly ExpressionOperator LogicalOr = new();
-        public static readonly ExpressionOperator LogicalXor = new();
-        public static readonly ExpressionOperator ShiftBitsLeft = new();
-        public static readonly ExpressionOperator ShiftBitsRight = new();
-        public static readonly ExpressionOperator NullCoalescing = new();
-        public static readonly ExpressionOperator Cast = new();
-
-
-        protected static ushort indexer;
-        protected ushort OperatorValue { get; }
-
-        protected ExpressionOperator()
-        {
-            indexer++;
-            OperatorValue = indexer;
-        }
-
-        public bool Equals(ExpressionOperator otherOperator)
-        {
-            return otherOperator != null && OperatorValue == otherOperator.OperatorValue;
-        }
-
-        public override int GetHashCode()
-        {
-            return OperatorValue.GetHashCode();
-        }
+        public static readonly InkOperator Plus = new();
+        public static readonly InkOperator Minus = new();
+        public static readonly InkOperator Multiply = new();
+        public static readonly InkOperator Divide = new();
+        public static readonly InkOperator Modulo = new();
+        public static readonly InkOperator Lower = new();
+        public static readonly InkOperator Greater = new();
+        public static readonly InkOperator Equal = new();
+        public static readonly InkOperator LowerOrEqual = new();
+        public static readonly InkOperator GreaterOrEqual = new();
+        public static readonly InkOperator Is = new();
+        public static readonly InkOperator NotEqual = new();
+        public static readonly InkOperator LogicalNegation = new();
+        public static readonly InkOperator BitwiseComplement = new();
+        public static readonly InkOperator ConditionalAnd = new();
+        public static readonly InkOperator ConditionalOr = new();
+        public static readonly InkOperator LogicalAnd = new();
+        public static readonly InkOperator LogicalOr = new();
+        public static readonly InkOperator LogicalXor = new();
+        public static readonly InkOperator ShiftBitsLeft = new();
+        public static readonly InkOperator ShiftBitsRight = new();
+        public static readonly InkOperator NullCoalescing = new();
+        public static readonly InkOperator Cast = new();
     }
 
 
@@ -2541,3 +2506,4 @@ namespace Arc.UniInk
 
     #endregion
 }
+//2514行

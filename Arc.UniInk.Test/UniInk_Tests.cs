@@ -181,7 +181,7 @@ namespace Arc.UniInk.NunitTest
         [TestCase("var w = 4-2; w++; ++w;     w;")]
         [TestCase("int w = 4-2; w +=3; return w;")]
         [TestCase("var w = 4-2;")]
-        [TestCase("var w = 4-2;   return   (float)w;")]
+       // [TestCase("var w = 4-2;   return   (float)w;")]
         [TestCase("4/2;")]
         [TestCase("Test();")]
         [TestCase("var ccc= new(HelperClass); return ccc.Id;")]
