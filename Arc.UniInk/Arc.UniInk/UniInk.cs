@@ -35,9 +35,9 @@ namespace Arc.UniInk
             ParsingMethods = new List<ParsingMethodDelegate>
             {
                 EvaluateCast,
+                EvaluateOperators,
                 EvaluateNumber,
                 EvaluateVarOrFunc,
-                EvaluateOperators,
                 EvaluateChar,
                 EvaluateParenthis,
                 EvaluateString,
@@ -2371,6 +2371,19 @@ namespace Arc.UniInk
         public static readonly InkOperator ShiftBitsRight = new();
         public static readonly InkOperator NullCoalescing = new();
         public static readonly InkOperator Cast = new();
+
+        protected static ushort indexer;
+        protected ushort OperatorValue { get; }
+
+        protected InkOperator()
+        {
+            indexer++;
+            OperatorValue = indexer;
+        }
+
+        public override bool Equals(object otherOperator) => otherOperator is InkOperator Operator && OperatorValue == Operator.OperatorValue;
+
+        public override int GetHashCode() => OperatorValue;
     }
 
 

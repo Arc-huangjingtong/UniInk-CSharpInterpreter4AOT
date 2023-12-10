@@ -44,6 +44,7 @@
         </Reference>
     </ItemGroup>
     <ItemGroup>
+        <Compile Include="UniInk_Speed_Tests.cs" />
         <Compile Include="UniInk_Tests.cs" />
         <Compile Include="Properties\AssemblyInfo.cs"/>
     </ItemGroup>
