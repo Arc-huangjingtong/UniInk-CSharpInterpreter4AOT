@@ -24,6 +24,26 @@ namespace Arc.UniInk
         public UniInk_Speed(object context = null, Dictionary<string, object> variables = null) { }
 
 
+        /// <summary>用于解释方法的委托</summary>
+        private delegate object InternalDelegate(params object[] args);
+
+
+        /// <summary> Some Escaped Char mapping  </summary>
+        protected static readonly Dictionary<char, char> dic_EscapedChar = new()
+        {
+            { '\\', '\\' },
+            { '\'', '\'' },
+            { '0', '\0' },
+            { 'a', '\a' },
+            { 'b', '\b' },
+            { 'f', '\f' },
+            { 'n', '\n' },
+            { 'r', '\r' },
+            { 't', '\t' },
+            { 'v', '\v' }
+        };
+
+
         /// <summary>Evaluate Operators in <see cref="InkOperator"/></summary>
         /// <param name="expression"> the expression to Evaluate     </param>
         /// <param name="stack"> the object stack to push or pop     </param>
@@ -51,35 +71,150 @@ namespace Arc.UniInk
         /// <returns>Evaluate is successful?</returns>
         private bool EvaluateNumber(string expression, Stack<object> stack, ref int i)
         {
-            // var numberMatch = regex_Number.Match(expression, i, expression.Length - i);
-            // //make sure match number sign is not a operator
-            // if (numberMatch.Success && (!numberMatch.Groups["sign"].Success || stack.Count == 0 || stack.Peek() is InkOperator))
-            // {
-            //     i += numberMatch.Length - 1;
-            //
-            //     if (numberMatch.Groups["type"].Success)
-            //     {
-            //         var type = numberMatch.Groups["type"].Value;
-            //         var numberNoType = numberMatch.Value.Replace(type, string.Empty);
-            //
-            //         if (dic_numberParseFunc.TryGetValue(type, out var parseFunc))
-            //         {
-            //             stack.Push(parseFunc(numberNoType));
-            //         }
-            //     }
-            //     else if (numberMatch.Groups["hasdecimal"].Success) //without the type suffix as double
-            //     {
-            //         stack.Push(double.Parse(numberMatch.Value));
-            //     }
-            //     else
-            //     {
-            //         stack.Push(int.Parse(numberMatch.Value));
-            //     }
-            //
-            //     return true;
-            // }
+            if (StartsWithNumbersFromIndex(expression, i, out var numberMatch, out var len))
+            {
+                stack.Push(numberMatch);
+                i += len;
+            }
 
             return false;
+        }
+
+        /// <summary>Evaluate Char or Escaped Char  _eg: 'a' '\d'</summary>
+        /// <param name="expression"> the expression to Evaluate     </param>
+        /// <param name="stack"> the object stack to push or pop     </param>
+        /// <param name="i">the <see cref="expression"/> start index </param>
+        /// <returns> the evaluate is success or not </returns>
+        /// <exception cref="SyntaxException">Illegal character or Unknown escape character </exception>
+        private bool EvaluateChar(string expression, Stack<object> stack, ref int i)
+        {
+            if (StartsWithCharFormIndex(expression, i, out var value, out var len))
+            {
+                stack.Push(value);
+                i += len;
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>Evaluate Parenthis _eg: (xxx)</summary>
+        /// <remarks>the match will recursive execute <see cref="Evaluate"/> </remarks>
+        /// <param name="expression"> the expression to Evaluate     </param>
+        /// <param name="stack"> the object stack to push or pop     </param>
+        /// <param name="i">the <see cref="expression"/> start index </param>
+        /// <returns> the evaluate is success or not </returns> 
+        private bool EvaluateParenthis(string expression, Stack<object> stack, ref int i)
+        {
+            var s = expression[i];
+
+            if (s.Equals(')')) throw new SyntaxException("missing match [)]");
+
+            if (s.Equals('('))
+            {
+                i++;
+
+                if (stack.Count > 0 && stack.Peek() is InternalDelegate)
+                {
+                    var expressionsInParenthis = GetExpressionsParenthesized(expression, ref i, true);
+
+                    // if (stack.Pop() is InternalDelegate lambdaDelegate)
+                    //     stack.Push(lambdaDelegate(expressionsInParenthis.ConvertAll(str => Evaluate(str))));
+                }
+                else
+                {
+                    var expressionsInParenthis = GetExpressionsParenthesized(expression, ref i, false);
+
+                    // stack.Push(Evaluate(expressionsInParenthis[0]));
+                }
+
+                return true;
+            }
+
+            return false;
+        }
+        
+        /// <summary>Evaluate String _eg:"string" </summary>
+        /// <param name="expression"> the expression to Evaluate     </param>
+        /// <param name="stack"> the object stack to push or pop     </param>
+        /// <param name="i">the <see cref="expression"/> start index </param>
+        /// <returns> the evaluate is success or not </returns> 
+        private bool EvaluateString(string expression, Stack<object> stack, ref int i)
+        {
+            if (StartsWithStringFormIndex(expression, i, out var value, out var len))
+            {
+                stack.Push(value);
+                i += len;
+                return true;
+            }
+
+            return false;
+        }
+
+        private readonly StringBuilder stringBuilderCache = new();
+
+        /// <summary>Get a expression list between [startChar] and [endChar]</summary>
+        /// <remarks>⚠️The startChar , endChar and separator must be different</remarks>
+        private List<string> GetExpressionsParenthesized(string expression, ref int i, bool checkSeparator, char separator = ',', char startChar = '(', char endChar = ')')
+        {
+            var expressionsList = new List<string>();
+
+            stringBuilderCache.Clear();
+            var bracketCount = 1;
+
+            for (; i < expression.Length; i++)
+            {
+                var s = expression[i];
+
+                if (s is '\'' or '\"')
+                {
+                    // var internalStringMatch = regex_String.Match(expression, i, expression.Length - i);
+                    // if (internalStringMatch.Success)
+                    // {
+                    //     stringBuilderCache.Append(internalStringMatch.Value);
+                    //     i += internalStringMatch.Length - 1;
+                    //     continue;
+                    // }
+                    //
+                    // var internalCharMatch = regex_Char.Match(expression, i, expression.Length - i);
+                    // if (internalCharMatch.Success)
+                    // {
+                    //     stringBuilderCache.Append(internalCharMatch.Value);
+                    //     i += internalCharMatch.Length - 1;
+                    //     continue;
+                    // }
+                }
+
+
+                if (s.Equals(startChar)) bracketCount++;
+                if (s.Equals(endChar)) bracketCount--;
+
+                if (bracketCount == 0)
+                {
+                    var currentExpressionStr = stringBuilderCache.ToString().Trim();
+                    if (!string.IsNullOrWhiteSpace(currentExpressionStr))
+                        expressionsList.Add(currentExpressionStr);
+                    break;
+                }
+
+                if (bracketCount == 1 && checkSeparator && s.Equals(separator))
+                {
+                    var currentExpressionStr = stringBuilderCache.ToString().Trim();
+                    expressionsList.Add(currentExpressionStr);
+                    stringBuilderCache.Clear();
+                }
+                else
+                {
+                    stringBuilderCache.Append(s);
+                }
+            }
+
+            if (bracketCount > 0)
+            {
+                throw new SyntaxException($"[{expression}] is missing characters ['{endChar}'] ");
+            }
+
+            return expressionsList;
         }
 
 
@@ -90,17 +225,20 @@ namespace Arc.UniInk
 
             public static void Release(InkValue value)
             {
+                value.Value_String.Clear();
                 value.Value_Meta.Clear();
                 pool.Push(value);
             }
 
-            public enum InkValueType { Int, Float, Double, }
+            public enum InkValueType { Int, Float, Double, Char, String }
 
             public static InkValue Empty = null;
 
             public int Value_int { get; set; }
             public float Value_float { get; set; }
             public double Value_double { get; set; }
+            public StringBuilder Value_String { get; set; } = new();
+            public char Value_char { get; set; }
 
             public InkValueType ValueType { get; set; }
 
@@ -108,14 +246,13 @@ namespace Arc.UniInk
 
             public void GetNumber()
             {
-                if (ValueType== InkValueType.Int)
+                if (ValueType == InkValueType.Int)
                 {
                     while (Value_Meta.Count != 0)
                     {
                         Value_int = Value_int * 10 + (Value_Meta.Pop() - '0');
                     }
                 }
-                
             }
         }
 
@@ -159,6 +296,8 @@ namespace Arc.UniInk
             public SyntaxException(string message) : base(message) { }
         }
 
+        
+        
         /// <summary>Find <see cref="input"/> is whether start with <see cref="value"/> from <see cref="startIndex"/></summary>
         protected static bool StartsWithFromIndex(string input, string value, int startIndex)
         {
@@ -179,8 +318,8 @@ namespace Arc.UniInk
             return true;
         }
 
-        ///  
-        public static bool StartsWithNumbersFromIndex(string input, int startIndex, out InkValue value, out int len)
+        /// <summary>Find <see cref="input"/> is whether start with numbers from <see cref="startIndex"/></summary>
+        protected static bool StartsWithNumbersFromIndex(string input, int startIndex, out InkValue value, out int len)
         {
             if (input.Length < startIndex)
             {
@@ -224,13 +363,11 @@ namespace Arc.UniInk
                     {
                         switch (input[i])
                         {
-                            case 'f':
-                            case 'F':
+                            case 'f' or 'F':
                                 value.ValueType = InkValue.InkValueType.Float;
                                 len++;
                                 break;
-                            case 'd':
-                            case 'D':
+                            case 'd' or 'D':
                                 value.ValueType = InkValue.InkValueType.Double;
                                 len++;
                                 break;
@@ -243,5 +380,113 @@ namespace Arc.UniInk
 
             return true;
         }
+
+        /// <summary>Find <see cref="input"/> is whether start with char from <see cref="startIndex"/></summary>
+        protected static bool StartsWithCharFormIndex(string input, int startIndex, out InkValue value, out int len)
+        {
+            var i = startIndex;
+            if (input[i].Equals('\''))
+            {
+                i++;
+                if (input[i].Equals('\\'))
+                {
+                    i++;
+
+                    if (dic_EscapedChar.TryGetValue(input[i], out var EscapedChar))
+                    {
+                        value = InkValue.Get();
+                        value.ValueType = InkValue.InkValueType.Char;
+                        value.Value_char = EscapedChar;
+                        i++;
+                    }
+                    else
+                    {
+                        throw new SyntaxException($"Unknown escape character[{input[i]}] : You can customize them in [dic_EscapedChar]");
+                    }
+                }
+                else if (input[i].Equals('\''))
+                {
+                    throw new SyntaxException($"Illegal character[{i}] : ['']");
+                }
+                else
+                {
+                    value = InkValue.Get();
+                    value.ValueType = InkValue.InkValueType.Char;
+                    value.Value_char = input[i];
+                    i++;
+                }
+
+                if (input[i].Equals('\''))
+                {
+                    len = i - startIndex + 1;
+                    return true;
+                }
+
+
+                throw new SyntaxException($"Illegal character[{i}] : too many characters in a character literal");
+            }
+
+            len = 0;
+            value = null;
+            return false;
+        }
+
+        /// <summary>Find <see cref="input"/> is whether start with string from <see cref="startIndex"/></summary>
+        protected static bool StartsWithStringFormIndex(string input, int startIndex, out InkValue value, out int len)
+        {
+            var i = startIndex;
+
+            if (i < input.Length - 1 && (input[i].Equals('@') || input[i].Equals('$') && input[i + 1].Equals('\"')))
+            {
+                throw new Exception("don't support [@] [$]");
+            }
+
+
+            if (input[i].Equals('\"'))
+            {
+                i++;
+                value = InkValue.Get();
+                value.ValueType = InkValue.InkValueType.String;
+                var stringBuilder = value.Value_String;
+
+
+                while (i < input.Length)
+                {
+                    if (input[i].Equals('\\'))
+                    {
+                        i++;
+
+                        if (dic_EscapedChar.TryGetValue(input[i], out var EscapedChar))
+                        {
+                            stringBuilder.Append(EscapedChar);
+                            i++;
+                        }
+                        else
+                        {
+                            throw new SyntaxException($"Unknown escape character[{input[i]}] : You can customize them in [dic_EscapedChar]");
+                        }
+                    }
+                    else if (input[i].Equals('\"'))
+                    {
+                        i++;
+                        len = i - startIndex;
+                        return true;
+                    }
+                    else
+                    {
+                        stringBuilder.Append(input[i]);
+                        i++;
+                    }
+                }
+
+                throw new SyntaxException($"Illegal character[{i}] : too many characters in a character literal");
+            }
+
+            len = 0;
+            value = null;
+            return false;
+        }
+        
+        
     }
 }

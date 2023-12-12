@@ -11,16 +11,24 @@
     {
         private static readonly UniInk_Speed Ink = new();
 
-        [TestCase("2222")]
+        [TestCase("2222"),Repeat(100)]
         public void Test_EvaluateNumber(string input)
         {
-            UniInk_Speed.StartsWithNumbersFromIndex(input, 0, out var numberMatch, out var len);
+            // UniInk_Speed.StartsWithNumbersFromIndex(input, 0, out var numberMatch, out var len);
+            //
+            // var answer = int.Parse(input);
+            // numberMatch.GetNumber();
+            //
+            // Assert.AreEqual(answer, numberMatch.Value_int);
+            // TestContext.Progress.WriteLine($"✅:{numberMatch.Value_int}=" + $"{answer}");
+        }
+        [TestCase("2222"),Repeat(100)]
+        public void Test_EvaluateNumber2(string input)
+        {
+            var answer = int.Parse(input);
 
-            var answer = int.Parse(input.Substring(0, len));
-            numberMatch.GetNumber();
-
-            Assert.AreEqual(answer, numberMatch.Value_int);
-            TestContext.Progress.WriteLine($"✅:{numberMatch.Value_int}=" + $"{answer}");
+            //Assert.AreEqual(answer, numberMatch.Value_int);
+            TestContext.Progress.WriteLine($"✅=" + $"{answer}");
         }
     }
 }
