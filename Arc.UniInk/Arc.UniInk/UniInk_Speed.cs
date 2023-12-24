@@ -21,8 +21,25 @@ namespace Arc.UniInk
         /// <summary> Constructor </summary>
         /// <param name="context"  > Set context use as "This" or use internal member variables directly </param>
         /// <param name="variables"> Set variables can replace a key string with value object            </param>
-        public UniInk_Speed(object context = null, Dictionary<string, object> variables = null) { }
+        public UniInk_Speed(object context = null, Dictionary<string, object> variables = null)
+        {
+            ParsingMethods = new List<ParsingMethodDelegate>
+            {
+                //EvaluateCast,
+                EvaluateOperators,
+                EvaluateNumber,
+                // EvaluateVarOrFunc,
+                EvaluateChar,
+                EvaluateParenthis,
+                EvaluateString,
+                //EvaluateTernaryConditionalOperator,
+            };
+        }
 
+        private readonly List<ParsingMethodDelegate> ParsingMethods;
+
+        /// <summary>用于解析方法的委托</summary>
+        private delegate bool ParsingMethodDelegate(string expression, Stack<object> stack, ref int i);
 
         /// <summary>用于解释方法的委托</summary>
         private delegate object InternalDelegate(params object[] args);
@@ -53,7 +70,7 @@ namespace Arc.UniInk
         {
             foreach (var operatorStr in InkOperator.List_Keys)
             {
-                if (StartsWithFromIndex(expression, operatorStr, i))
+                if (StartsWithInputStrFromIndex(expression, operatorStr, i))
                 {
                     stack.Push(InkOperator.Dic_Values[operatorStr]);
                     i += operatorStr.Length - 1;
@@ -108,32 +125,82 @@ namespace Arc.UniInk
         {
             var s = expression[i];
 
-            if (s.Equals(')')) throw new SyntaxException("missing match [)]");
-
-            if (s.Equals('('))
+            if (StartsWithParenthisFromIndex(expression, i, out var len))
             {
-                i++;
-
-                if (stack.Count > 0 && stack.Peek() is InternalDelegate)
-                {
-                    var expressionsInParenthis = GetExpressionsParenthesized(expression, ref i, true);
-
-                    // if (stack.Pop() is InternalDelegate lambdaDelegate)
-                    //     stack.Push(lambdaDelegate(expressionsInParenthis.ConvertAll(str => Evaluate(str))));
-                }
-                else
-                {
-                    var expressionsInParenthis = GetExpressionsParenthesized(expression, ref i, false);
-
-                    // stack.Push(Evaluate(expressionsInParenthis[0]));
-                }
-
-                return true;
+                var result = Evaluate(expression, i + 1, len - 1);
+                stack.Push(result);
+                i += len;
             }
 
             return false;
         }
+
+        /// <summary> Evaluate a expression      </summary>
+        /// <returns> return the result object   </returns>
+        public object Evaluate(string expression, int startIndex, int endIndex)
+        {
+            var stack = new Stack<object>();
+            
+            for (var i = startIndex; i < expression.Length; i++)
+            {
+                var any = false;
+                foreach (var parsingMethod in ParsingMethods)
+                {
+                    if (parsingMethod(expression, stack, ref i))
+                    {
+                        any = true;
+                        break;
+                    }
+                }
+
+                if (any) continue;
+                if (char.IsWhiteSpace(expression[i])) continue;
+
+                throw new SyntaxException($"Invalid character : [{(int)expression[i]}:{expression[i]}] at [{i}  {expression}] ");
+            }
+
+            return ProcessStack(stack);
+        }
         
+        public object ProcessStack(Stack<object> stack)
+        {
+            if (stack.Count == 0) throw new SyntaxException("Empty expression and Empty stack");
+
+           // var list = stack.Select(e => e is ValueTypeWrapper valueTypeNestingTrace ? valueTypeNestingTrace.Value : e); //处理值类型
+
+            stack = new Stack<object>();
+
+            object stackCache = null;
+            while (stack.Count > 0)
+            {
+                var pop = stack.Pop();
+
+                if (pop is not InkOperator)
+                {
+                    stackCache = pop;
+                }
+
+                // else if (pop is InkOperator @operator)
+                // {
+                //     if (Operators_UnaryPostfix.Contains(@operator))
+                //     {
+                //         var right = stack.Pop();
+                //         stackCache = dic_OperatorsFunc[@operator](null, right);
+                //     }
+                //     else
+                //     {
+                //         var left = stackCache;
+                //         var right = stack.Pop();
+                //
+                //         stackCache = dic_OperatorsFunc[@operator](left, right);
+                //     }
+                // }
+            }
+
+            return stackCache;
+        }
+
+
         /// <summary>Evaluate String _eg:"string" </summary>
         /// <param name="expression"> the expression to Evaluate     </param>
         /// <param name="stack"> the object stack to push or pop     </param>
@@ -157,9 +224,10 @@ namespace Arc.UniInk
         /// <remarks>⚠️The startChar , endChar and separator must be different</remarks>
         private List<string> GetExpressionsParenthesized(string expression, ref int i, bool checkSeparator, char separator = ',', char startChar = '(', char endChar = ')')
         {
+            stringBuilderCache.Clear();
+
             var expressionsList = new List<string>();
 
-            stringBuilderCache.Clear();
             var bracketCount = 1;
 
             for (; i < expression.Length; i++)
@@ -296,11 +364,48 @@ namespace Arc.UniInk
             public SyntaxException(string message) : base(message) { }
         }
 
-        
-        
-        /// <summary>Find <see cref="input"/> is whether start with <see cref="value"/> from <see cref="startIndex"/></summary>
-        protected static bool StartsWithFromIndex(string input, string value, int startIndex)
+
+        /// <summary>Find <see cref="input"/> is whether start with [(] from <see cref="startIndex"/></summary>
+        protected static bool StartsWithParenthisFromIndex(string input, int startIndex, out int len)
         {
+            if (input.Length < startIndex)
+            {
+                throw new Exception("input.Length < startIndex");
+            }
+
+            len = 0;
+
+            if (input[startIndex].Equals(')')) throw new SyntaxException("missing match [)]");
+            if (input[startIndex].Equals('('))
+            {
+                var bracketCount = 0;
+
+                for (var i = startIndex; i < input.Length; i++)
+                {
+                    var s = input[i];
+
+                    if (s.Equals(')')) bracketCount--;
+                    if (s.Equals('(')) bracketCount++;
+
+                    if (bracketCount == 0)
+                    {
+                        len = i - startIndex;
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>Find <see cref="input"/> is whether start with <see cref="value"/> from <see cref="startIndex"/></summary>
+        protected static bool StartsWithInputStrFromIndex(string input, string value, int startIndex)
+        {
+            if (input.Length < startIndex)
+            {
+                throw new Exception("input.Length < startIndex");
+            }
+
             if (input.Length - startIndex < value.Length)
             {
                 return false;
@@ -486,7 +591,5 @@ namespace Arc.UniInk
             value = null;
             return false;
         }
-        
-        
     }
 }
