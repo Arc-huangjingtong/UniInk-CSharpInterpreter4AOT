@@ -91,7 +91,8 @@ namespace Arc.UniInk
             if (StartsWithNumbersFromIndex(expression, i, out var numberMatch, out var len))
             {
                 stack.Push(numberMatch);
-                i += len;
+                i += len - 1;
+                return true;
             }
 
             return false;
@@ -140,8 +141,8 @@ namespace Arc.UniInk
         public object Evaluate(string expression, int startIndex, int endIndex)
         {
             var stack = new Stack<object>();
-            
-            for (var i = startIndex; i < expression.Length; i++)
+
+            for (var i = startIndex; i < endIndex && i < expression.Length; i++)
             {
                 var any = false;
                 foreach (var parsingMethod in ParsingMethods)
@@ -161,14 +162,11 @@ namespace Arc.UniInk
 
             return ProcessStack(stack);
         }
-        
+
         public object ProcessStack(Stack<object> stack)
         {
             if (stack.Count == 0) throw new SyntaxException("Empty expression and Empty stack");
 
-           // var list = stack.Select(e => e is ValueTypeWrapper valueTypeNestingTrace ? valueTypeNestingTrace.Value : e); //处理值类型
-
-            stack = new Stack<object>();
 
             object stackCache = null;
             while (stack.Count > 0)
@@ -180,21 +178,20 @@ namespace Arc.UniInk
                     stackCache = pop;
                 }
 
-                // else if (pop is InkOperator @operator)
-                // {
-                //     if (Operators_UnaryPostfix.Contains(@operator))
-                //     {
-                //         var right = stack.Pop();
-                //         stackCache = dic_OperatorsFunc[@operator](null, right);
-                //     }
-                //     else
-                //     {
-                //         var left = stackCache;
-                //         var right = stack.Pop();
-                //
-                //         stackCache = dic_OperatorsFunc[@operator](left, right);
-                //     }
-                // }
+                else if (pop is InkOperator @operator)
+                {
+                    var left = stackCache;
+                    var right = stack.Pop();
+
+                    stackCache = dic_OperatorsFunc[@operator](left, right);
+                }
+            }
+
+
+            if (stackCache is InkValue value)
+            {
+                stackCache = value.ValueType switch { InkValue.InkValueType.Int => value.Value_int, InkValue.InkValueType.Float => value.Value_float, InkValue.InkValueType.Double => value.Value_double, InkValue.InkValueType.Boolean => value.Value_bool, InkValue.InkValueType.Char => value.Value_char, InkValue.InkValueType.String => value.Value_String.ToString(), _ => throw new ArgumentOutOfRangeException() };
+                InkValue.Release(value);
             }
 
             return stackCache;
@@ -288,6 +285,8 @@ namespace Arc.UniInk
 
         public class InkValue
         {
+            public static readonly InkValue Empty = null;
+
             public static readonly Stack<InkValue> pool = new();
             public static InkValue Get() => pool.Count > 0 ? pool.Pop() : new InkValue();
 
@@ -295,37 +294,59 @@ namespace Arc.UniInk
             {
                 value.Value_String.Clear();
                 value.Value_Meta.Clear();
+                value.isCalculate = false;
                 pool.Push(value);
             }
 
-            public enum InkValueType { Int, Float, Double, Char, String }
 
-            public static InkValue Empty = null;
+            public enum InkValueType
+            {
+                Int,
+                Float,
+                Boolean,
+                Double,
+                Char,
+                String
+            }
+
 
             public int Value_int { get; set; }
+            public bool Value_bool { get; set; }
+            public char Value_char { get; set; }
             public float Value_float { get; set; }
             public double Value_double { get; set; }
             public StringBuilder Value_String { get; set; } = new();
-            public char Value_char { get; set; }
 
             public InkValueType ValueType { get; set; }
 
             public Stack<char> Value_Meta { get; set; } = new();
 
-            public void GetNumber()
+            public bool isCalculate = false;
+
+            public void Calculate(InkValueType type)
             {
-                if (ValueType == InkValueType.Int)
+                if (isCalculate)
                 {
+                    return;
+                }
+
+                if (type == InkValueType.Int)
+                {
+                    Value_int = 0;
                     while (Value_Meta.Count != 0)
                     {
                         Value_int = Value_int * 10 + (Value_Meta.Pop() - '0');
                     }
                 }
+
+                isCalculate = true;
             }
         }
 
         public class InkOperator
         {
+            public static readonly Dictionary<string, InkOperator> Dic_Values = new();
+            public static readonly List<string> List_Keys = new();
             public static readonly InkOperator Plus = new("+");
             public static readonly InkOperator Minus = new("-");
             public static readonly InkOperator Multiply = new("*");
@@ -340,8 +361,6 @@ namespace Arc.UniInk
             public static readonly InkOperator LogicalNegation = new("!");
             public static readonly InkOperator ConditionalAnd = new("&&");
             public static readonly InkOperator ConditionalOr = new("||");
-            public static readonly List<string> List_Keys = new();
-            public static readonly Dictionary<string, InkOperator> Dic_Values = new();
 
 
             protected static ushort indexer;
@@ -591,5 +610,35 @@ namespace Arc.UniInk
             value = null;
             return false;
         }
+
+
+        /// <summary> Some UnaryPostfix Operators mark</summary>
+        protected static readonly Dictionary<InkOperator, Func<object, object, object>> dic_OperatorsFunc = new()
+        {
+            {
+                InkOperator.Plus, (left, right) =>
+                {
+                    if (left is null)
+                    {
+                        return right;
+                    }
+
+                    if (left is InkValue leftValue && right is InkValue rightValue)
+                    {
+                        leftValue.Calculate(InkValue.InkValueType.Int);
+                        rightValue.Calculate(InkValue.InkValueType.Int);
+
+                        var answer = InkValue.Get();
+                        answer.Value_int = leftValue.Value_int + rightValue.Value_int;
+                        answer.isCalculate = true;
+
+                        return answer;
+                    }
+
+
+                    return null;
+                }
+            } // 加法
+        };
     }
 }
