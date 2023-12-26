@@ -47,6 +47,15 @@ namespace Arc.UniInk.NunitTest
             TestContext.Progress.WriteLine("UniInk_NunitTest : test complete");
             TestContext.Progress.WriteLine("UniInk_NunitTest : total memory used : " + _Delta / 1024 / 1024 + " MB");
         }
+        
+        
+        [TestCase("+2222+(333-3+3-3)"), Repeat(1000)]
+        public void Test_EvaluateNumber(string input)
+        {
+            var res = Ink.Evaluate(input);
+
+            Assert.AreEqual(res, 2552);
+        }
 
 
         /// <summary> Test SimpleMath Calculate </summary>

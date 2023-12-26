@@ -39,7 +39,7 @@ namespace Arc.UniInk
         private readonly List<ParsingMethodDelegate> ParsingMethods;
 
         /// <summary>用于解析方法的委托</summary>
-        private delegate bool ParsingMethodDelegate(string expression, Stack<object> stack, ref int i);
+        private delegate bool ParsingMethodDelegate(string expression, Queue<object> stack, ref int i);
 
         /// <summary>用于解释方法的委托</summary>
         private delegate object InternalDelegate(params object[] args);
@@ -66,17 +66,27 @@ namespace Arc.UniInk
         /// <param name="stack"> the object stack to push or pop     </param>
         /// <param name="i">the <see cref="expression"/> start index </param>
         /// <returns> the evaluate is success or not </returns> 
-        private bool EvaluateOperators(string expression, Stack<object> stack, ref int i)
+        private bool EvaluateOperators(string expression, Queue<object> stack, ref int i)
         {
-            foreach (var operatorStr in InkOperator.List_Keys)
+            foreach (var operatorStr in InkOperator.Dic_Values)
             {
-                if (StartsWithInputStrFromIndex(expression, operatorStr, i))
+                if (StartsWithInputStrFromIndex(expression, operatorStr.Key, i))
                 {
-                    stack.Push(InkOperator.Dic_Values[operatorStr]);
-                    i += operatorStr.Length - 1;
+                    stack.Enqueue(operatorStr.Value);
+                    i += operatorStr.Key.Length - 1;
                     return true;
                 }
             }
+
+            // foreach (var operatorStr in InkOperator.List_Keys)
+            // {
+            //     if (StartsWithInputStrFromIndex(expression, operatorStr, i))
+            //     {
+            //         stack.Push(InkOperator.Dic_Values[operatorStr]);
+            //         i += operatorStr.Length - 1;
+            //         return true;
+            //     }
+            // }
 
             return false;
         }
@@ -86,11 +96,11 @@ namespace Arc.UniInk
         /// <param name="stack"> the object stack to push or pop     </param>
         /// <param name="i">the <see cref="expression"/> start index </param>
         /// <returns>Evaluate is successful?</returns>
-        private bool EvaluateNumber(string expression, Stack<object> stack, ref int i)
+        private bool EvaluateNumber(string expression, Queue<object> stack, ref int i)
         {
             if (StartsWithNumbersFromIndex(expression, i, out var numberMatch, out var len))
             {
-                stack.Push(numberMatch);
+                stack.Enqueue(numberMatch);
                 i += len - 1;
                 return true;
             }
@@ -104,11 +114,11 @@ namespace Arc.UniInk
         /// <param name="i">the <see cref="expression"/> start index </param>
         /// <returns> the evaluate is success or not </returns>
         /// <exception cref="SyntaxException">Illegal character or Unknown escape character </exception>
-        private bool EvaluateChar(string expression, Stack<object> stack, ref int i)
+        private bool EvaluateChar(string expression, Queue<object> stack, ref int i)
         {
             if (StartsWithCharFormIndex(expression, i, out var value, out var len))
             {
-                stack.Push(value);
+                stack.Enqueue(value);
                 i += len;
                 return true;
             }
@@ -122,15 +132,16 @@ namespace Arc.UniInk
         /// <param name="stack"> the object stack to push or pop     </param>
         /// <param name="i">the <see cref="expression"/> start index </param>
         /// <returns> the evaluate is success or not </returns> 
-        private bool EvaluateParenthis(string expression, Stack<object> stack, ref int i)
+        private bool EvaluateParenthis(string expression, Queue<object> stack, ref int i)
         {
             var s = expression[i];
 
             if (StartsWithParenthisFromIndex(expression, i, out var len))
             {
-                var result = Evaluate(expression, i + 1, len - 1);
-                stack.Push(result);
+                var result = Internal_Evaluate(expression, i + 1, i + len - 1);
+                stack.Enqueue(result);
                 i += len;
+                return true;
             }
 
             return false;
@@ -140,14 +151,14 @@ namespace Arc.UniInk
         /// <returns> return the result object   </returns>
         public object Evaluate(string expression, int startIndex, int endIndex)
         {
-            var stack = new Stack<object>();
+            var queue = new Queue<object>();
 
             for (var i = startIndex; i < endIndex && i < expression.Length; i++)
             {
                 var any = false;
                 foreach (var parsingMethod in ParsingMethods)
                 {
-                    if (parsingMethod(expression, stack, ref i))
+                    if (parsingMethod(expression, queue, ref i))
                     {
                         any = true;
                         break;
@@ -160,41 +171,78 @@ namespace Arc.UniInk
                 throw new SyntaxException($"Invalid character : [{(int)expression[i]}:{expression[i]}] at [{i}  {expression}] ");
             }
 
-            return ProcessStack(stack);
+            var ans = ProcessQueue(queue);
+
+            if (ans is InkValue value)
+            {
+                ans = value.ValueType switch
+                {
+                    InkValue.InkValueType.Int => value.Value_int,
+                    InkValue.InkValueType.Float => value.Value_float,
+                    InkValue.InkValueType.Double => value.Value_double, //
+                    InkValue.InkValueType.Boolean => value.Value_bool, // 
+                    InkValue.InkValueType.Char => value.Value_char, //
+                    InkValue.InkValueType.String => value.Value_String.ToString(), // 
+                    _ => throw new ArgumentOutOfRangeException()
+                };
+                InkValue.Release(value);
+            }
+
+            return ans;
         }
 
-        public object ProcessStack(Stack<object> stack)
+        private object Internal_Evaluate(string expression, int startIndex, int endIndex)
         {
-            if (stack.Count == 0) throw new SyntaxException("Empty expression and Empty stack");
+            var queue = new Queue<object>();
 
-
-            object stackCache = null;
-            while (stack.Count > 0)
+            for (var i = startIndex; i <= endIndex && i < expression.Length; i++)
             {
-                var pop = stack.Pop();
+                var any = false;
+                foreach (var parsingMethod in ParsingMethods)
+                {
+                    if (parsingMethod(expression, queue, ref i))
+                    {
+                        any = true;
+                        break;
+                    }
+                }
+
+                if (any) continue;
+                if (char.IsWhiteSpace(expression[i])) continue;
+
+                throw new SyntaxException($"Invalid character : [{(int)expression[i]}:{expression[i]}] at [{i}  {expression}] ");
+            }
+
+            var ans = ProcessQueue(queue);
+
+            return ans;
+        }
+
+
+        public static object ProcessQueue(Queue<object> queue)
+        {
+            if (queue.Count == 0) throw new SyntaxException("Empty expression and Empty stack");
+
+            object cache = null;
+            while (queue.Count > 0)
+            {
+                var pop = queue.Dequeue();
 
                 if (pop is not InkOperator)
                 {
-                    stackCache = pop;
+                    cache = pop;
                 }
 
                 else if (pop is InkOperator @operator)
                 {
-                    var left = stackCache;
-                    var right = stack.Pop();
+                    var left = cache;
+                    var right = queue.Dequeue();
 
-                    stackCache = dic_OperatorsFunc[@operator](left, right);
+                    cache = dic_OperatorsFunc[@operator](left, right);
                 }
             }
 
-
-            if (stackCache is InkValue value)
-            {
-                stackCache = value.ValueType switch { InkValue.InkValueType.Int => value.Value_int, InkValue.InkValueType.Float => value.Value_float, InkValue.InkValueType.Double => value.Value_double, InkValue.InkValueType.Boolean => value.Value_bool, InkValue.InkValueType.Char => value.Value_char, InkValue.InkValueType.String => value.Value_String.ToString(), _ => throw new ArgumentOutOfRangeException() };
-                InkValue.Release(value);
-            }
-
-            return stackCache;
+            return cache;
         }
 
 
@@ -203,11 +251,11 @@ namespace Arc.UniInk
         /// <param name="stack"> the object stack to push or pop     </param>
         /// <param name="i">the <see cref="expression"/> start index </param>
         /// <returns> the evaluate is success or not </returns> 
-        private bool EvaluateString(string expression, Stack<object> stack, ref int i)
+        private bool EvaluateString(string expression, Queue<object> stack, ref int i)
         {
             if (StartsWithStringFormIndex(expression, i, out var value, out var len))
             {
-                stack.Push(value);
+                stack.Enqueue(value);
                 i += len;
                 return true;
             }
@@ -341,12 +389,60 @@ namespace Arc.UniInk
 
                 isCalculate = true;
             }
+
+
+            public static InkValue operator +(InkValue left, InkValue right)
+            {
+                if (left is null || right is null)
+                {
+                    throw new Exception("left is null || right is null");
+                }
+
+
+                if (left.ValueType == InkValueType.Int || right.ValueType == InkValueType.Int)
+                {
+                    var answer = Get();
+                    answer.ValueType = InkValueType.Int;
+
+                    left.Calculate(InkValueType.Int);
+                    right.Calculate(InkValueType.Int);
+
+                    answer.Value_int = left.Value_int + right.Value_int;
+                    answer.isCalculate = true;
+                    return answer;
+                }
+
+                throw new Exception("left.ValueType == InkValueType.Int || right.ValueType == InkValueType.Int");
+            }
+
+            public static InkValue operator -(InkValue left, InkValue right)
+            {
+                if (left is null || right is null)
+                {
+                    throw new Exception("left is null || right is null");
+                }
+
+                if (left.ValueType == InkValueType.Int || right.ValueType == InkValueType.Int)
+                {
+                    var answer = Get();
+                    answer.ValueType = InkValueType.Int;
+
+                    left.Calculate(InkValueType.Int);
+                    right.Calculate(InkValueType.Int);
+
+                    answer.Value_int = left.Value_int - right.Value_int;
+                    answer.isCalculate = true;
+                    return answer;
+                }
+
+                throw new Exception("left.ValueType == InkValueType.Int || right.ValueType == InkValueType.Int");
+            }
         }
 
         public class InkOperator
         {
             public static readonly Dictionary<string, InkOperator> Dic_Values = new();
-            public static readonly List<string> List_Keys = new();
+
             public static readonly InkOperator Plus = new("+");
             public static readonly InkOperator Minus = new("-");
             public static readonly InkOperator Multiply = new("*");
@@ -369,13 +465,38 @@ namespace Arc.UniInk
             protected InkOperator(string name)
             {
                 OperatorValue = indexer++;
-                List_Keys.Add(name);
                 Dic_Values.Add(name, this);
             }
 
             public override bool Equals(object otherOperator) => otherOperator is InkOperator Operator && OperatorValue == Operator.OperatorValue;
-
             public override int GetHashCode() => OperatorValue;
+
+
+            public static object InkOperator_Plus(object left, object right)
+            {
+                switch (left)
+                {
+                    case null: return right;
+                    case InkValue leftValue when right is InkValue rightValue:
+                    {
+                        return leftValue + rightValue;
+                    }
+                    default: throw new Exception($"unknown type{left}--{right}");
+                }
+            }
+
+            public static object InkOperator_Minus(object left, object right)
+            {
+                switch (left)
+                {
+                    case null: return right;
+                    case InkValue leftValue when right is InkValue rightValue:
+                    {
+                        return leftValue - rightValue;
+                    }
+                    default: throw new Exception($"unknown type{left}--{right}");
+                }
+            }
         }
 
         public class SyntaxException : Exception
@@ -615,30 +736,20 @@ namespace Arc.UniInk
         /// <summary> Some UnaryPostfix Operators mark</summary>
         protected static readonly Dictionary<InkOperator, Func<object, object, object>> dic_OperatorsFunc = new()
         {
-            {
-                InkOperator.Plus, (left, right) =>
-                {
-                    if (left is null)
-                    {
-                        return right;
-                    }
-
-                    if (left is InkValue leftValue && right is InkValue rightValue)
-                    {
-                        leftValue.Calculate(InkValue.InkValueType.Int);
-                        rightValue.Calculate(InkValue.InkValueType.Int);
-
-                        var answer = InkValue.Get();
-                        answer.Value_int = leftValue.Value_int + rightValue.Value_int;
-                        answer.isCalculate = true;
-
-                        return answer;
-                    }
-
-
-                    return null;
-                }
-            } // 加法
+            { InkOperator.Plus, InkOperator.InkOperator_Plus }, //
+            { InkOperator.Minus, InkOperator.InkOperator_Minus }, //
+            { InkOperator.Multiply, (left, right) => null }, //
+            { InkOperator.Divide, (left, right) => null }, //
+            { InkOperator.Modulo, (left, right) => null }, //
+            { InkOperator.Lower, (left, right) => null }, //
+            { InkOperator.Greater, (left, right) => null }, //
+            { InkOperator.Equal, (left, right) => null }, //
+            { InkOperator.LowerOrEqual, (left, right) => null }, //
+            { InkOperator.GreaterOrEqual, (left, right) => null }, //
+            { InkOperator.NotEqual, (left, right) => null }, //
+            { InkOperator.LogicalNegation, (left, right) => null }, //
+            { InkOperator.ConditionalAnd, (left, right) => null }, //
+            { InkOperator.ConditionalOr, (left, right) => null }, //
         };
     }
 }
