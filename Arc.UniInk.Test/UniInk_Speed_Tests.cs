@@ -18,7 +18,7 @@
 
             Assert.AreEqual(res, 2552);
         }
-        
+
         [TestCase("333-3"), Repeat(100)]
         public void Test_EvaluateNumber2(string input)
         {
@@ -26,5 +26,7 @@
 
             Assert.AreEqual(res, 330);
         }
+
+      
     }
 }
