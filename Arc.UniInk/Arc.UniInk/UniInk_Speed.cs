@@ -460,6 +460,29 @@ namespace Arc.UniInk
 
                 throw new Exception("left.ValueType != InkValueType.Int || right.ValueType != InkValueType.Int");
             }
+
+            public static InkValue operator /(InkValue left, InkValue right)
+            {
+                if (left is null || right is null)
+                {
+                    throw new Exception("left is null || right is null");
+                }
+
+                if (left.ValueType == InkValueType.Int || right.ValueType == InkValueType.Int)
+                {
+                    var answer = Get();
+                    answer.ValueType = InkValueType.Int;
+
+                    left.Calculate(InkValueType.Int);
+                    right.Calculate(InkValueType.Int);
+
+                    answer.Value_int = left.Value_int / right.Value_int;
+                    answer.isCalculate = true;
+                    return answer;
+                }
+
+                throw new Exception("left.ValueType != InkValueType.Int || right.ValueType != InkValueType.Int");
+            }
         }
 
         public class InkOperator
@@ -530,6 +553,19 @@ namespace Arc.UniInk
                     case InkValue leftValue when right is InkValue rightValue:
                     {
                         return leftValue * rightValue;
+                    }
+                    default: throw new Exception($"unknown type{left}--{right}");
+                }
+            }
+
+            public static object InkOperator_Divide(object left, object right)
+            {
+                switch (left)
+                {
+                    case null: return right;
+                    case InkValue leftValue when right is InkValue rightValue:
+                    {
+                        return leftValue / rightValue;
                     }
                     default: throw new Exception($"unknown type{left}--{right}");
                 }
@@ -776,7 +812,7 @@ namespace Arc.UniInk
             { InkOperator.Plus, InkOperator.InkOperator_Plus }, //
             { InkOperator.Minus, InkOperator.InkOperator_Minus }, //
             { InkOperator.Multiply, InkOperator.InkOperator_Multiply }, //
-            { InkOperator.Divide, (left, right) => null }, //
+            { InkOperator.Divide, InkOperator.InkOperator_Divide }, //
             { InkOperator.Modulo, (left, right) => null }, //
             { InkOperator.Lower, (left, right) => null }, //
             { InkOperator.Greater, (left, right) => null }, //
@@ -789,7 +825,4 @@ namespace Arc.UniInk
             { InkOperator.ConditionalOr, (left, right) => null }, //
         };
     }
-
-
-    
 }
