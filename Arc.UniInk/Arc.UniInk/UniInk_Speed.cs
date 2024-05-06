@@ -33,7 +33,6 @@ namespace Arc.UniInk
         };
 
 
-        /// <summary>用于解析方法的委托</summary>
         private delegate bool ParsingMethodDelegate(string expression, Queue<object> stack, ref int i);
 
 
