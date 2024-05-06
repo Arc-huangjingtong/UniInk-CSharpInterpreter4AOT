@@ -15,6 +15,8 @@ namespace Arc.UniInk.NunitTest
     using System;
     using System.Diagnostics;
     using System.Collections.Generic;
+    using System.Linq.Expressions;
+
 
     //🔴🟠🟡🟢🔵🟣🟤⚫⚪
     [TestFixture]
@@ -251,6 +253,8 @@ namespace Arc.UniInk.NunitTest
                 _ => throw new ArgumentException("Invalid operator") //
             };
         }
+        
+      
     }
 
 

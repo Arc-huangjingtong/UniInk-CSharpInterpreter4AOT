@@ -2,16 +2,16 @@
 	<s:String x:Key="/Default/Environment/AssemblyExplorer/XmlDocument/@EntryValue">&lt;AssemblyExplorer&gt;&#xD;
   &lt;Assembly Path="D:\Project\UniInk\Arc.UniInk\packages\NUnit.3.5.0\lib\net45\nunit.framework.dll" /&gt;&#xD;
 &lt;/AssemblyExplorer&gt;</s:String>
-	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=2f4297cf_002Dd321_002D46f4_002Db28f_002Deed6e1341e74/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" Name="Test_EvaluateNumber" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;&#xD;
-  &lt;TestAncestor&gt;&#xD;
-    &lt;TestId&gt;NUnit3x::D4E69C6F-59C7-4687-B3E4-646E26C9A7FE::.NETFramework,Version=v4.7.1::Arc.UniInk.NunitTest.UniInk_Speed_Tests.Test_EvaluateNumber&lt;/TestId&gt;&#xD;
-    &lt;TestId&gt;NUnit3x::D4E69C6F-59C7-4687-B3E4-646E26C9A7FE::.NETFramework,Version=v4.7.1::Arc.UniInk.NunitTest.UniInk_Speed_Tests.Test&lt;/TestId&gt;&#xD;
-  &lt;/TestAncestor&gt;&#xD;
+	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=e2163b1b_002Dbc6d_002D49a1_002Da2ba_002De3ccc7759170/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="&amp;lt;Arc.UniInk.Test&amp;gt; 中的所有测试" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;&#xD;
+  &lt;Project Location="D:\Project\UniInk\Arc.UniInk.Test" Presentation="&amp;lt;Arc.UniInk.Test&amp;gt;" /&gt;&#xD;
 &lt;/SessionState&gt;</s:String>
 	
-	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=9af9e47b_002D845e_002D42b2_002Db2ca_002D36b4229100c8/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="解决方案中的所有测试" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;&#xD;
-  &lt;Solution /&gt;&#xD;
-&lt;/SessionState&gt;</s:String>
+	
+	
+	
+	
+	
+	
 	
 	
 	

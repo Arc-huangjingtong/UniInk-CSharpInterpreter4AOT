@@ -1,10 +1,13 @@
 ﻿namespace Arc.UniInk.NunitTest
 {
+
     using Arc.UniInk;
     using NUnit.Framework;
     using System;
     using System.Diagnostics;
     using System.Collections.Generic;
+    using System.Linq.Expressions;
+
 
     [TestFixture]
     public class UniInk_Speed_Tests
@@ -27,6 +30,32 @@
             Assert.AreEqual(res, 330);
         }
 
-      
+        [Test, Repeat(100)]
+        public void Test()
+        {
+            // 使用具体的参数值调用委托
+            var result = compiled(333, 3); // result将会是8
+
+            Assert.AreEqual(result, 330);
+        }
+
+        Func<int, int, int> compiled;
+
+        [OneTimeSetUp]
+        public void Test_SetUp()
+        {
+            // 使用表达式API来创建表达式树
+            var paramA        = Expression.Parameter(typeof(int), "a");
+            var paramB        = Expression.Parameter(typeof(int), "b");
+            var sumExpression = Expression.Subtract(paramA, paramB);
+
+
+            // 创建lambda表达式代表这个表达式树
+            var lambda = Expression.Lambda<Func<int, int, int>>(sumExpression, paramA, paramB);
+
+            // 编译lambda表达式，生成可执行的委托
+            compiled = lambda.Compile();
+        }
     }
+
 }
