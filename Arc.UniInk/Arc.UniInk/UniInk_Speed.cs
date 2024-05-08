@@ -102,7 +102,7 @@ namespace Arc.UniInk
         /// <param name="stack"> the object stack to push or pop     </param>
         /// <param name="i">the <see cref="expression"/> start index </param>
         /// <returns> the evaluate is success or not </returns>
-        /// <exception cref="SyntaxException">Illegal character or Unknown escape character </exception>
+        /// <exception cref="InkSyntaxException">Illegal character or Unknown escape character </exception>
         private static bool EvaluateChar(string expression, Queue<object> stack, ref int i)
         {
             if (StartsWithCharFormIndex(expression, i, out var value, out var len))
@@ -136,9 +136,9 @@ namespace Arc.UniInk
             return false;
         }
 
-        /// <summary> Evaluate a expression      </summary>
-        /// <returns> return the result object   </returns>
-        public object Evaluate(string expression, int startIndex, int endIndex)
+        /// <summary> Evaluate a expression       </summary>
+        /// <returns> return the result object    </returns>
+        public static object Evaluate(string expression, int startIndex, int endIndex)
         {
             var queue = new Queue<object>();
 
@@ -157,26 +157,25 @@ namespace Arc.UniInk
                 if (any) continue;
                 if (char.IsWhiteSpace(expression[i])) continue;
 
-                throw new SyntaxException($"Invalid character : [{(int)expression[i]}:{expression[i]}] at [{i}  {expression}] ");
+                throw new InkSyntaxException($"Invalid character : [{(int)expression[i]}:{expression[i]}] at [{i}  {expression}] ");
             }
 
             var ans = ProcessQueue(queue);
 
-            if (ans is InkValue value)
-            {
-                ans = value.ValueType switch
-                {
-                    InkValue.InkValueType.Int     => value.Value_int, InkValue.InkValueType.Float => value.Value_float, InkValue.InkValueType.Double => value.Value_double, //
-                    InkValue.InkValueType.Boolean => value.Value_bool
-                  , // 
-                    InkValue.InkValueType.Char => value.Value_char
-                  , //
-                    InkValue.InkValueType.String => value.Value_String.ToString()
-                  , // 
-                    _ => throw new ArgumentOutOfRangeException()
-                };
-                InkValue.Release(value);
-            }
+            // if (ans is InkValue value)
+            // {
+            //     ans = value.ValueType switch
+            //     {
+            //         InkValue.InkValueType.Int     => value.Value_int               //
+            //       , InkValue.InkValueType.Float   => value.Value_float             //
+            //       , InkValue.InkValueType.Double  => value.Value_double            //
+            //       , InkValue.InkValueType.Boolean => value.Value_bool              // 
+            //       , InkValue.InkValueType.Char    => value.Value_char              //
+            //       , InkValue.InkValueType.String  => value.Value_String.ToString() // 
+            //       , _                             => throw new ArgumentOutOfRangeException()
+            //     };
+            //     InkValue.Release(value);
+            // }
 
             return ans;
         }
@@ -200,7 +199,7 @@ namespace Arc.UniInk
                 if (any) continue;
                 if (char.IsWhiteSpace(expression[i])) continue;
 
-                throw new SyntaxException($"Invalid character : [{(int)expression[i]}:{expression[i]}] at [{i}  {expression}] ");
+                throw new InkSyntaxException($"Invalid character : [{(int)expression[i]}:{expression[i]}] at [{i}  {expression}] ");
             }
 
             var ans = ProcessQueue(queue);
@@ -211,7 +210,7 @@ namespace Arc.UniInk
 
         public static object ProcessQueue(Queue<object> queue)
         {
-            if (queue.Count == 0) throw new SyntaxException("Empty expression and Empty stack");
+            if (queue.Count == 0) throw new InkSyntaxException("Empty expression and Empty stack");
 
             object cache = null;
             while (queue.Count > 0)
@@ -313,19 +312,20 @@ namespace Arc.UniInk
 
             if (bracketCount > 0)
             {
-                throw new SyntaxException($"[{expression}] is missing characters ['{endChar}'] ");
+                throw new InkSyntaxException($"[{expression}] is missing characters ['{endChar}'] ");
             }
 
             return expressionsList;
         }
 
 
+        /// <summary>In UniInk , every valueType is Object , No Boxing!</summary>
         public class InkValue
         {
-            public static readonly InkValue Empty = null;
+            public static readonly InkValue        Empty = null;
+            public static readonly Stack<InkValue> pool  = new();
 
-            public static readonly Stack<InkValue> pool = new();
-            public static          InkValue        Get() => pool.Count > 0 ? pool.Pop() : new InkValue();
+            public static InkValue Get() => pool.Count > 0 ? pool.Pop() : new InkValue();
 
             public static void Release(InkValue value)
             {
@@ -360,6 +360,7 @@ namespace Arc.UniInk
 
             public bool isCalculate = false;
 
+            /// <summary>Calculate the value</summary>
             public void Calculate(InkValueType type)
             {
                 if (isCalculate)
@@ -517,7 +518,7 @@ namespace Arc.UniInk
                     {
                         return leftValue + rightValue;
                     }
-                    default : throw new Exception($"unknown type{left}--{right}");
+                    default : throw new InkSyntaxException($"unknown type{left}--{right}");
                 }
             }
 
@@ -530,10 +531,9 @@ namespace Arc.UniInk
                     {
                         return leftValue - rightValue;
                     }
-                    default : throw new Exception($"unknown type{left}--{right}");
+                    default : throw new InkSyntaxException($"unknown type{left}--{right}");
                 }
             }
-
 
             public static object InkOperator_Multiply(object left, object right)
             {
@@ -544,7 +544,7 @@ namespace Arc.UniInk
                     {
                         return leftValue * rightValue;
                     }
-                    default : throw new Exception($"unknown type{left}--{right}");
+                    default : throw new InkSyntaxException($"unknown type{left}--{right}");
                 }
             }
 
@@ -557,15 +557,15 @@ namespace Arc.UniInk
                     {
                         return leftValue / rightValue;
                     }
-                    default : throw new Exception($"unknown type{left}--{right}");
+                    default : throw new InkSyntaxException($"unknown type{left}--{right}");
                 }
             }
         }
 
 
-        public class SyntaxException : Exception
+        public class InkSyntaxException : Exception
         {
-            public SyntaxException(string message) : base(message) { }
+            public InkSyntaxException(string message) : base(message) { }
         }
 
 
@@ -579,7 +579,7 @@ namespace Arc.UniInk
 
             len = 0;
 
-            if (input[startIndex].Equals(')')) throw new SyntaxException("missing match [)]");
+            if (input[startIndex].Equals(')')) throw new InkSyntaxException("missing match [)]");
             if (input[startIndex].Equals('('))
             {
                 var bracketCount = 0;
@@ -654,7 +654,7 @@ namespace Arc.UniInk
 
                     if (pointNum > 1)
                     {
-                        throw new SyntaxException("[NotSupport]:Too many decimal points, can't calling method with float or double number.");
+                        throw new InkSyntaxException("[NotSupport]:Too many decimal points, can't calling method with float or double number.");
                     }
 
                     value.ValueType = InkValue.InkValueType.Double;
@@ -710,12 +710,12 @@ namespace Arc.UniInk
                     }
                     else
                     {
-                        throw new SyntaxException($"Unknown escape character[{input[i]}] : You can customize them in [dic_EscapedChar]");
+                        throw new InkSyntaxException($"Unknown escape character[{input[i]}] : You can customize them in [dic_EscapedChar]");
                     }
                 }
                 else if (input[i].Equals('\''))
                 {
-                    throw new SyntaxException($"Illegal character[{i}] : ['']");
+                    throw new InkSyntaxException($"Illegal character[{i}] : ['']");
                 }
                 else
                 {
@@ -732,7 +732,7 @@ namespace Arc.UniInk
                 }
 
 
-                throw new SyntaxException($"Illegal character[{i}] : too many characters in a character literal");
+                throw new InkSyntaxException($"Illegal character[{i}] : too many characters in a character literal");
             }
 
             len   = 0;
@@ -772,7 +772,7 @@ namespace Arc.UniInk
                         }
                         else
                         {
-                            throw new SyntaxException($"Unknown escape character[{input[i]}] : You can customize them in [dic_EscapedChar]");
+                            throw new InkSyntaxException($"Unknown escape character[{input[i]}] : You can customize them in [dic_EscapedChar]");
                         }
                     }
                     else if (input[i].Equals('\"'))
@@ -788,7 +788,7 @@ namespace Arc.UniInk
                     }
                 }
 
-                throw new SyntaxException($"Illegal character[{i}] : too many characters in a character literal");
+                throw new InkSyntaxException($"Illegal character[{i}] : too many characters in a character literal");
             }
 
             len   = 0;
@@ -800,33 +800,20 @@ namespace Arc.UniInk
         /// <summary> Some UnaryPostfix Operators mark</summary>
         protected static readonly Dictionary<InkOperator, Func<object, object, object>> dic_OperatorsFunc = new()
         {
-            { InkOperator.Plus, InkOperator.InkOperator_Plus }, //
-            { InkOperator.Minus, InkOperator.InkOperator_Minus }
-          , //
-            { InkOperator.Multiply, InkOperator.InkOperator_Multiply }
-          , //
-            { InkOperator.Divide, InkOperator.InkOperator_Divide }
-          , //
-            { InkOperator.Modulo, (left, right) => null }
-          , //
-            { InkOperator.Lower, (left, right) => null }
-          , //
-            { InkOperator.Greater, (left, right) => null }
-          , //
-            { InkOperator.Equal, (left, right) => null }
-          , //
-            { InkOperator.LowerOrEqual, (left, right) => null }
-          , //
-            { InkOperator.GreaterOrEqual, (left, right) => null }
-          , //
-            { InkOperator.NotEqual, (left, right) => null }
-          , //
-            { InkOperator.LogicalNegation, (left, right) => null }
-          , //
-            { InkOperator.ConditionalAnd, (left, right) => null }
-          , //
-            { InkOperator.ConditionalOr, (left, right) => null }
-          , //
+            { InkOperator.Plus, InkOperator.InkOperator_Plus }         //
+          , { InkOperator.Minus, InkOperator.InkOperator_Minus }       //
+          , { InkOperator.Multiply, InkOperator.InkOperator_Multiply } //
+          , { InkOperator.Divide, InkOperator.InkOperator_Divide }     //
+          , { InkOperator.Modulo, (left,          right) => null }     //
+          , { InkOperator.Lower, (left,           right) => null }     //
+          , { InkOperator.Greater, (left,         right) => null }     //
+          , { InkOperator.Equal, (left,           right) => null }     //
+          , { InkOperator.LowerOrEqual, (left,    right) => null }     //
+          , { InkOperator.GreaterOrEqual, (left,  right) => null }     //
+          , { InkOperator.NotEqual, (left,        right) => null }     //
+          , { InkOperator.LogicalNegation, (left, right) => null }     //
+          , { InkOperator.ConditionalAnd, (left,  right) => null }     //
+          , { InkOperator.ConditionalOr, (left,   right) => null }     //
         };
     }
 
