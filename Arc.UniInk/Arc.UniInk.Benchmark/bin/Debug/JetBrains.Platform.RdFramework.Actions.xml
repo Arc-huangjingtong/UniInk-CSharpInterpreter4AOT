@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>JetBrains.Platform.RdFramework.Actions</name>
+    </assembly>
+    <members>
+        <member name="M:JetBrains.Platform.RdFramework.Actions.Backend.ActionUpdateTimeStatistics.CreateComparer">
+            <summary>
+            Creates comparer based on current statistics.
+            </summary>
+        </member>
+    </members>
+</doc>

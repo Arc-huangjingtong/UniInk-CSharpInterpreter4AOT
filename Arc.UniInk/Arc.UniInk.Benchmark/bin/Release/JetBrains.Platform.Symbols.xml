@@ -1,0 +1,153 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>JetBrains.Platform.Symbols</name>
+    </assembly>
+    <members>
+        <member name="T:JetBrains.Symbols.DefaultPdbCmdExecutionConfirmation">
+            <summary>
+            Default implementation which is required for the subsystem to be runnable on its own.
+            Override in host-specific environments if needed.
+            </summary>
+        </member>
+        <member name="T:JetBrains.Symbols.DefaultPdbSpecificLogger">
+            <summary>
+            Default implementation which is required for the subsystem to be runnable on its own.
+            Override in host-specific environments for relevant logging mechanisms (e.g. to VS Output window).
+            </summary>
+        </member>
+        <member name="P:JetBrains.Symbols.ISourcesCache.PrimaryCacheDir">
+            <summary>
+            Chosen directory to place downloaded sources
+            </summary>
+        </member>
+        <member name="M:JetBrains.Symbols.ISourcesDownloader.Download(JetBrains.Metadata.Debug.Pdb.SrcSrv.SourceLocation,JetBrains.Util.FileSystemPath,JetBrains.Application.Progress.IProgressIndicator,JetBrains.Symbols.SourceLinks.ISourceLinkCredentialManager)">
+            <summary>
+             Downloads source file specified by <paramref name="sourceLocation" /> to <paramref name="cacheDirectory" />.
+             Handles errors by itself
+             </summary>
+        </member>
+        <member name="M:JetBrains.Symbols.ISymbolsDownloader.Download(JetBrains.Metadata.Debug.Pdb.IDebugAssemblyInfo,JetBrains.Symbols.SymbolsSource,JetBrains.Application.Progress.IProgressIndicator)">
+            <summary>
+             Downloads symbols for <paramref name="assemblyInfo" /> to <paramref name="symbolsSource" />,
+             asks for specific pdbSignature instead of gettting it from <paramref name="assemblyInfo" />
+             Handles errors by itself, overwrites existing files.
+             </summary><returns>whether pdb was successfully downloaded and saved to designated location</returns>
+        </member>
+        <member name="M:JetBrains.Symbols.Providers.ISymbolsProvider.GetPdbFiles(JetBrains.Metadata.Debug.Pdb.IDebugAssemblyInfo)">
+            <remarks>
+            Does not check the signature and type of the found pdb files.
+            But the signature and type (from <paramref name="assemblyInfo"/>) can be used to locate pdb files
+            </remarks>
+        </member>
+        <member name="M:JetBrains.Symbols.Providers.ISymbolsProvider.DownloadPdbFile(JetBrains.Metadata.Debug.Pdb.IDebugAssemblyInfo,JetBrains.Application.Progress.IProgressIndicator)">
+            <summary>
+            Downloads symbols file for <paramref name="assemblyInfo"/>
+            </summary>
+            <exception cref="T:System.OperationCanceledException">on downloading cancelled by progress indicator</exception>
+            <returns>true if the file was downloaded, false otherwise</returns>
+        </member>
+        <member name="M:JetBrains.Symbols.Providers.ISymbolsProvidersManager.GetPdbFilesInfo(JetBrains.Metadata.Debug.Pdb.IDebugAssemblyInfo)">
+            <remarks>
+            Does not check the signature and type of the found pdb files.
+            But the signature and type (from <paramref name="assemblyInfo"/>) can be used to locate pdb files
+            </remarks>
+        </member>
+        <member name="T:JetBrains.Symbols.SourceLinkOrEmbeddedSourcesCache">
+             <summary>
+             <para>Cache for unpacked sources (embedded into portable pdb)
+             and sources downloaded from source server (for pdb with SourceLink)</para>
+            
+             <para>Structure</para>
+             <para>
+             case 1 (source with valid checksum in pdb):
+             (cache dir)\(hex presentation of source checksum)\(source short name)
+             - corresponds to the folder structure of Visual Studio embedded sources cache
+             </para>
+             <para>
+             case 2 (source with invalid checksum):
+             (cache dir)\(assembly MVID in hex + assembly size in hex)\(source index in hex)\(source short name)
+             (source index > 0 (index > DebugDocument.NullDocumentIndex))
+             </para>
+             <para>
+             case 2' (source with invalid checksum, source index is 0 (DebugDocument.NullDocumentIndex),
+             i.e. source without sequence points, e.g. source for enum or interface):
+             (cache dir)\(assembly MVID in hex + assembly size in hex)\_(source name hash)\(source short name)
+             </para>
+             <para>Properties file near the cached source (only in case 1):</para>
+             <para>checksum + assembly ids list (may be empty) for assemblies referencing this source via pdb</para>
+             </summary>
+        </member>
+        <member name="P:JetBrains.Symbols.SourceLinkOrEmbeddedSourcesCache.CacheDirectory">
+            <summary>
+            Cache root folder
+            </summary>
+        </member>
+        <member name="M:JetBrains.Symbols.SourceLinkOrEmbeddedSourcesCache.GetItemRelativePath(JetBrains.Metadata.Reader.API.AssemblyId,System.Int32,JetBrains.Util.FileSystemPath)">
+            <summary>
+            Path relative to cache folder
+            case 2:  (assembly MVID in hex + assembly size in hex)\(source index in hex)\(source short name)
+            case 2': (assembly MVID in hex + assembly size in hex)\_(source name hash)\(source short name)
+            </summary>
+        </member>
+        <member name="M:JetBrains.Symbols.SourceLinkOrEmbeddedSourcesCache.GetItemRelativePath(JetBrains.Metadata.Reader.API.AssemblyId,JetBrains.Metadata.Debug.Pdb.PdbDocumentInfo,JetBrains.Util.FileSystemPath)">
+            <summary>
+            Path relative to cache folder
+            case 1: (VS hex presentation of source checksum)\(source short name)
+            case 2: (assembly MVID in hex + assembly size in hex)\(source index in hex)\(source short name)
+            case 2':(assembly MVID in hex + assembly size in hex)\_(source name hash)\(source short name)
+            </summary>
+        </member>
+        <member name="M:JetBrains.Symbols.SourceLinkOrEmbeddedSourcesCache.TryGetSource(JetBrains.Metadata.Reader.API.AssemblyId,JetBrains.Metadata.Debug.Pdb.PdbDocumentInfo,System.String,JetBrains.Util.FileSystemPath,JetBrains.Metadata.Utils.PE.Directories.DebugInfoType)">
+            <summary>
+            Gets cached source
+            (null if source is not cached / is not embedded)
+            </summary>
+            <remarks>
+            Embedded source can be extracted to cache,
+            but cannot be downloaded from source server
+            </remarks>
+        </member>
+        <member name="M:JetBrains.Symbols.SourceLinkOrEmbeddedSourcesCache.TryGetSourceInfo(JetBrains.Util.FileSystemPath,JetBrains.Metadata.Debug.Pdb.ParsedPdb)">
+            <summary>
+            Source index or checksum based on cache folder structure or
+            PdbDocumentInfo.Invalid if cacheItemPath is not inside cache
+            </summary>
+        </member>
+        <member name="M:JetBrains.Symbols.SourceLinkOrEmbeddedSourcesCache.GetSourceLinkPath(JetBrains.Metadata.Reader.API.AssemblyId)">
+            <summary>
+            SourceLink.json file path in cache for assembly 
+            </summary>
+        </member>
+        <member name="M:JetBrains.Symbols.SourceLinkOrEmbeddedSourcesCache.GetDefaultChecksum(System.Byte[])">
+            <summary>
+            SHA1 checksum
+            </summary>
+        </member>
+        <member name="P:JetBrains.Symbols.SrcSrvSourcesCache.PrimaryCacheDir">
+            <summary>
+            Chosen directory to place downloaded sources
+            </summary>
+        </member>
+        <member name="T:JetBrains.Symbols.SymbolsCache.SymbolsCacheStructureUtil">
+            <summary>
+            File/folder structure of cache (inside symbols cache folder):
+            pdbName.pdb/signature/pdbName.pdb
+            (or pdbFileName/signature/pdbFileName, pdbFileName = pdbName.pdb)
+            signature - pdb signature (Guid in hex) and age (int in hex)
+            </summary>
+        </member>
+        <member name="M:JetBrains.Symbols.SymbolsCache.SymbolsCacheStructureUtil.GetPdbFilePath(JetBrains.Util.FileSystemPath,System.String,System.String)">
+            <param name="rootFolder"></param>
+            <param name="pdbFileName">pdb file name with extension</param>
+            <param name="pdbSignature"></param>
+            <returns></returns>
+        </member>
+        <member name="M:JetBrains.Symbols.SymbolsCache.SymbolsCacheStructureUtil.GetPdbFolderPath(JetBrains.Util.FileSystemPath,System.String,System.String)">
+            <param name="rootFolder"></param>
+            <param name="pdbFileName">pdb file name with extension</param>
+            <param name="pdbSignature"></param>
+            <returns></returns>
+        </member>
+    </members>
+</doc>

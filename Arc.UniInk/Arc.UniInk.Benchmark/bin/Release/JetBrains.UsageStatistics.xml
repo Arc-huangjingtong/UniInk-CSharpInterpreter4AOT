@@ -1,0 +1,491 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>JetBrains.UsageStatistics</name>
+    </assembly>
+    <members>
+        <member name="M:JetBrains.UsageStatistics.ActivityTracking.StopSession">
+            <summary>
+            Stop session and return collected result for frontend.
+            </summary>
+        </member>
+        <member name="M:JetBrains.UsageStatistics.ActivityTracking.RestartSession">
+            <summary>
+            Restart session and return collected result for frontend.
+            </summary>
+        </member>
+        <member name="P:JetBrains.UsageStatistics.ActivityTrackingDefaultSettings.SubmitLogsInterval">
+            <summary>
+            First attempt to submit logs is with first dump (<see cref="P:JetBrains.UsageStatistics.ActivityTrackingDefaultSettings.DumpLogsInterval"/>). Next in <see cref="P:JetBrains.UsageStatistics.ActivityTrackingDefaultSettings.SubmitLogsInterval"/>.
+            </summary>
+        </member>
+        <member name="T:JetBrains.UsageStatistics.FUS.Collectors.ApplicationUsagesCollector">
+             <p>Use it to create a collector which records product state.</p>
+             <br/>
+             To implement a new collector:
+             <ol>
+               <li>Inherit the class, implement {@link ApplicationUsagesCollector#getGroup()} and {@link ApplicationUsagesCollector#getMetrics()}
+               See <i>fus-collectors.md</i> for more details.</li>
+               <li>Implement custom validation rules if necessary. For more information see {@link DotnetSensitiveDataValidator}.</li>
+               <li>Otherwise, create a YT issue in FUS project with group data scheme and descriptions to register it on the statistics metadata server</li>
+             </ol>
+             <br/>
+             To test collector:
+             <ol>
+              <li>
+                Open "Statistics Event Log" toolwindow.
+              </li>
+              <li>
+                Add group to events test scheme with "Add Group to Events Test Scheme" action.<br/>
+                {@link com.intellij.internal.statistic.actions.scheme.AddGroupToTestSchemeAction}
+              </li>
+              <li>
+                Record all state collectors with "Record State Collectors to Event Log" action.<br/>
+                {@link com.intellij.internal.statistic.actions.RecordStateStatisticsEventLogAction}
+              </li>
+             </ol>
+             <br/>
+             For more information see <i>fus-collectors.md</i>
+            
+             @see ProjectUsagesCollector
+             @see CounterUsagesCollector
+        </member>
+        <member name="M:JetBrains.UsageStatistics.FUS.Collectors.ApplicationUsagesCollector.GetMetricsAsync(JetBrains.Lifetimes.Lifetime)">
+            Implement this method to calculate metrics.
+            <br/><br/>
+            {@link MetricEvent#eventId} should indicate what we measure, e.g. "configured.vcs", "module.jdk".<br/>
+            {@link MetricEvent#data} should contain the value of the measurement, e.g. {"name":"Git"}, {"version":"1.8", "vendor":"OpenJdk"}
+        </member>
+        <member name="T:JetBrains.UsageStatistics.FUS.Collectors.CounterUsagesCollector">
+             <p>Use it to create a collector which records user or internal IDE actions.</p>
+             <br/>
+             To implement a new collector:
+             <ol>
+               <li>Inherit the class, implement {@link CounterUsagesCollector#getGroup()}, register all events you want to record and register collector in plugin.xml.
+               See <i>fus-collectors.md</i> for more details.</li>
+               <li>Implement custom validation rules if necessary. For more information see {@link IntellijSensitiveDataValidator}.</li>
+               <li>If new group is implemented in a platform or a plugin built with IntelliJ Ultimate, YT issue will be created automatically</li>
+               <li>Otherwise, create a YT issue in FUS project with group data scheme and descriptions to register it on the statistics metadata server</li>
+             </ol>
+             <br/>
+             To test collector:
+             <ol>
+              <li>
+                Open "Statistics Event Log" toolwindow.
+              </li>
+              <li>
+                Add group to events test scheme with "Add Group to Events Test Scheme" action.<br/>
+                {@link com.intellij.internal.statistic.actions.scheme.AddGroupToTestSchemeAction}
+              </li>
+              <li>
+                Perform action to check that it's recorded in "Statistics Event Log" toolwindow.
+              </li>
+             </ol>
+             <br/>
+             For more information see <i>fus-collectors.md</i>
+            
+             @see ApplicationUsagesCollector
+             @see SolutionUsagesCollector
+        </member>
+        <member name="T:JetBrains.UsageStatistics.FUS.Collectors.FeatureUsagesCollector">
+             <p>Use it to create a collector which records IDE/project state or user/IDE internal actions.</p>
+             <br/>
+             For more information see <i>fus-collectors.md</i>
+            
+             @see ApplicationUsagesCollector
+             @see ProjectUsagesCollector
+             @see CounterUsagesCollector
+        </member>
+        <member name="M:JetBrains.UsageStatistics.FUS.Collectors.FeatureUsagesCollector.GetGroup">
+            @return EventLogGroup with all registered event IDs and fields in the group
+            @see EventLogGroup#registerEvent
+            @see EventId#metric
+        </member>
+        <member name="T:JetBrains.UsageStatistics.FUS.Collectors.FUCounterUsageLogger">
+             Please do not implement any new collectors using this API directly.
+             Please refer to "fus-collectors.md" dev-guide and {@link EventLogGroup#registerEvent} doc comments for the new collector API.
+            
+             @see CounterUsagesCollector
+             @see ApplicationUsagesCollector
+             @see SolutionUsagesCollector
+        </member>
+        <member name="T:JetBrains.UsageStatistics.FUS.Collectors.FuStateUsagesLogger">
+             <p>Called by a scheduler once a day and records IDE/project state.</p> <br/>
+            
+             <p><b>Don't</b> use it directly unless absolutely necessary.
+             Implement {@link ApplicationUsagesCollector} or {@link ProjectUsagesCollector} instead.</p>
+            
+             <p>To record IDE events (e.g. invoked action, opened dialog) use {@link CounterUsagesCollector}</p>
+        </member>
+        <member name="M:JetBrains.UsageStatistics.FUS.EventLog.Connection.IEventLogSettingsService.IsSettingsReachable">
+            @return true if it's possible to load settings from server, false otherwise
+        </member>
+        <member name="M:JetBrains.UsageStatistics.FUS.EventLog.Connection.IEventLogSettingsService.IsSendEnabled">
+            @return true if send is enable for a current IDE version (i.e. send configuration exists), false otherwise
+        </member>
+        <member name="T:JetBrains.UsageStatistics.FUS.EventLog.Connection.Metadata.EventGroupRemoteDescriptors">
+             <b>Example:</b>
+            
+             <pre>{@code
+             {
+               "groups": [
+                 {
+                   "id": "actions",
+                   "builds": [],
+                   "versions": [ {"from": "9"} ],
+                   "rules": {
+                     "event_id": [ "{enum:action.invoked}" ],
+                     "event_data": {
+                       "action_id": [ "{util#action}" ],
+                       "context_menu": [ "{enum#boolean}" ],
+                       "parent": [ "{enum#parent}", "{util#class_name}" ]
+                     },
+                     "enums": {
+                       "parent": [ "LineMarkerActionWrapper", "TreeActionWrapper", "MyTreeActionWrapper" ]
+                     }
+                   }
+                 },
+                 {
+                   "id" : "run.configuration.exec",
+                   "builds" : [ {"from" : "191.4811"} ],
+                   "versions" : [ {"from" : "1"} ],
+                   "rules": {
+                     "event_id" : [ "{enum:started|ui.shown|finished}" ],
+                     "event_data": {
+                       "id" : [ "{util#run_config_id}" ]
+                     }
+                   }
+                 }
+               ]
+             }
+             }</pre>
+        </member>
+        <member name="T:JetBrains.UsageStatistics.FUS.EventLog.EventLogGroup">
+            Best practices:
+            - Prefer a bigger group with many (related) event types to many small groups of 1-2 events each
+            - Prefer shorter group names; avoid common prefixes (such as "statistics.")
+        </member>
+        <member name="M:JetBrains.UsageStatistics.FUS.EventLog.EventLogGroup.RegisterEvent``1(System.String,System.String,JetBrains.UsageStatistics.FUS.EventLog.Events.EventField{``0})">
+             See docs for com.intellij.internal.statistic.eventLog.EventLogGroup.registerEvent(java.lang.String)
+            
+             @see registerEvent
+             @see registerVarargEvent
+        </member>
+        <member name="M:JetBrains.UsageStatistics.FUS.EventLog.EventLogGroup.RegisterEvent``2(System.String,System.String,JetBrains.UsageStatistics.FUS.EventLog.Events.EventField{``0},JetBrains.UsageStatistics.FUS.EventLog.Events.EventField{``1})">
+             See docs for com.intellij.internal.statistic.eventLog.EventLogGroup.registerEvent(java.lang.String)
+            
+             @see registerEvent
+             @see registerVarargEvent
+        </member>
+        <member name="M:JetBrains.UsageStatistics.FUS.EventLog.EventLogGroup.RegisterVarargEvent(System.String,System.String,JetBrains.UsageStatistics.FUS.EventLog.Events.EventField[])">
+             See docs for com.intellij.internal.statistic.eventLog.EventLogGroup.registerEvent(java.lang.String)
+            
+             @see registerEvent
+        </member>
+        <member name="F:JetBrains.UsageStatistics.FUS.EventLog.EventLogSystemEvents.COLLECTOR_REGISTERED">
+            System event which indicates that the counter collector is enabled in current IDE build.
+            Used to calculate counter metric baseline.
+        </member>
+        <member name="F:JetBrains.UsageStatistics.FUS.EventLog.EventLogSystemEvents.STATE_COLLECTOR_INVOKED">
+            System event which indicates that the collector was called.
+            Used to calculate state metric baseline.
+        </member>
+        <member name="F:JetBrains.UsageStatistics.FUS.EventLog.EventLogSystemEvents.STATE_COLLECTOR_FAILED">
+            System event which indicates that the collector was called but failed with an exception.
+        </member>
+        <member name="F:JetBrains.UsageStatistics.FUS.EventLog.EventLogSystemEvents.TOO_MANY_EVENTS_ALERT">
+             Indicates that the number of events from group is bigger than a soft threshold
+            
+             Events will be still recorded until final threshold is reached
+        </member>
+        <member name="F:JetBrains.UsageStatistics.FUS.EventLog.EventLogSystemEvents.TOO_MANY_EVENTS">
+             Indicates that too many events were reported from a group or in total
+            
+             If this threshold is reached, events won't be recorded till the end of the hour
+        </member>
+        <member name="M:JetBrains.UsageStatistics.FUS.EventLog.Events.EventFields.StringValidatedByRegexp(System.String,System.String,System.String)">
+            Creates a field that will be validated by global regexp rule
+            @param name  name of the field
+            @param regexpRef reference to global regexp, e.g "integer" for "{regexp#integer}"
+        </member>
+        <member name="M:JetBrains.UsageStatistics.FUS.EventLog.Events.EventFields.StringValidatedByEnum(System.String,System.String,System.String)">
+            Creates a field that will be validated by global enum rule
+            @param name  name of the field
+            @param enumRef reference to global enum, e.g "os" for "{enum#os}"
+        </member>
+        <member name="M:JetBrains.UsageStatistics.FUS.EventLog.Events.EventFields.StringValidatedByCustomRule(System.String,System.String,System.String)">
+            Creates a field that will be validated by [com.intellij.internal.statistic.eventLog.validator.rules.impl.CustomValidationRule]
+            @param name  name of the field
+            @param customRuleId ruleId that is accepted by [com.intellij.internal.statistic.eventLog.validator.rules.impl.CustomValidationRule.acceptRuleId],
+            e.g "class_name" for "{util#class_name}"
+        </member>
+        <member name="M:JetBrains.UsageStatistics.FUS.EventLog.Events.EventFields.String(System.String,System.String,System.Collections.Generic.IEnumerable{System.String})">
+            Creates a field that allows only a specific list of values
+            @param name  name of the field
+            @param allowedValues list of allowed values, e.g [ "bool", "int", "float"]
+        </member>
+        <member name="M:JetBrains.UsageStatistics.FUS.EventLog.Events.EventFields.RoundedInt(System.String,System.String)">
+            Rounds integer value to the next power of two.
+            Use it to anonymize sensitive information like the number of files in a project.
+        </member>
+        <member name="M:JetBrains.UsageStatistics.FUS.EventLog.Events.EventFields.RoundedLong(System.String,System.String)">
+            Rounds long value to the next power of two.
+            Use it to anonymize sensitive information like the number of files in a project.
+        </member>
+        <member name="M:JetBrains.UsageStatistics.FUS.EventLog.Events.EventFields.StringListValidatedByCustomRule(System.String,System.String,System.String)">
+            Creates a field for a list, each element of which will be validated by [com.intellij.internal.statistic.eventLog.validator.rules.impl.CustomValidationRule]
+            @param name  name of the field
+            @param customRuleId ruleId that is accepted by [com.intellij.internal.statistic.eventLog.validator.rules.impl.CustomValidationRule.acceptRuleId],
+            e.g "class_name" for "{util#class_name}"
+        </member>
+        <member name="M:JetBrains.UsageStatistics.FUS.EventLog.Events.EventFields.StringListValidatedByEnum(System.String,System.String,System.String)">
+            Creates a field for a list, each element of which will be validated by global enum rule
+            @param name  name of the field
+            @param enumRef reference to global enum, e.g "os" for "{enum#os}"
+        </member>
+        <member name="M:JetBrains.UsageStatistics.FUS.EventLog.Events.EventFields.StringListValidatedByRegexp(System.String,System.String,System.String)">
+            Creates a field for a list, each element of which will be validated by global regexp
+            @param name  name of the field
+            @param regexpRef reference to global regexp, e.g "integer" for "{regexp#integer}"
+        </member>
+        <member name="M:JetBrains.UsageStatistics.FUS.EventLog.Events.EventFields.StringList(System.String,System.String,System.Collections.Generic.IList{System.String})">
+            Creates a field for a list in which only a specific values are allowed
+            @param name  name of the field
+            @param allowedValues list of allowed values, e.g [ "bool", "int", "float"]
+        </member>
+        <member name="M:JetBrains.UsageStatistics.FUS.EventLog.Events.EventFields.StringValidatedByInlineRegexp(System.String,System.String,System.String)">
+            Please choose regexp carefully to avoid reporting any sensitive data.
+        </member>
+        <member name="M:JetBrains.UsageStatistics.FUS.EventLog.Events.EventFields.StringListValidatedByInlineRegexp(System.String,System.String,System.String)">
+            Please choose regexp carefully to avoid reporting any sensitive data.
+        </member>
+        <member name="T:JetBrains.UsageStatistics.FUS.EventLog.FeatureUsageData">
+             <p>FeatureUsageData represents additional data for reported event.</p>
+            
+             <h3>Example</h3>
+            
+             <p>My usage collector collects actions invocations. <i>"my.foo.action"</i> could be invoked from one of the following contexts:
+             "main.menu", "context.menu", "my.dialog", "all-actions-run".</p>
+            
+             <p>If I write {@code FUCounterUsageLogger.logEvent("my.foo.action", "bar")}, I'll know how many times the action "bar" was invoked (e.g. 239)</p>
+            
+             <p>If I write {@code FUCounterUsageLogger.logEvent("my.foo.action", "bar", new FeatureUsageData().addPlace(place))}, I'll get the same
+             total count of action invocations (239), but I'll also know that the action was called 3 times from "main.menu", 235 times from "my.dialog" and only once from "context.menu".
+             <br/>
+             </p>
+        </member>
+        <member name="M:JetBrains.UsageStatistics.FUS.EventLog.FeatureUsageData.AddData(System.String,System.Boolean)">
+            @param key can contain "-", "_", latin letters or digits. All not allowed symbols will be replaced with "_" or "?".
+        </member>
+        <member name="M:JetBrains.UsageStatistics.FUS.EventLog.FeatureUsageData.AddData(System.String,System.Int32)">
+            @param key can contain "-", "_", latin letters or digits. All not allowed symbols will be replaced with "_" or "?".
+        </member>
+        <member name="M:JetBrains.UsageStatistics.FUS.EventLog.FeatureUsageData.AddData(System.String,System.Int64)">
+            @param key can contain "-", "_", latin letters or digits. All not allowed symbols will be replaced with "_" or "?".
+        </member>
+        <member name="M:JetBrains.UsageStatistics.FUS.EventLog.FeatureUsageData.AddData(System.String,System.Single)">
+            @param key can contain "-", "_", latin letters or digits. All not allowed symbols will be replaced with "_" or "?".
+        </member>
+        <member name="M:JetBrains.UsageStatistics.FUS.EventLog.FeatureUsageData.AddData(System.String,System.Double)">
+            @param key can contain "-", "_", latin letters or digits. All not allowed symbols will be replaced with "_" or "?".
+        </member>
+        <member name="M:JetBrains.UsageStatistics.FUS.EventLog.FeatureUsageData.AddData(System.String,System.String)">
+            @param key can contain "-", "_", latin letters or digits. All not allowed symbols will be replaced with "_" or "?".
+            @param value can contain "-", "_", ".", latin letters or digits. All not allowed symbols will be replaced with "_" or "?".
+        </member>
+        <member name="M:JetBrains.UsageStatistics.FUS.EventLog.FeatureUsageData.AddData(System.String,System.Collections.Generic.IList{System.String})">
+             The data reported by this method will be available ONLY for ad-hoc analysis.
+            
+             @param key key can contain "-", "_", latin letters or digits. All not allowed symbols will be replaced with "_" or "?".
+        </member>
+        <member name="M:JetBrains.UsageStatistics.FUS.EventLog.FeatureUsageData.AddListLongData(System.String,System.Collections.Generic.IList{System.Int64})">
+             The data reported by this method will be available ONLY for ad-hoc analysis.
+            
+             @param key key can contain "-", "_", latin letters or digits. All not allowed symbols will be replaced with "_" or "?".
+        </member>
+        <member name="P:JetBrains.UsageStatistics.FUS.EventLog.Fus.FeatureUsageLogger.LoggerProvider">
+            <summary>
+            Direct use of this should be done in the tests only!
+            </summary>
+        </member>
+        <member name="M:JetBrains.UsageStatistics.FUS.EventLog.Fus.FeatureUsageLogger.Log(JetBrains.UsageStatistics.FUS.EventLog.EventLogGroup,System.String,System.Collections.Generic.IDictionary{System.String,System.Object})">
+            Records that in a group (e.g. 'dialogs', 'intentions') a new event occurred.
+            Adds context information to the event, e.g. source and shortcut for an action.
+        </member>
+        <member name="M:JetBrains.UsageStatistics.FUS.EventLog.Fus.FeatureUsageLogger.LogState(JetBrains.UsageStatistics.FUS.EventLog.EventLogGroup,System.String)">
+            Records a new state event in a group (e.g. 'run.configuration.type').
+        </member>
+        <member name="M:JetBrains.UsageStatistics.FUS.EventLog.Fus.FeatureUsageLogger.LogState(JetBrains.UsageStatistics.FUS.EventLog.EventLogGroup,System.String,System.Collections.Generic.IDictionary{System.String,System.Object})">
+            Records a new state event in a group (e.g. 'run.configuration.type').
+            Adds context information to the event, e.g. if configuration is stored on project or on IDE level.
+        </member>
+        <member name="M:JetBrains.UsageStatistics.FUS.EventLog.Fus.MachineIdManager.GetAnonymizedMachineId(System.String,System.String)">
+            @param purpose What id will be used for, shouldn't be empty.
+            @return Anonymized machine id or null If getting machine id was failed.
+        </member>
+        <member name="M:JetBrains.UsageStatistics.FUS.EventLog.Fus.MachineIdManager.GetLinuxMachineId">
+             Reads machineId from /etc/machine-id or if not found from /var/lib/dbus/machine-id
+            
+             See https://manpages.debian.org/testing/systemd/machine-id.5.en.html for more details
+        </member>
+        <member name="M:JetBrains.UsageStatistics.FUS.EventLog.Fus.MachineIdManager.GetMacOsMachineId">
+            Invokes `ioreg -rd1 -c IOPlatformExpertDevice` to get IOPlatformUUID
+        </member>
+        <member name="F:JetBrains.UsageStatistics.FUS.EventLog.StatisticsEventLogThrottleWriter.myThrottle">
+            <summary>
+             Allow up to 24000 events per hour or another threshold loaded from config
+             </summary>
+        </member>
+        <member name="F:JetBrains.UsageStatistics.FUS.EventLog.StatisticsEventLogThrottleWriter.myGroupThrottle">
+            <summary>
+             Allow up to 12000 events per group per hour or another threshold loaded from config
+             </summary>
+        </member>
+        <member name="M:JetBrains.UsageStatistics.FUS.EventLog.Validator.Rules.EventGroupRules.ValidateEventData(System.String,System.Object,JetBrains.UsageStatistics.FUS.EventLog.Validator.Rules.EventContext)">
+            <returns>validated data, incorrect values are replaced with {@link ValidationResultType#GetDescription()}</returns>
+        </member>
+        <member name="M:JetBrains.UsageStatistics.FUS.EventLog.Validator.Rules.FUSRule.Validate(System.String,JetBrains.UsageStatistics.FUS.EventLog.Validator.Rules.EventContext)">
+             <p>Validates event id and event data before recording it locally. Used to ensure that no personal or proprietary data is recorded.</p>
+            
+             <ul>
+                 <li>{@link ValidationResultType#ACCEPTED} - data is checked and should be recorded as is;</li>
+                 <li>{@link ValidationResultType#THIRD_PARTY} - data is correct but is implemented in an unknown third-party plugin, e.g. third-party file type</li>
+                 <li>{@link ValidationResultType#REJECTED} - unexpected data, e.g. cannot find run-configuration by provided id;</li>
+             </ul>
+            
+             @param data what is validated. Event id or the value of event data field.
+             @param context whole event context, i.e. both event id and event data.
+            
+        </member>
+        <member name="T:JetBrains.UsageStatistics.FUS.EventLog.Validator.Rules.Impl.CustomValidationRule">
+             <p>
+               Base class for custom validation rules.
+               If your data cannot be validated with enumerated values or by a regexp,
+               inherit the class and implement {@link CustomValidationRule#doValidate(String, EventContext)}.
+               For more information see {@link IntellijSensitiveDataValidator}.
+             </p>
+            
+             <p><i>Example:</i>
+             {@link com.intellij.internal.statistic.collectors.fus.ClassNameRuleValidator},
+             {@link com.intellij.internal.statistic.collectors.fus.LangCustomRuleValidator}, etc.</p>
+            
+             @see IntellijSensitiveDataValidator
+        </member>
+        <member name="T:JetBrains.UsageStatistics.FUS.EventLog.Validator.Rules.Impl.IUtilValidationRule">
+             Use this class to validate data with java code when {@link EnumValidationRule} or {@link RegexpValidationRule} rules are not enough,
+             e.g there are too many possible values or they are dynamically generated.
+             Make sure that your {@link UtilRuleProducer} is able to create new validation rule.
+            
+             Example: {util#class_name} checks that the value is a class name from platform, JB plugin or a plugin from JB plugin repository.
+        </member>
+        <member name="M:JetBrains.UsageStatistics.FUS.EventLog.Validator.Rules.PerformanceCareRule.DoValidate(System.String,JetBrains.UsageStatistics.FUS.EventLog.Validator.Rules.EventContext)">
+             <p>Validates event id and event data before recording it locally. Used to ensure that no personal or proprietary data is recorded.</p>
+            
+             <ul>
+                 <li>{@link ValidationResultType#ACCEPTED} - data is checked and should be recorded as is;</li>
+                 <li>{@link ValidationResultType#THIRD_PARTY} - data is correct but is implemented in an unknown third-party plugin, e.g. third-party file type</li>
+                 <li>{@link ValidationResultType#REJECTED} - unexpected data, e.g. cannot find run-configuration by provided id;</li>
+             </ul>
+            
+             @param data what is validated. Event id or the value of event data field.
+             @param context whole event context, i.e. both event id and event data.
+        </member>
+        <member name="M:JetBrains.UsageStatistics.FUS.EventLog.Validator.Rules.Utils.IValidationRuleProducer`1.CreateValidationRule(System.String,JetBrains.UsageStatistics.FUS.EventLog.Validator.Rules.EventGroupContextData)">
+            @param value       validation rule string without prefix and braces (e.g "foo|bar" for {enum:foo|bar})
+        </member>
+        <member name="M:JetBrains.UsageStatistics.FUS.EventLog.Validator.Rules.Utils.IValidationRuleProducer`1.GetPrefix">
+            Returns the prefix of the validation rule that can be created by this producer.
+            E.g `enum:` for enum validation rule.
+        </member>
+        <member name="M:JetBrains.UsageStatistics.FUS.EventLog.Validator.SensitiveDataValidator`1.ValidateEvent(JetBrains.UsageStatistics.FUS.EventLog.LogEvent)">
+            @return null if the build or version failed validation,
+            otherwise returns validated event in which incorrect values are replaced with {@link ValidationResultType#getDescription()}.
+        </member>
+        <member name="T:JetBrains.UsageStatistics.FUS.EventLog.Validator.Storage.DotnetSensitiveDataValidator">
+             <p>
+               The data from all collectors is validated before it's recorded locally.
+               It's necessary to make sure that the data is correct and it doesn't contain personal or proprietary information.<br/>
+               Validation is performed right before logging in {@link IntellijSensitiveDataValidator#validate}.<br/>
+             </p>
+            
+             <p>
+               Therefore, each collector should define data scheme and rules which will be used in validation.<br/>
+               Rules are stored in a separate repository, IDE loads rules from the server during runtime.<br/>
+               If you use new FUS API (docs: fus-collectors.md) and group is implemented in a platform or bundled plugin,
+               synchronization between statistics metadata repository and source code is performed semi-automatically.
+               In other cases or when you need to change group scheme without changing the code, create an <a href="https://youtrack.jetbrains.com/issues/FUS">issue</a>.
+             </p>
+            
+             <p>
+             There are 3 types of rules:
+             <ol>
+                 <li>
+                   <b>Enum</b>: a list of possible values, e.g.
+                   <i>"{enum:started|finished}"</i> checks that the value is equal to 'started' or 'finished'.<br/>
+                  See: {@link EnumValidationRule}
+                 </li>
+                 <li>
+                   <b>Regexp</b>: e.g. <i>"{regexp#integer}</i> checks that the value is integer.<br/>
+                   See: {@link RegexpValidationRule}
+                 </li>
+                 <li>
+                   <b>Custom rule</b>: class which inherits {@link CustomValidationRule} and validates dynamic data like action id or file type, e.g.
+                   <i>"{util#class_name}"</i> checks that the value is a class name from platform, JB plugin or a plugin from JB plugin repository.<br/>
+                   See: {@link com.intellij.internal.statistic.collectors.fus.ClassNameRuleValidator}
+                 </li>
+             </ol>
+             </p>
+            
+             <p>
+               There is also a list of common event data fields which doesn't require validation
+               because they are always validated in {@link FeatureUsageData}, e.g. "plugin", "lang", etc.
+             </p>
+            
+             <p>Example:</p>
+             <ul>
+             <li><i>"actions"</i> collector records invoked actions
+             ({@link com.intellij.internal.statistic.collectors.fus.actions.persistence.ActionsCollectorImpl}).<br/>
+            
+             It is validated by the following rules:
+             <pre>
+             {
+               "event_id" : [ "{enum:action.invoked|custom.action.invoked}" ],
+               "event_data" : {
+                 "action_id" : [ "{util#action}" ],
+                 "class" : [ "{util#class_name}" ],
+                 "context_menu" : [ "{enum#boolean}" ],
+                 "current_file" : [ "{util#current_file}" ],
+                 "input_event" : [ "{util#shortcut}" ],
+                 "place" : [ "{util#place}" ],
+                 "plugin" : [ "{util#plugin}" ],
+                 "plugin_type" : [ "{util#plugin_type}" ]
+               }
+             }
+             </pre></li>
+            
+             <li><i>"file.types"</i> collector records information about project files
+             ({@link com.intellij.internal.statistic.collectors.fus.fileTypes.FileTypeUsagesCollector}).<br/>
+            
+             It is validated by the following rules:
+             <pre>
+             {
+               "event_id" : ["{enum:file.in.project}" ],
+               "event_data" : {
+                 "file_type" : [ "{util#file_type}" ]
+               }
+             }
+             </pre></li>
+             </ul>
+        </member>
+        <member name="M:JetBrains.UsageStatistics.FUS.EventLog.Validator.Storage.DotnetValidationRulesStorage.Update">
+            Loads and updates events scheme from the server if necessary
+        </member>
+        <member name="M:JetBrains.UsageStatistics.FUS.EventLog.Validator.Storage.DotnetValidationRulesStorage.Reload">
+            Re-loads events scheme from local caches
+        </member>
+        <member name="M:JetBrains.UsageStatistics.FUS.Utils.StatisticsUtil.GetCountingStepName(System.Int32,System.Collections.Generic.IList{System.Int32})">
+            Anonymizes sensitive project properties by rounding it to the next value in steps list.
+            See `com.intellij.internal.statistic.collectors.fus.fileTypes.FileTypeUsagesCollector`
+        </member>
+    </members>
+</doc>

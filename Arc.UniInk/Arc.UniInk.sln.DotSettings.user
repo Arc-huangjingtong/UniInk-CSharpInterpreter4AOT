@@ -1,18 +1,25 @@
 ﻿<wpf:ResourceDictionary xml:space="preserve" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:s="clr-namespace:System;assembly=mscorlib" xmlns:ss="urn:shemas-jetbrains-com:settings-storage-xaml" xmlns:wpf="http://schemas.microsoft.com/winfx/2006/xaml/presentation">
 	<s:Boolean x:Key="/Default/Dpa/IsEnabledInDebug/@EntryValue">True</s:Boolean>
+	<s:Int64 x:Key="/Default/Dpa/Thresholds/=AllocationClosure/@EntryIndexedValue">1048576</s:Int64>
+	<s:Int64 x:Key="/Default/Dpa/Thresholds/=AllocationLoh/@EntryIndexedValue">1048576</s:Int64>
+	<s:Int64 x:Key="/Default/Dpa/Thresholds/=AllocationTopSoh/@EntryIndexedValue">1048576</s:Int64>
 	<s:String x:Key="/Default/Environment/AssemblyExplorer/XmlDocument/@EntryValue">&lt;AssemblyExplorer&gt;&#xD;
   &lt;Assembly Path="D:\Project\UniInk\Arc.UniInk\packages\NUnit.3.5.0\lib\net45\nunit.framework.dll" /&gt;&#xD;
+  &lt;Assembly Path="F:\UniInk-CSharpInterpreter4AOT\Arc.UniInk\packages\NUnit.3.5.0\lib\net45\nunit.framework.dll" /&gt;&#xD;
+  &lt;Assembly Path="F:\UniInk-CSharpInterpreter4AOT\Arc.UniInk\packages\BenchmarkDotNet.0.13.12\lib\netstandard2.0\BenchmarkDotNet.dll" /&gt;&#xD;
+  &lt;Assembly Path="C:\Windows\Microsoft.NET\assembly\GAC_MSIL\System.Core\v4.0_4.0.0.0__b77a5c561934e089\System.Core.dll" /&gt;&#xD;
+  &lt;Assembly Path="C:\Windows\Microsoft.Net\assembly\GAC_32\mscorlib\v4.0_4.0.0.0__b77a5c561934e089\mscorlib.dll" /&gt;&#xD;
 &lt;/AssemblyExplorer&gt;</s:String>
-	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=e2163b1b_002Dbc6d_002D49a1_002Da2ba_002De3ccc7759170/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" Name="&amp;lt;Arc.UniInk.Test&amp;gt; 中的所有测试" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;&#xD;
+	<s:Boolean x:Key="/Default/Environment/Hierarchy/Build/SolBuilderDuo/RunBuildOnSolutionLoaded/@EntryValue">True</s:Boolean>
+	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=b61aab5a_002D57c0_002D4767_002D9b8b_002De6a980253203/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="Test_EvaluateNumber_Int2" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;&#xD;
   &lt;TestAncestor&gt;&#xD;
-    &lt;TestId&gt;NUnit3x::D4E69C6F-59C7-4687-B3E4-646E26C9A7FE::.NETFramework,Version=v4.7.1::Arc.UniInk.NunitTest.UniInk_Speed_Tests&lt;/TestId&gt;&#xD;
+    &lt;TestId&gt;NUnit3x::D4E69C6F-59C7-4687-B3E4-646E26C9A7FE::.NETFramework,Version=v4.7.1::Arc.UniInk.NUnitTest.NUnit_UniInkSpeed&lt;/TestId&gt;&#xD;
+    &lt;TestId&gt;NUnit3x::1BA70864-1706-44D0-9D58-669FD5703A14::.NETFramework,Version=v4.8::Arc.UniInk.NUnitTest.NUnit_UniInkSpeed&lt;/TestId&gt;&#xD;
+    &lt;TestId&gt;NUnit3x::1BA70864-1706-44D0-9D58-669FD5703A14::.NETFramework,Version=v4.8::Arc.UniInk.NunitTest.NUnit_UniInk&lt;/TestId&gt;&#xD;
   &lt;/TestAncestor&gt;&#xD;
 &lt;/SessionState&gt;</s:String>
-	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=ea710edc_002Dc6f6_002D4cf1_002D87e3_002D5886dde72bbd/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="Test_EvaluateNumber_Int" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;&#xD;
-  &lt;TestAncestor&gt;&#xD;
-    &lt;TestId&gt;NUnit3x::D4E69C6F-59C7-4687-B3E4-646E26C9A7FE::.NETFramework,Version=v4.7.1::Arc.UniInk.NunitTest.UniInk_Speed_Tests&lt;/TestId&gt;&#xD;
-  &lt;/TestAncestor&gt;&#xD;
-&lt;/SessionState&gt;</s:String>
+	
+	
 	
 	
 	

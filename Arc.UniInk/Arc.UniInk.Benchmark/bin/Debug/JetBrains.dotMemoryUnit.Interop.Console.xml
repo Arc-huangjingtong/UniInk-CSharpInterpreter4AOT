@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>JetBrains.dotMemoryUnit.Interop.Console</name>
+    </assembly>
+    <members>
+        <member name="M:JetBrains.dotMemoryUnit.Interop.Console.DotMemoryUnitOptions.#ctor">
+            <summary>
+            Default constructor used by command line mapper.
+            </summary>
+        </member>
+        <member name="M:JetBrains.dotMemoryUnit.Interop.Console.DotMemoryUnitOptions.#ctor(System.String,System.String)">
+            <summary>
+            Example constructor used to create sample options.
+            </summary>
+            <param name="executable"></param>
+            <param name="arguments"></param>
+        </member>
+    </members>
+</doc>

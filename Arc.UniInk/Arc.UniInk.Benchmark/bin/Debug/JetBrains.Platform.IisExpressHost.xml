@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>JetBrains.Platform.IisExpressHost</name>
+    </assembly>
+    <members>
+        <member name="F:JetBrains.Platform.IisExpressHost.AncmEnvironmentParameters.PreferEnvironmentVariablesVariableName">
+            <summary>
+            See https://github.com/dotnet/aspnetcore/blob/fdaa334567a158c82f4544f5dc18c9cd2ea99854/src/Servers/IIS/AspNetCoreModuleV2/RequestHandlerLib/environmentvariablehash.h#L16
+            </summary>
+        </member>
+        <member name="T:JetBrains.Platform.IisExpressHost.IisExpressWorkerExternalProcess">
+            <summary>Represents the worker process that will be started as a child of IIS Express.</summary>
+        </member>
+        <member name="T:JetBrains.Platform.IisExpressHost.Models.IisExpressWorkerModel">
+            <summary>
+            <p>Generated from: IisExpressWorkerModel.kt</p>
+            </summary>
+        </member>
+        <member name="T:JetBrains.Platform.IisExpressHost.Models.RdIisExpressWorkerHostedProcessInfo">
+            <summary>
+            <p>Generated from: IisExpressWorkerModel.kt</p>
+            </summary>
+        </member>
+        <member name="T:JetBrains.Platform.IisExpressHost.Models.RdIisExpressWorkerProcessOutput">
+            <summary>
+            <p>Generated from: IisExpressWorkerModel.kt</p>
+            </summary>
+        </member>
+    </members>
+</doc>

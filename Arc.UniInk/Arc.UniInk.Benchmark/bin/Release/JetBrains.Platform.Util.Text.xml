@@ -1,0 +1,166 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>JetBrains.Platform.Util.Text</name>
+    </assembly>
+    <members>
+        <member name="T:JetBrains.Text.AnyOrderIdentiferMatcherFactory">
+            <summary>
+            intentionally named in wrong order :)
+            </summary>
+        </member>
+        <member name="M:JetBrains.Text.MatcherScoreEx.ToComparableInt(JetBrains.Text.MatcherScore,System.Int32,JetBrains.Text.MatcherScore)">
+            <summary>
+            Combine score and adjustment with coefficient.
+            Negates sum to obtain comparable int.
+            Use positive/negative coefficient to increase/decrease rank of item in search results
+            </summary>
+        </member>
+        <member name="M:JetBrains.Text.MatcherScoreEx.ToTextScore(JetBrains.Text.MatcherScore)">
+            <summary>
+            Text scoring honor Exact middle match more, than match by humps
+            </summary>
+        </member>
+        <member name="T:JetBrains.Text.IdentifierMatcher">
+            <summary>
+            Matches text by pattern using so called CamelHump. Not immutable, has internal state.
+            !!! MUST BE used in single-threaded fashion, because every processing method changes internal state.
+            </summary>
+        </member>
+        <member name="P:JetBrains.Text.IdentifierMatcher.SharedMatchingIndices">
+            <summary>
+            Caution!!! Use it only for stream processing to reduce memory traffic or with defensive copying.
+            This is shared stated and it will be changed after next <see cref="M:JetBrains.Text.IdentifierMatcher.Matches(System.String)"/> invocation.
+            </summary>
+        </member>
+        <member name="M:JetBrains.Text.IdentifierMatcherExtensions.Matches(JetBrains.Text.IIdentifierMatcher,System.String,JetBrains.Text.MatcherScore)">
+            <summary>
+            Matches with minimal required flags in <see cref="T:JetBrains.Text.MatcherScore"/>
+            </summary>
+        </member>
+        <member name="P:JetBrains.Text.ISuffixShrinkMatcher.HasSuffixShrinkProperty">
+            <summary>
+            declare property of matcher, that if wv is matched, where w and v are words, then w is also matched
+            Used for caching purposes
+            </summary>
+        </member>
+        <member name="T:JetBrains.Util.Text.Matchers.BoyerMoore">
+            <summary>
+            Implements Boyer-Moore search algorithm (case-sensitive)
+            </summary>
+        </member>
+        <member name="M:JetBrains.Util.Text.IdentifierMatcherAnyOrder.MakeBigraph(JetBrains.Util.PersistentMap.UnsafeIntArray,System.Int32,System.Char*,JetBrains.Util.PersistentMap.UnsafeIntArray,System.Char*)">
+             <summary>
+             This method calculate for each pattern character the list of possible indices of input string.
+             </summary>
+             <param name="graph">
+             The resulting graph.
+             For example, for input string "pj ppe" and pattern ppe it looks like as follow
+             Note: there is not zeroing memory of all graph for performance reasons. g means that in that part of array garbage is located.
+             -1 means end of list.
+             | input index   | 0   | 1   | 2   | 3   | 4   | 5   |
+             | input char    | p   | j   |     | p   | p   | e   |
+             | ------------- | --- | --- | --- | --- | --- | --- |
+             | p             | 0   | 3   | -1  | g   | g   | g   |
+             | p             | 0   | 3   | 4   | -1  | g   | g   |
+             | e             | 5   | -1  | g   | g   | g   | g   |
+            
+             </param>
+             <param name="n">length of input</param>
+             <param name="lowerText">the pointer to lowered input text</param>
+             <param name="humps">the unsafe array of humps indices.</param>
+             <param name="textData">the pointer to original input text</param>
+             <returns>if corresponding character in input string is found for each character in pattern.</returns>
+        </member>
+        <member name="M:JetBrains.Util.Text.IdentifierMatcherAnyOrder.FindMatchingIndicesInCorrectOrder(JetBrains.Util.PersistentMap.UnsafeIntArray,System.Int32,JetBrains.Util.PersistentMap.UnsafeIntArray,JetBrains.Util.PersistentMap.UnsafeIntArray,JetBrains.Util.PersistentMap.UnsafeIntArray)">
+             <summary>
+             This method calculates the best matching indices of input string to pattern using dynamic programming when there is guarantee that 
+             a match with correct indices exist.
+             </summary>
+             <param name="bigraph">the matrix of possible corresponding chars of input string to pattern (see detailed description above)</param>
+            <param name="inputLength">input length</param>
+             <param name="mt">mt is resulting array of input length </param>
+             <param name="isHumpLookup">hump lookup for input string</param>
+             <param name="dynMatrix">
+             <code>
+             This is externally provided storage for dynamics.
+             This array threaded as matrix with row count = pattern length, column count = input length.
+             For example, the following matrix is calculated for pattern ppe and input string "pj ppe"
+             h = humpScore = 10
+             s = nonHumpScore = 1
+             c = letter count score = 100000 - fake scoring for ensure that every symbol of input is corresponding to character of input text
+             path direction is determined by the sign of score:
+                   Negative = maximal score taken from skipping this character of input string.
+                   Positive = maximal score taken from matching this character of input string.
+            
+              | input index   | 0    | 1   | 2   | 3      | 4       | 5        |
+              | input char    | p    | j   |     | p      | p       | e        |
+              | ------------- | ---  | --- | --- | ---    | ---     | ---      |
+              | p             | -c-h | c+h | c+h | -c-h   | c+h     | c+h      |
+              | p             | 0    | 0   | 0   | -2c-2h | -2c-h-s | 2c+h+s   |
+              | e             | 0    | 0   | 0   | 0      | 0       | 3c+1h+2s |
+             </code>
+             </param>
+        </member>
+        <member name="M:JetBrains.Util.Text.WildcardIdentifierMatcher.#ctor(System.String,System.Boolean,System.String)">
+            <summary>
+            Create wildcard identifier mather. Can be used together with * and ? to create exact matches
+            </summary>
+            <param name="wildCardPattern">the wildcard pattern for </param>
+            <param name="caseSensitive"></param>
+            <param name="originalPattern">Unescaped pattern value with quotes to ability create correct clones with Identifier matchers factories.</param>
+        </member>
+        <member name="T:JetBrains.Util.Text.StringAbbreviator`1">
+            <summary>
+            Creates short abbreviated names for the entities.
+            Treats just string length.
+            </summary>
+        </member>
+        <member name="M:JetBrains.Util.Text.StringAbbreviator`1.Run(System.Collections.Generic.IEnumerable{`0},System.Func{`0,System.String},System.Int32)">
+            <summary>
+            Produces abbreviated names for the given set of items.
+            </summary>
+            <param name="items">The list of items to process.</param>
+            <param name="FItemName">The way of getting the item names.</param>
+            <param name="nChars">Max number of characters allowed in the output.</param>
+        </member>
+        <member name="M:JetBrains.Util.Text.StringAbbreviator`1.IsCaps(System.Char)">
+            <summary>
+            Tells whether the char is CAPS, in our terms.
+            </summary>
+        </member>
+        <member name="M:JetBrains.Util.Text.StringAbbreviator`1.CreateData(System.Collections.Generic.IEnumerable{`0})">
+            <summary>
+            Initial data.
+            Just limits all items to the given maxlen (at most).
+            </summary>
+        </member>
+        <member name="M:JetBrains.Util.Text.StringAbbreviator`1.GetDefaultAbbreviation(JetBrains.DataFlow.PropertyBag)">
+            <summary>
+            Take <see cref="F:JetBrains.Util.Text.StringAbbreviator`1.myCharsLimit" /> chars at most (this includes as many caps as possible).
+            </summary>
+        </member>
+        <member name="M:JetBrains.Util.Text.StringAbbreviator`1.GetNameParts(`0)">
+            <summary>
+            Gets the item name, splits it into parts by the Caps.
+            Each part is a property bag.
+            </summary>
+        </member>
+        <member name="M:JetBrains.Util.Text.StringAbbreviator`1.GetResult">
+            <summary>
+            Reverses the internal map to make it item-to-name.
+            </summary>
+        </member>
+        <member name="M:JetBrains.Util.Text.StringAbbreviator`1.ResolveConflicts_ChooseUniqueChars">
+            <summary>
+            When shortening the abbreviations, we've taken the first chars from each capsed part.
+            Try taking some non-first chars instead, if they help making the abbr unique.
+            </summary>
+        </member>
+        <member name="M:JetBrains.Util.Text.StringAbbreviator`1.ResolveConflicts_DisambigChars">
+            <summary>
+            Appends disambig chars to the end of the abbreviation, as a last resort.
+            </summary>
+        </member>
+    </members>
+</doc>

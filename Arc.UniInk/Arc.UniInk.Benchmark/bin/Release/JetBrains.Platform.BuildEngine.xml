@@ -1,0 +1,614 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>JetBrains.Platform.BuildEngine</name>
+    </assembly>
+    <members>
+        <member name="M:JetBrains.Build.Engine.IsolatedBuild.BuildBinaryFileItems.ExpandContainerFileItems(System.Collections.Generic.IEnumerable{JetBrains.Util.Storage.ImmutableFileItem})">
+            <summary>
+            Expands file items by unpacking certain kinds of containers:
+            • NuGet package.
+            • Structured Storage with <see cref="T:JetBrains.Build.Running.Serialization.BuildEngineOrScriptBinaries" /> in it.
+            </summary>
+        </member>
+        <member name="M:JetBrains.Build.Engine.IsolatedBuild.BuildBinaryFileItems.ExpandContainerFileItemsEx(System.Collections.Generic.IEnumerable{JetBrains.Util.Storage.ImmutableFileItem},JetBrains.Util.Storage.Packages.JetNugetTargetFramework)">
+            <summary>
+              <para>Accepts either DLL files AS IS or these kinds of containers:</para>
+              <para>• NuGet package.</para>
+              <para>• Structured Storage with <see cref="T:JetBrains.Build.Running.Serialization.BuildEngineOrScriptBinaries" /> in it.</para>
+              <para>Not expecting nesting of containers. Only top-level files are checked for being containers.</para>
+            </summary>
+            <returns>The list of expanded files. For each of the files, also specifies its parent conatiner path, for tracking the file origin in case of any conflicts.</returns>
+        </member>
+        <member name="P:JetBrains.Build.Engine.IsolatedBuild.BuildBinaryFileItems.IBuildBinaryAssemblyItem.IsCatalogable">
+            <summary>
+            Whether it's known if a part catalog should be attempted for this assembly.
+            Allows skip third-party assemblies, including extarcting them from a nuget, unless it's resolved for.
+            </summary>
+        </member>
+        <member name="P:JetBrains.Build.Engine.IsolatedBuild.BuildBinaryFileItems.IBuildBinaryAssemblyItem.Origin">
+            <summary>
+            Where it comes from, e.g. unpacked from a nuget.
+            </summary>
+        </member>
+        <member name="P:JetBrains.Build.Engine.IsolatedBuild.BuildBinaryFileItems.IBuildBinaryAssemblyItem.PrecalculatedPartCatalog">
+            <summary>
+            The cached part catalog that contains this item, if available.
+            </summary>
+        </member>
+        <member name="T:JetBrains.Build.Engine.IsolatedBuild.BuildLogRecordMarshaller">
+            <summary>
+            Accepts log records on any thread, yields them to consumer (e.g. a ListEvents for binding to UI) in the main thread.
+            </summary>
+        </member>
+        <member name="F:JetBrains.Build.Engine.IsolatedBuild.BuildLogRecordMarshaller.myFIncoming">
+            <summary>
+            Incoming action. Initiates an outgoing action, if created on an STA. Otherwise, just does the outgoing with all the necesary locking.
+            </summary>
+        </member>
+        <member name="M:JetBrains.Build.Engine.IsolatedBuild.BuildLogRecordMarshaller.Flush">
+            <summary>
+            MUST be run on the home thread, if created on STA. Otherwise, free-threaded.
+            Flushes the messages still in queue, makes them reach the output func immediately.
+            </summary>
+        </member>
+        <member name="T:JetBrains.Build.Engine.IsolatedBuild.IRunningIsolatedBuildGuestContext">
+            <summary>
+            Exposes some of the context which is available to the running Isolated Build guest (guest means we're in the guest appdomain context, rather than the side which spins up the isolated build).
+            This derived interface adds some of the engine-specific stuff which is not available on the Build Interfaces level.
+            </summary>
+        </member>
+        <member name="P:JetBrains.Build.Engine.IsolatedBuild.IRunningIsolatedBuildGuestContext.LazyEngineAssembiles">
+            <summary>
+            Gives the assemblies with the build runner engine implementation which is currently running.
+            </summary>
+        </member>
+        <member name="P:JetBrains.Build.Engine.IsolatedBuild.IRunningIsolatedBuildGuestContext.RunningBuildRequest">
+            <summary>
+            The buidl request for the build which is currently running.
+            </summary>
+        </member>
+        <member name="M:JetBrains.Build.Engine.IsolatedBuild.IsolatedBuildGuest.#ctor(System.IntPtr)">
+            <summary>
+            Proxy for calling from another appdomain, because the only possible cross-appdomain call is a ctor call.
+            </summary>
+        </member>
+        <member name="M:JetBrains.Build.Engine.IsolatedBuild.IsolatedBuildGuest.InvokeRunCrossAppDomain(System.AppDomain,System.Void*)">
+            <summary>
+            Invokes the proxy assembly so that it invoked the <see cref="T:JetBrains.Build.Engine.IsolatedBuild.IsolatedBuildGuest" /> from the isolated build engine loaded into the isolated appdomain, whichever it is (shipped or from package).
+            The proxy assembly is expected to be already emitted and saved to the basedir of the isolated appdomain, so that it could be loaded on demand. So as the engine assemblies.
+            </summary>
+            <param name="appdomainIsolated"></param>
+            <param name="lockBytesDataRaw"></param>
+        </member>
+        <member name="M:JetBrains.Build.Engine.IsolatedBuild.IsolatedBuildGuest.Run(System.IntPtr)">
+            <summary>
+            Does the run. Should be called already in the guest appdomain.
+            </summary>
+        </member>
+        <member name="T:JetBrains.Build.Engine.IsolatedBuild.IsolatedBuildGuestCatalog">
+            <summary>
+            A part of the <see cref="T:JetBrains.Build.Engine.IsolatedBuild.IsolatedBuildGuest" /> responsible of making the build part catalog out of what's given as build script sources and binaries.
+            </summary>
+        </member>
+        <member name="T:JetBrains.Build.Engine.IsolatedBuild.IsolatedBuildGuestContext">
+            <summary>
+            Exposes some of the context which is available to the running Isolated Build guest (guest means we're in the guest appdomain context, rather than the side which spins up the isolated build).
+            </summary>
+        </member>
+        <member name="P:JetBrains.Build.Engine.IsolatedBuild.IsolatedBuildGuestContext.JetBrains#Build#Running#IRunningIsolatedBuildContext#BindTypesInEngineContext">
+            <inheritdoc />
+        </member>
+        <member name="P:JetBrains.Build.Engine.IsolatedBuild.IsolatedBuildGuestContext.JetBrains#Build#Running#IRunningIsolatedBuildContext#BuildTaskHost">
+            <inheritdoc />
+        </member>
+        <member name="P:JetBrains.Build.Engine.IsolatedBuild.IsolatedBuildGuestContext.JetBrains#Build#Engine#IsolatedBuild#IRunningIsolatedBuildGuestContext#IsolatedBuildGuestStorageMemoryPressure">
+            <inheritdoc />
+        </member>
+        <member name="P:JetBrains.Build.Engine.IsolatedBuild.IsolatedBuildGuestContext.JetBrains#Build#Engine#IsolatedBuild#IRunningIsolatedBuildGuestContext#LazyEngineAssembiles">
+            <inheritdoc />
+        </member>
+        <member name="P:JetBrains.Build.Engine.IsolatedBuild.IsolatedBuildGuestContext.JetBrains#Build#Running#IRunningIsolatedBuildContext#LowLevelBuildLogRecordWriter">
+            <inheritdoc />
+        </member>
+        <member name="P:JetBrains.Build.Engine.IsolatedBuild.IsolatedBuildGuestContext.JetBrains#Build#Running#IRunningIsolatedBuildContext#RealizedAssemblyItemUnificationSlave">
+            <inheritdoc />
+        </member>
+        <member name="P:JetBrains.Build.Engine.IsolatedBuild.IsolatedBuildGuestContext.JetBrains#Build#Engine#IsolatedBuild#IRunningIsolatedBuildGuestContext#RunningBuildRequest">
+            <inheritdoc />
+        </member>
+        <member name="T:JetBrains.Build.Engine.IsolatedBuild.IsolatedBuildRunnerEngine">
+            <summary>
+            Represents a separate appdomain with a codebase in a TEMP location which has all the assemblies
+            </summary>
+        </member>
+        <member name="F:JetBrains.Build.Engine.IsolatedBuild.IsolatedBuildRunnerEngine.myCrossAppDomainPointer">
+            <summary>
+            The pointer which is passed AS IS across the appdomains.
+            Previously, it's the raw <see cref="T:JetBrains.Interop.WinApi.Declarations.Interfaces.ILockBytes" /> COM object pointer.
+            Next gen, it's the <see cref="T:JetBrains.Build.Engine.IsolatedBuild.IsolatedBuildRunnerEngine.DataFormats.CrossAppDomainMemory" /> structure in global memory.
+            NG++, it's the string with path for <see cref="T:JetBrains.Util.Storage.StructuredStorage.DiskFolderStructuredStorage" /> in global memory.
+            </summary>
+            <seealso cref="T:JetBrains.Build.Engine.IsolatedBuild.IsolatedBuildRunnerEngine.DataFormats.CrossDomainMemoryMode" />
+        </member>
+        <member name="F:JetBrains.Build.Engine.IsolatedBuild.IsolatedBuildRunnerEngine.myLockBytesData">
+            <summary>
+              <see cref="F:JetBrains.Build.Engine.IsolatedBuild.IsolatedBuildRunnerEngine.DataFormats.CrossDomainMemoryMode.ILockBytesComPtr" />
+            </summary>
+        </member>
+        <member name="M:JetBrains.Build.Engine.IsolatedBuild.IsolatedBuildRunnerEngine.BeginRunBuildScriptWorker(JetBrains.Lifetimes.Lifetime,JetBrains.Build.Running.IBuildRunnerRequest,JetBrains.Util.dataStructures.Boxed{JetBrains.Build.Running.BuildRunnerResult})">
+            <summary>
+            Worker thread, main appdomain.
+            </summary>
+        </member>
+        <member name="M:JetBrains.Build.Engine.IsolatedBuild.IsolatedBuildRunnerEngine.InitAppdomain">
+            <summary>
+            Worker thread, main appdomain.
+            </summary>
+        </member>
+        <member name="M:JetBrains.Build.Engine.IsolatedBuild.IsolatedBuildRunnerEngine.InitAppdomain_Evidence">
+            <summary>
+            Evidence: might be required for some functionality like Isolated Storage, e.g. to run OPC packages API, otherwise exceptions like “Unable to determine the identity of domain.” might occur.
+            </summary>
+        </member>
+        <member name="M:JetBrains.Build.Engine.IsolatedBuild.IsolatedBuildRunnerEngine.OpenCrossDomainStorage(System.Action{JetBrains.Util.Storage.StructuredStorage.IStructuredStorage},JetBrains.Util.Storage.StructuredStorage.StreamOpenFlags.ReadWrite)">
+            <summary>
+            Allows to read/write the structured storage which is passed across appdomains, to the isolated build guest.
+            </summary>
+        </member>
+        <member name="F:JetBrains.Build.Engine.IsolatedBuild.IsolatedBuildRunnerEngine.DataFormats.Storage_BuildEnvironment">
+            <summary>
+            Build env params, like Nuget connection.
+            </summary>
+        </member>
+        <member name="F:JetBrains.Build.Engine.IsolatedBuild.IsolatedBuildRunnerEngine.DataFormats.Storage_BuildGraphs">
+            <summary>
+            Writes graphs for build storage, build plan, etc when in Guest.
+            Due to nested builds, there might be more than one.
+            </summary>
+        </member>
+        <member name="F:JetBrains.Build.Engine.IsolatedBuild.IsolatedBuildRunnerEngine.DataFormats.Storage_BuildRequest">
+            <summary>
+            What and how to build, serialized with <see cref="T:JetBrains.Build.Engine.IsolatedBuild.IsolatedBuildRunnerEngineRequest" /> based on <see cref="T:JetBrains.Build.Running.BuildRunnerRequest" />.
+            </summary>
+        </member>
+        <member name="F:JetBrains.Build.Engine.IsolatedBuild.IsolatedBuildRunnerEngine.DataFormats.Storage_IsolatedEngine">
+            <summary>
+            Build engine parameters.
+            </summary>
+        </member>
+        <member name="F:JetBrains.Build.Engine.IsolatedBuild.IsolatedBuildRunnerEngine.DataFormats.Storage_IsolatedEngine_AssemblyUnificationMasterToSlave">
+            <summary>
+            Assembly unification, to be used outside and in the appdomain.
+            </summary>
+        </member>
+        <member name="F:JetBrains.Build.Engine.IsolatedBuild.IsolatedBuildRunnerEngine.DataFormats.Storage_IsolatedEngine_AssemblyUnificationSlaveToMaster">
+            <summary>
+            Assembly unification, to be used outside and in the appdomain.
+            </summary>
+        </member>
+        <member name="F:JetBrains.Build.Engine.IsolatedBuild.IsolatedBuildRunnerEngine.DataFormats.Storage_IsolatedEngine_EngineAssemblies">
+            <summary>
+            The assemblies of the build engine iself.
+            Built-in version, and the proxy assembly. Always defined.
+            </summary>
+        </member>
+        <member name="F:JetBrains.Build.Engine.IsolatedBuild.IsolatedBuildRunnerEngine.DataFormats.Storage_OutputArtifacts">
+            <summary>
+            The artifacts in the build storage after the build is run.
+            </summary>
+        </member>
+        <member name="F:JetBrains.Build.Engine.IsolatedBuild.IsolatedBuildRunnerEngine.DataFormats.Stream_BuildGraphs_Plan">
+            <summary>
+            Graph with build execution plan.
+            </summary>
+        </member>
+        <member name="F:JetBrains.Build.Engine.IsolatedBuild.IsolatedBuildRunnerEngine.DataFormats.Stream_BuildGraphs_Storage">
+            <summary>
+            Graph with build entities in the storage.
+            </summary>
+        </member>
+        <member name="F:JetBrains.Build.Engine.IsolatedBuild.IsolatedBuildRunnerEngine.DataFormats.Stream_IsolatedEngine_BuildLogRecordChannelName">
+            <summary>
+            MMF for piping the log messages out of the build.
+            </summary>
+        </member>
+        <member name="F:JetBrains.Build.Engine.IsolatedBuild.IsolatedBuildRunnerEngine.DataFormats.CrossAppDomainMemory.CurrentFormat">
+            <summary>
+            Change whenever format/semantic of this data changes.
+            </summary>
+        </member>
+        <member name="F:JetBrains.Build.Engine.IsolatedBuild.IsolatedBuildRunnerEngine.DataFormats.CrossAppDomainMemory.IntegrityValue">
+            <summary>
+            Must never change.
+            </summary>
+        </member>
+        <member name="F:JetBrains.Build.Engine.IsolatedBuild.IsolatedBuildRunnerEngine.DataFormats.CrossAppDomainMemory.Integrity">
+            <summary>
+            Integrity check (points to the valid structure).
+            </summary>
+        </member>
+        <member name="F:JetBrains.Build.Engine.IsolatedBuild.IsolatedBuildRunnerEngine.DataFormats.CrossAppDomainMemory.Format">
+            <summary>
+            Versioning check.
+            </summary>
+        </member>
+        <member name="F:JetBrains.Build.Engine.IsolatedBuild.IsolatedBuildRunnerEngine.DataFormats.CrossAppDomainMemory.InstanceIdentifier">
+            <summary>
+            Mostly used for access control.
+            </summary>
+        </member>
+        <member name="F:JetBrains.Build.Engine.IsolatedBuild.IsolatedBuildRunnerEngine.DataFormats.CrossAppDomainMemory.MmfHandle">
+            <summary>
+            Handle to the memory-mapped file.
+            </summary>
+        </member>
+        <member name="F:JetBrains.Build.Engine.IsolatedBuild.IsolatedBuildRunnerEngine.DataFormats.CrossAppDomainMemory.MmfTotalSize">
+            <summary>
+            Size of the memory-mapped file.
+            </summary>
+        </member>
+        <member name="F:JetBrains.Build.Engine.IsolatedBuild.IsolatedBuildRunnerEngine.DataFormats.CrossAppDomainMemory.MmfWrittenSize">
+            <summary>
+            The number of bytes actually written into the memory-mapped file, what must be returned as stream length or lockbytes stat size.
+            ACHTUNG: this is a mutable field, so it's critical that the stream were opened on exactly the same pointer instance.
+            </summary>
+        </member>
+        <member name="P:JetBrains.Build.Engine.IsolatedBuild.IsolatedBuildRunnerEngine.DataFormats.CrossAppDomainMemory.PreferredBankSpec">
+            <summary>
+            Bank size for the bank-switching memory stream.
+            </summary>
+        </member>
+        <member name="M:JetBrains.Build.Engine.IsolatedBuild.IsolatedBuildRunnerEngine.DataFormats.CrossAppDomainMemory.OpenStreamOnMemory(JetBrains.Lifetimes.Lifetime,JetBrains.Build.Engine.IsolatedBuild.IsolatedBuildRunnerEngine.DataFormats.CrossAppDomainMemory*)">
+            <summary>
+            Opens on the existing memory.
+            Make sure you don't open two accesses at a time.
+            </summary>
+            <param name="lifetime">Lifetime for just this stream.</param>
+            <param name="pCrossAppDomainMemory">Pointer to the struct. MUST be mutable!</param>
+            <returns></returns>
+        </member>
+        <member name="M:JetBrains.Build.Engine.IsolatedBuild.IsolatedBuildRunnerEngine.DataFormats.CrossAppDomainMemory.CreateNewMmfAndWrap(JetBrains.Lifetimes.Lifetime,System.UInt64)">
+            <summary>
+            Creates a new MMF and wraps into this structure.
+            </summary>
+            <param name="lifetime">Lifeitme of the MMF validity. Must stay alive while your clients are using this data.</param>
+            <param name="qwMmfSize"></param>
+        </member>
+        <member name="F:JetBrains.Build.Engine.IsolatedBuild.IsolatedBuildRunnerEngine.DataFormats.CrossDomainMemoryMode.ILockBytesComPtr">
+            <summary>
+            Classic. Create <see cref="T:JetBrains.Interop.WinApi.Declarations.Interfaces.ILockBytes" /> with <see cref="M:JetBrains.Interop.WinApi.Ole32Dll.CreateILockBytesOnHGlobal(System.Void*,System.Int32,JetBrains.Interop.WinApi.Declarations.Interfaces.ILockBytes@)" />, pass as a raw COM pointer.
+            </summary>
+        </member>
+        <member name="F:JetBrains.Build.Engine.IsolatedBuild.IsolatedBuildRunnerEngine.DataFormats.CrossDomainMemoryMode.CrossAppDomainMemoryStructPtrDocFile">
+            <summary>
+            NG. Create an MMF, alloc <see cref="T:JetBrains.Build.Engine.IsolatedBuild.IsolatedBuildRunnerEngine.DataFormats.CrossAppDomainMemory" /> in global memory and fill, pass that pointer.
+            The memory layout is managed with a DocFile.
+            </summary>
+        </member>
+        <member name="F:JetBrains.Build.Engine.IsolatedBuild.IsolatedBuildRunnerEngine.DataFormats.CrossDomainMemoryMode.CrossAppDomainMemoryStructPtrZipFile">
+            <summary>
+            NG. Create an MMF, alloc <see cref="T:JetBrains.Build.Engine.IsolatedBuild.IsolatedBuildRunnerEngine.DataFormats.CrossAppDomainMemory" /> in global memory and fill, pass that pointer.
+            The memory layout is managed with a ZIP SSTG.
+            </summary>
+        </member>
+        <member name="F:JetBrains.Build.Engine.IsolatedBuild.IsolatedBuildRunnerEngine.DataFormats.CrossDomainMemoryMode.DiskFolderStructuredStoragePtr">
+            <summary>
+            NG++. Create a <see cref="T:JetBrains.Util.Storage.StructuredStorage.DiskFolderStructuredStorage" />, alloc path folder in global memory and fill, pass that pointer.
+            </summary>
+        </member>
+        <member name="F:JetBrains.Build.Engine.IsolatedBuild.IsolatedBuildRunnerEngine.DataFormats.CrossDomainMemoryMode.CrossAppDomainMemoryStructPtrCustomSstg">
+            <summary>
+            NG#. Create an MMF, alloc <see cref="T:JetBrains.Build.Engine.IsolatedBuild.IsolatedBuildRunnerEngine.DataFormats.CrossAppDomainMemory" /> in global memory and fill, pass that pointer.
+            The memory layout is managed with a special shared-mem SSTG.
+            </summary>
+        </member>
+        <member name="F:JetBrains.Build.Engine.IsolatedBuild.IsolatedBuildRunnerEngineAssemblies.BuiltInEngineAssemblies">
+            <summary>
+            Engine assemblies, built-in version. Always available.
+            </summary>
+        </member>
+        <member name="F:JetBrains.Build.Engine.IsolatedBuild.IsolatedBuildRunnerEngineAssemblies.CustomEngineBinaries">
+            <summary>
+            Engine assemblies (or packages), custom binaries version. Present only if running in custom engine mode.
+            </summary>
+        </member>
+        <member name="M:JetBrains.Build.Engine.IsolatedBuild.IsolatedBuildRunnerEngineAssemblies.WithOtherCustomEngineBinaries(System.Collections.Generic.IReadOnlyCollection{JetBrains.Util.Storage.ImmutableFileItem})">
+            <summary>
+            A new object with custom binaries replaced.
+            </summary>
+        </member>
+        <member name="T:JetBrains.Build.Engine.IsolatedBuild.IsolatedBuildRunnerEngineAssemblies.ChosenEngine">
+            <summary>
+            The <see cref="T:JetBrains.Build.Engine.IsolatedBuild.IsolatedBuildRunnerEngineAssemblies" />, plus an applied choise for either built-in or custom kind.
+            </summary>
+        </member>
+        <member name="T:JetBrains.Build.Engine.IsolatedBuild.IsolatedBuildRunnerEngineNestedBuildRunner">
+            <summary>
+            Knows how to spawn nested builds correctly connected to the currently running build.
+            </summary>
+        </member>
+        <member name="M:JetBrains.Build.Engine.IsolatedBuild.IsolatedBuildRunnerEngineNestedBuildRunner.RunNestedBuildInheritedAsync(JetBrains.Lifetimes.Lifetime,JetBrains.Build.Running.InheritFromParentRequest,JetBrains.Build.Running.FillNestedRequestDelegate)">
+            <inheritdoc />
+        </member>
+        <member name="P:JetBrains.Build.Engine.IsolatedBuild.IsolatedBuildRunnerEngineNestedBuildRunner.BuildRequestRenamed.JetBrains#Build#Running#IBuildRunnerRequest#BuildScriptBinaries">
+            <inheritdoc />
+        </member>
+        <member name="P:JetBrains.Build.Engine.IsolatedBuild.IsolatedBuildRunnerEngineNestedBuildRunner.BuildRequestRenamed.JetBrains#Build#Running#IBuildRunnerRequest#BuildScriptBinariesInInputArtifacts">
+            <inheritdoc />
+        </member>
+        <member name="P:JetBrains.Build.Engine.IsolatedBuild.IsolatedBuildRunnerEngineNestedBuildRunner.BuildRequestRenamed.JetBrains#Build#Running#IBuildRunnerRequest#BuildScriptSources">
+            <inheritdoc />
+        </member>
+        <member name="P:JetBrains.Build.Engine.IsolatedBuild.IsolatedBuildRunnerEngineNestedBuildRunner.BuildRequestRenamed.JetBrains#Build#Running#IBuildRunnerRequest#CustomEngineBinaries">
+            <inheritdoc />
+        </member>
+        <member name="P:JetBrains.Build.Engine.IsolatedBuild.IsolatedBuildRunnerEngineNestedBuildRunner.BuildRequestRenamed.JetBrains#Build#Running#IBuildRunnerRequest#EngineChoice">
+            <inheritdoc />
+        </member>
+        <member name="P:JetBrains.Build.Engine.IsolatedBuild.IsolatedBuildRunnerEngineNestedBuildRunner.BuildRequestRenamed.JetBrains#Build#Running#IBuildRunnerRequest#InputArtifacts">
+            <inheritdoc />
+        </member>
+        <member name="P:JetBrains.Build.Engine.IsolatedBuild.IsolatedBuildRunnerEngineNestedBuildRunner.BuildRequestRenamed.JetBrains#Build#Running#IBuildRunnerRequest#InputArtifactStrings">
+            <inheritdoc />
+        </member>
+        <member name="P:JetBrains.Build.Engine.IsolatedBuild.IsolatedBuildRunnerEngineNestedBuildRunner.BuildRequestRenamed.JetBrains#Build#Running#IBuildRunnerRequest#Objectives">
+            <inheritdoc />
+        </member>
+        <member name="P:JetBrains.Build.Engine.IsolatedBuild.IsolatedBuildRunnerEngineNestedBuildRunner.BuildRequestRenamed.JetBrains#Build#Running#IBuildRunnerRequest#StageDisplayName">
+            <inheritdoc />
+        </member>
+        <member name="T:JetBrains.Build.Engine.IsolatedBuild.IsolatedBuildRunnerEngineRequest">
+            <summary>
+            Written into a storage for passing into the isolated appdomain.
+            Upon reading, reflects what once was in <see cref="T:JetBrains.Build.Running.BuildRunnerRequest" />.
+            </summary>
+        </member>
+        <member name="M:JetBrains.Build.Engine.IsolatedBuild.IsolatedBuildRunnerEngineRequest.GetBuildScriptBinaries">
+            <summary>
+            Deserializes the build script binaries list.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:JetBrains.Build.Engine.IsolatedBuild.IsolatedBuildRunnerEngineRequest.GetBuildScriptBinariesInInputArtifacts">
+            <summary>
+            Deserializes the build script binaries types in input artifacts list.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:JetBrains.Build.Engine.IsolatedBuild.IsolatedBuildRunnerEngineRequest.GetBuildScriptSources">
+            <summary>
+            Deserializes the build sources list.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="T:JetBrains.Build.Engine.IsolatedBuild.IsolatedBuildRunners">
+            <summary>
+            Base impl which is not dependent on Shell (and is thus not a component on iself).
+            </summary>
+        </member>
+        <member name="M:JetBrains.Build.Engine.IsolatedBuild.IsolatedBuildRunners.BeginRunBuildScript(JetBrains.Lifetimes.Lifetime,JetBrains.Build.Running.BuildRunnerRequest)">
+            <summary>
+            Starts a new build async.
+            </summary>
+        </member>
+        <member name="M:JetBrains.Build.Engine.IsolatedBuild.IsolatedBuildRunners.CreateBuiltInEngine(JetBrains.Lifetimes.Lifetime)">
+            <summary>
+            Runs the built-in build engine. Can execute build steps in script.
+            Can't execute steps from compiled packages nicely because those are referencing their own instance of the compiled build engine instead of this one.
+            </summary>
+        </member>
+        <member name="M:JetBrains.Build.Engine.IsolatedBuild.IsolatedBuildRunners.CreateSpecificEngine(JetBrains.Lifetimes.Lifetime,JetBrains.Build.Running.BuildRunnerRequest)">
+            <summary>
+            Runs the build engine retrieved from packages.
+            Suitable for running builds on steps from packages because they would be using the same types.
+            </summary>
+        </member>
+        <member name="F:JetBrains.Build.Engine.IsolatedBuild.ScriptSources.CompiledBuildScriptSources.IsWithErros">
+            <summary>
+            If there were any errors when building the script, which includes both compilaton errors and reference retrieval errors.
+            </summary>
+        </member>
+        <member name="T:JetBrains.Build.Engine.IsolatedBuild.ScriptSources.Compilers.CodeDomSourcesCompiler">
+            <summary>
+            Uses the built-in CodeDOM C# compiler (which in turn calls some csc.exe and is in its APIs close to what csc.exe expects).
+            </summary>
+        </member>
+        <member name="M:JetBrains.Build.Engine.IsolatedBuild.ScriptSources.Compilers.CodeDomSourcesCompiler.#ctor(JetBrains.Util.ILogger)">
+            <inheritdoc />
+        </member>
+        <member name="T:JetBrains.Build.Engine.IsolatedBuild.ScriptSources.Compilers.CscBasedSourcesCompiler">
+            <summary>
+            Compilers which call into <c>csc.exe</c> in the result, and have its behavior, incl the CodeDOM and calling it manually.
+            </summary>
+        </member>
+        <member name="M:JetBrains.Build.Engine.IsolatedBuild.ScriptSources.Compilers.CscBasedSourcesCompiler.MakeReferencedAssembliesList(JetBrains.Lifetimes.Lifetime,System.Collections.Generic.ICollection{JetBrains.Toolset.ScriptSourcesCompiler.Interface.IResolvedScriptSourceDllReference},JetBrains.Util.CommandLineBuilderJet,JetBrains.Util.ILogger)">
+            <summary>
+            Assembly paths, plus aliases for disambiguing the use of the same types.
+            </summary>
+        </member>
+        <member name="M:JetBrains.Build.Engine.IsolatedBuild.ScriptSources.Compilers.CscBasedSourcesCompiler.JetBrains#Toolset#ScriptSourcesCompiler#Interface#IScriptSourcesCompilerSession#SetPreprocessorSymbols(System.Collections.Generic.ICollection{System.String})">
+            <inheritdoc />
+        </member>
+        <member name="T:JetBrains.Build.Engine.IsolatedBuild.ScriptSources.Compilers.ToolsetCscSourcesCompiler">
+            <summary>
+            Calls <c>csc.exe</c> manually, should be compatible with the installed toolsets.
+            </summary>
+        </member>
+        <member name="M:JetBrains.Build.Engine.IsolatedBuild.ScriptSources.Compilers.ToolsetCscSourcesCompiler.#ctor(JetBrains.Build.Helpers.Msbuild.InvokeMsbuildToolset,JetBrains.Util.ILogger)">
+            <inheritdoc />
+        </member>
+        <member name="M:JetBrains.Build.Engine.IsolatedBuild.ScriptSources.IsolatedBuildGuestSources.ChooseCompiler_TryGetRoslynEmbedded(JetBrains.Util.CountingLogger)">
+            <summary>We now have Roslyn in our Metadata project, this tries to reuse the existing code instead of loading a separate one from the package.</summary>
+        </member>
+        <member name="M:JetBrains.Build.Engine.IsolatedBuild.ScriptSources.IsolatedBuildGuestSources.ChooseCompiler_TryGetRoslynNuget(JetBrains.Lifetimes.Lifetime,System.Lazy{JetBrains.Util.Storage.Packages.IJetNugetPackageManager},JetBrains.Application.Threading.Tasks.ITaskHost,JetBrains.Util.ILogger)">
+            <summary>Original impl, when we had no Roslyn directly referenced from within our solution. Loads from a Nuget.</summary>
+        </member>
+        <member name="T:JetBrains.Build.Engine.IsolatedBuild.ScriptSources.ResolvedScriptSourceDllReference">
+            <inheritdoc />
+        </member>
+        <member name="F:JetBrains.Build.Engine.IsolatedBuild.ScriptSources.ResolvedScriptSourceDllReference.Origin">
+            <summary>
+            Where this assembly reference comes from, which also gives the priority for choosing between conflicting DLLs.
+            </summary>
+        </member>
+        <member name="P:JetBrains.Build.Engine.IsolatedBuild.ScriptSources.ResolvedScriptSourceDllReference.OriginalAssemblyItem">
+            <summary>
+            Only if originating as an assembly item.
+            </summary>
+            <value></value>
+        </member>
+        <member name="F:JetBrains.Build.Engine.IsolatedBuild.ScriptSources.ResolvedScriptSourceDllReference.OriginalGacPath">
+            <summary>
+            For assemblies that we're pulling from GAC, means the path is the primary identity of the assembly, and we're not bringing it along.
+            </summary>
+        </member>
+        <member name="F:JetBrains.Build.Engine.IsolatedBuild.ScriptSources.ResolvedScriptSourceDllReference.OriginalImage">
+            <summary>
+            If the assembly has been originally retrieved to be used as a reference (i.e. not coming from build interface, build script binaries, or GAC, but from an e.g. package reference).
+            </summary>
+        </member>
+        <member name="M:JetBrains.Build.Engine.IsolatedBuild.ScriptSources.ResolvedScriptSourceDllReference.GetOrLoadAssemblyItem">
+            <summary>
+            Loads even if originating on disk.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="P:JetBrains.Build.Engine.IsolatedBuild.ScriptSources.ResolvedScriptSourceDllReference.JetBrains#Toolset#ScriptSourcesCompiler#Interface#IResolvedScriptSourceDllReference#AssemblySimpleName">
+            <inheritdoc />
+        </member>
+        <member name="P:JetBrains.Build.Engine.IsolatedBuild.ScriptSources.ResolvedScriptSourceDllReference.JetBrains#Toolset#ScriptSourcesCompiler#Interface#IResolvedScriptSourceDllReference#AssemblyTextualIdentity">
+            <inheritdoc />
+        </member>
+        <member name="P:JetBrains.Build.Engine.IsolatedBuild.ScriptSources.ResolvedScriptSourceDllReference.JetBrains#Toolset#ScriptSourcesCompiler#Interface#IResolvedScriptSourceDllReference#FullPathIfOnDisk">
+            <inheritdoc />
+        </member>
+        <member name="M:JetBrains.Build.Engine.IsolatedBuild.ScriptSources.ResolvedScriptSourceDllReference.JetBrains#Toolset#ScriptSourcesCompiler#Interface#IResolvedScriptSourceDllReference#GetInMemoryStreamOrLoadFromDisk">
+            <inheritdoc />
+        </member>
+        <member name="P:JetBrains.Build.Engine.IsolatedBuild.ScriptSources.ResolvedScriptSourceDllReference.JetBrains#Toolset#ScriptSourcesCompiler#Interface#IResolvedScriptSourceDllReference#IsLoadedInMemory">
+            <inheritdoc />
+        </member>
+        <member name="F:JetBrains.Build.Engine.IsolatedBuild.ScriptSources.ResolvedScriptSourceDllReferenceOrigin.ExplicitReferenceFromSource">
+            <summary>
+            In build script files, there's a Pragma Reference for either a GAC DLL or a Nuget package.
+            </summary>
+        </member>
+        <member name="F:JetBrains.Build.Engine.IsolatedBuild.ScriptSources.ResolvedScriptSourceDllReferenceOrigin.BuildScriptBinaries">
+            <summary>
+            For the part of the build script which has been supplied as binaries, all of its assemblies and their references become available to the source part of the build script as references.
+            </summary>
+        </member>
+        <member name="F:JetBrains.Build.Engine.IsolatedBuild.ScriptSources.ResolvedScriptSourceDllReferenceOrigin.BuildEngineAssemblyReferences">
+            <summary>
+            As build script uses some of the build engine types (most notably, attributes), its assemblies must also be available to build script as references.
+            </summary>
+        </member>
+        <member name="T:JetBrains.Build.Engine.IsolatedBuild.ScriptSources.ScriptSourceImplicitEngineDllReferences">
+            <summary>
+            References to the interface assemblies in Build Engine itself, incl our assemblies and their GAC requirements.
+            </summary>
+        </member>
+        <member name="M:JetBrains.Build.Engine.IsolatedBuild.ScriptSources.ScriptSourcesCompilerAssemblyItem.ToString">
+            <inheritdoc />
+        </member>
+        <member name="T:JetBrains.Build.Engine.IsolatedBuild.ScriptSources.ScriptSourcesCompilerExternalObjectsFactory">
+            <summary>
+            Factory for creating platform entities in assemblies without references to the Platform.
+            </summary>
+        </member>
+        <member name="M:JetBrains.Build.Engine.IsolatedBuild.ScriptSources.ScriptSourcesCompilerExternalObjectsFactory.JetBrains#Toolset#ScriptSourcesCompiler#Interface#IScriptSourcesCompilerExternalObjectsFactory#CreateScriptSourcesCompilerAssemblyItem(System.Action{System.Action{System.IO.Stream}},System.Action{System.Action{System.IO.Stream}},System.Action{System.Action{System.IO.Stream}})">
+            <inheritdoc />
+        </member>
+        <member name="M:JetBrains.Build.Engine.IsolatedBuild.ScriptSources.ScriptSourcesCompilerExternalObjectsFactory.JetBrains#Toolset#ScriptSourcesCompiler#Interface#IScriptSourcesCompilerExternalObjectsFactory#CreateScriptToGacDllReference(System.String,System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:JetBrains.Build.Engine.IsolatedBuild.ScriptSources.ScriptSourcesCompilerExternalObjectsFactory.JetBrains#Toolset#ScriptSourcesCompiler#Interface#IScriptSourcesCompilerExternalObjectsFactory#CreateScriptToNugetReference(System.String,System.String,System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:JetBrains.Build.Engine.IsolatedBuild.ScriptSources.ScriptSourcesCompilerExternalObjectsFactory.JetBrains#Toolset#ScriptSourcesCompiler#Interface#IScriptSourcesCompilerExternalObjectsFactory#TryParseReferenceDirective(System.String,System.String,System.Boolean,System.Action{System.String},System.Action{System.String})">
+            <inheritdoc />
+        </member>
+        <member name="M:JetBrains.Build.Engine.IsolatedBuild.ScriptSources.ScriptSourcesCompilerFileItem.#ctor(JetBrains.Util.Storage.ImmutableFileItem)">
+            <inheritdoc />
+        </member>
+        <member name="M:JetBrains.Build.Engine.IsolatedBuild.ScriptSources.ScriptSourcesCompilerFileItem.ToString">
+            <inheritdoc />
+        </member>
+        <member name="M:JetBrains.Build.Engine.IsolatedBuild.ScriptSources.ScriptSourcesCompilerFileItem.JetBrains#Toolset#ScriptSourcesCompiler#Interface#IScriptSourcesCompilerFileItem#FileContent(System.Action{System.IO.Stream})">
+            <inheritdoc />
+        </member>
+        <member name="P:JetBrains.Build.Engine.IsolatedBuild.ScriptSources.ScriptSourcesCompilerFileItem.JetBrains#Toolset#ScriptSourcesCompiler#Interface#IScriptSourcesCompilerFileItem#RelativePath">
+            <inheritdoc />
+        </member>
+        <member name="M:JetBrains.Build.Engine.IsolatedBuild.ScriptSources.ScriptSourcesCompilerLogger.#ctor(JetBrains.Util.ILogger)">
+            <inheritdoc />
+        </member>
+        <member name="M:JetBrains.Build.Engine.IsolatedBuild.ScriptSources.ScriptSourcesCompilerLogger.JetBrains#Toolset#ScriptSourcesCompiler#Interface#IScriptSourcesCompilerLogger#Log(JetBrains.Toolset.ScriptSourcesCompiler.Interface.ScriptSourcesCompilerLoggerLevel,System.Exception,System.String)">
+            <inheritdoc />
+        </member>
+        <member name="F:JetBrains.Build.Engine.IsolatedBuild.ScriptSources.ScriptSourceToDllReference.myRegexPragmaReference">
+            <summary>
+              <code>
+            #pragma reference assembly Microsoft.Build
+            #pragma reference package Nuget.Core 2.11.1
+            </code>
+            </summary>
+        </member>
+        <member name="P:JetBrains.Build.Engine.IsolatedBuild.ScriptSources.ScriptSourceToDllReference.JetBrains#Toolset#ScriptSourcesCompiler#Interface#IScriptSourceToDllReference#ScriptFileRelativePath">
+            <inheritdoc />
+        </member>
+        <member name="M:JetBrains.Build.Engine.IsolatedBuild.ScriptSources.ScriptSourceToGacDllReference.ToString">
+            <inheritdoc />
+        </member>
+        <member name="P:JetBrains.Build.Engine.IsolatedBuild.ScriptSources.ScriptSourceToGacDllReference.JetBrains#Toolset#ScriptSourcesCompiler#Interface#IScriptSourceToGacDllReference#AssemblyTextualIdentity">
+            <inheritdoc />
+        </member>
+        <member name="M:JetBrains.Build.Engine.IsolatedBuild.ScriptSources.ScriptSourceToNugetPackageReference.ToString">
+            <inheritdoc />
+        </member>
+        <member name="P:JetBrains.Build.Engine.IsolatedBuild.ScriptSources.ScriptSourceToNugetPackageReference.JetBrains#Toolset#ScriptSourcesCompiler#Interface#IScriptSourceToNugetPackageReference#Id">
+            <inheritdoc />
+        </member>
+        <member name="P:JetBrains.Build.Engine.IsolatedBuild.ScriptSources.ScriptSourceToNugetPackageReference.JetBrains#Toolset#ScriptSourcesCompiler#Interface#IScriptSourceToNugetPackageReference#Version">
+            <inheritdoc />
+        </member>
+        <member name="T:JetBrains.Toolset.ScriptSourcesCompiler.Roslyn.Compilers.RoslynSourcesCompiler">
+            <summary>
+            The compiler sessions.
+            </summary>
+        </member>
+        <member name="M:JetBrains.Toolset.ScriptSourcesCompiler.Roslyn.Compilers.RoslynSourcesCompiler.#ctor(JetBrains.Toolset.ScriptSourcesCompiler.Interface.IScriptSourcesCompilerExternalObjectsFactory,JetBrains.Toolset.ScriptSourcesCompiler.Interface.IScriptSourcesCompilerLogger)">
+            <inheritdoc />
+        </member>
+        <member name="M:JetBrains.Toolset.ScriptSourcesCompiler.Roslyn.Compilers.RoslynSourcesCompiler.PumpDiagnosticsIntoLogger(System.Collections.Generic.IEnumerable{Microsoft.CodeAnalysis.Diagnostic},JetBrains.Toolset.ScriptSourcesCompiler.Interface.IScriptSourcesCompilerLogger)">
+            <summary>
+            Submits to logger, accordingly with severity etc.
+            </summary>
+            <returns>If was successful (no errors).</returns>
+        </member>
+        <member name="M:JetBrains.Toolset.ScriptSourcesCompiler.Roslyn.Compilers.RoslynSourcesCompiler.JetBrains#Toolset#ScriptSourcesCompiler#Interface#IScriptSourcesCompilerSession#SetAssemblySimpleName(System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:JetBrains.Toolset.ScriptSourcesCompiler.Roslyn.Compilers.RoslynSourcesCompiler.JetBrains#Toolset#ScriptSourcesCompiler#Interface#IScriptSourcesCompilerSession#SetPreprocessorSymbols(System.Collections.Generic.ICollection{System.String})">
+            <inheritdoc />
+        </member>
+        <member name="M:JetBrains.Toolset.ScriptSourcesCompiler.Roslyn.Compilers.RoslynSourcesCompiler.JetBrains#Toolset#ScriptSourcesCompiler#Interface#IScriptSourcesCompilerSession2#SetPublicKey(System.Byte[])">
+            <inheritdoc />
+        </member>
+        <member name="M:JetBrains.Toolset.ScriptSourcesCompiler.Roslyn.Compilers.RoslynSourcesCompiler.JetBrains#Toolset#ScriptSourcesCompiler#Interface#IScriptSourcesCompilerSession#SetScriptToDllReferences(System.Collections.Generic.ICollection{JetBrains.Toolset.ScriptSourcesCompiler.Interface.IResolvedScriptSourceDllReference})">
+            <inheritdoc />
+        </member>
+        <member name="M:JetBrains.Toolset.ScriptSourcesCompiler.Roslyn.Compilers.RoslynSourcesCompiler.JetBrains#Toolset#ScriptSourcesCompiler#Interface#IScriptSourcesCompilerSession#SetSourceFiles(System.Collections.Generic.ICollection{JetBrains.Toolset.ScriptSourcesCompiler.Interface.IScriptSourcesCompilerFileItem})">
+            <inheritdoc />
+        </member>
+        <member name="T:JetBrains.Toolset.ScriptSourcesCompiler.Roslyn.Compilers.RoslynSourcesCompilerFactory">
+            <summary>
+            Factored by users via reflection, then used to summon compiler session instances.
+            </summary>
+        </member>
+        <member name="M:JetBrains.Toolset.ScriptSourcesCompiler.Roslyn.Compilers.RoslynSourcesCompilerFactory.JetBrains#Toolset#ScriptSourcesCompiler#Interface#IScriptSourcesCompiler#CreateSession(JetBrains.Toolset.ScriptSourcesCompiler.Interface.IScriptSourcesCompilerExternalObjectsFactory,JetBrains.Toolset.ScriptSourcesCompiler.Interface.IScriptSourcesCompilerLogger)">
+            <inheritdoc />
+        </member>
+    </members>
+</doc>

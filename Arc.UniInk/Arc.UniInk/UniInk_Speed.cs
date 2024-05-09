@@ -1,22 +1,18 @@
-﻿/************************************************************************************************************************
- *  📰 Title    : UniInk_Speed (https://github.com/Arc-huangjingtong/UniInk-CSharpInterpreter4Unity)                    *
- *  🔖 Version  : 1.0.0                                                                                                 *
- *  👩‍💻 Author   : Arc (https://github.com/Arc-huangjingtong)                                                            *
- *  🔑 Licence  : MIT (https://github.com/Arc-huangjingtong/UniInk-CSharpInterpreter4Unity/blob/main/LICENSE)           *
- *  🤝 Support  : [.NET Framework 4+] [C# 8.0+] [IL2CPP Support]                                                        *
- *  📝 Desc     : [High performance] [zero box & unbox] [zero reflection runtime] [Easy-use] ⚠but                       *
-/************************************************************************************************************************/
-
-
-namespace Arc.UniInk
+﻿namespace Arc.UniInk
 {
 
+    /*******************************************************************************************************************
+     *  📰 Title    : UniInk_Speed (https://github.com/Arc-huangjingtong/UniInk-CSharpInterpreter4Unity)              |*
+     *  🔖 Version  : 1.0.0                                                                                           |*
+     *  😀 Author   : Arc (https://github.com/Arc-huangjingtong)                                                      |*
+     *  🔑 Licence  : MIT (https://github.com/Arc-huangjingtong/UniInk-CSharpInterpreter4Unity/blob/main/LICENSE)     |*
+     *  🤝 Support  : [.NET Framework 4+] [C# 8.0+] [IL2CPP Support]                                                  |*
+     *  📝 Desc     : [High performance] [zero box & unbox] [zero reflection runtime] [Easy-use] ⚠but                 |*
+    /*******************************************************************************************************************/
+
     using System;
-    using System.Collections;
     using System.Collections.Generic;
     using System.Text;
-    using System.Text.RegularExpressions;
-    using System.Linq;
 
 
     public class UniInk_Speed
@@ -123,11 +119,10 @@ namespace Arc.UniInk
         /// <returns> the evaluate is success or not </returns> 
         private static bool EvaluateParenthis(string expression, Queue<object> stack, ref int i)
         {
-            var s = expression[i];
-
             if (StartsWithParenthisFromIndex(expression, i, out var len))
             {
-                var result = Internal_Evaluate(expression, i + 1, i + len - 1);
+                var temp   = new Queue<object>();
+                var result = Internal_Evaluate(expression, i + 1, i + len - 1, temp);
                 stack.Enqueue(result);
                 i += len;
                 return true;
@@ -136,60 +131,24 @@ namespace Arc.UniInk
             return false;
         }
 
+        public static readonly Queue<object> queue = new();
+
         /// <summary> Evaluate a expression       </summary>
         /// <returns> return the result object    </returns>
         public static object Evaluate(string expression, int startIndex, int endIndex)
         {
-            var queue = new Queue<object>();
-
-            for (var i = startIndex ; i < endIndex && i < expression.Length ; i++)
-            {
-                var any = false;
-                foreach (var parsingMethod in ParsingMethods)
-                {
-                    if (parsingMethod(expression, queue, ref i))
-                    {
-                        any = true;
-                        break;
-                    }
-                }
-
-                if (any) continue;
-                if (char.IsWhiteSpace(expression[i])) continue;
-
-                throw new InkSyntaxException($"Invalid character : [{(int)expression[i]}:{expression[i]}] at [{i}  {expression}] ");
-            }
-
-            var ans = ProcessQueue(queue);
-
-            // if (ans is InkValue value)
-            // {
-            //     ans = value.ValueType switch
-            //     {
-            //         InkValue.InkValueType.Int     => value.Value_int               //
-            //       , InkValue.InkValueType.Float   => value.Value_float             //
-            //       , InkValue.InkValueType.Double  => value.Value_double            //
-            //       , InkValue.InkValueType.Boolean => value.Value_bool              // 
-            //       , InkValue.InkValueType.Char    => value.Value_char              //
-            //       , InkValue.InkValueType.String  => value.Value_String.ToString() // 
-            //       , _                             => throw new ArgumentOutOfRangeException()
-            //     };
-            //     InkValue.Release(value);
-            // }
-
-            return ans;
+            queue.Clear();
+            return Internal_Evaluate(expression, startIndex, endIndex, queue);
         }
 
-        private static object Internal_Evaluate(string expression, int startIndex, int endIndex)
+        private static object Internal_Evaluate(string expression, int startIndex, int endIndex, Queue<object> stack)
         {
-            var queue = new Queue<object>();
-
             for (var i = startIndex ; i <= endIndex && i < expression.Length ; i++)
             {
                 var any = false;
                 foreach (var parsingMethod in ParsingMethods)
                 {
-                    if (parsingMethod(expression, queue, ref i))
+                    if (parsingMethod(expression, stack, ref i))
                     {
                         any = true;
                         break;
@@ -202,7 +161,7 @@ namespace Arc.UniInk
                 throw new InkSyntaxException($"Invalid character : [{(int)expression[i]}:{expression[i]}] at [{i}  {expression}] ");
             }
 
-            var ans = ProcessQueue(queue);
+            var ans = ProcessQueue(stack);
 
             return ans;
         }
@@ -399,6 +358,9 @@ namespace Arc.UniInk
 
                     answer.Value_int   = left.Value_int + right.Value_int;
                     answer.isCalculate = true;
+
+                    Release(left);
+                    Release(right);
                     return answer;
                 }
 
@@ -422,6 +384,8 @@ namespace Arc.UniInk
 
                     answer.Value_int   = left.Value_int - right.Value_int;
                     answer.isCalculate = true;
+                    Release(left);
+                    Release(right);
                     return answer;
                 }
 
@@ -445,6 +409,9 @@ namespace Arc.UniInk
 
                     answer.Value_int   = left.Value_int * right.Value_int;
                     answer.isCalculate = true;
+
+                    Release(left);
+                    Release(right);
                     return answer;
                 }
 
@@ -468,6 +435,9 @@ namespace Arc.UniInk
 
                     answer.Value_int   = left.Value_int / right.Value_int;
                     answer.isCalculate = true;
+
+                    Release(left);
+                    Release(right);
                     return answer;
                 }
 
@@ -480,28 +450,53 @@ namespace Arc.UniInk
         {
             public static readonly Dictionary<string, InkOperator> Dic_Values = new();
 
-            public static readonly InkOperator Plus            = new("+");
-            public static readonly InkOperator Minus           = new("-");
-            public static readonly InkOperator Multiply        = new("*");
-            public static readonly InkOperator Divide          = new("/");
-            public static readonly InkOperator Modulo          = new("%");
-            public static readonly InkOperator Lower           = new("<");
-            public static readonly InkOperator Greater         = new(">");
-            public static readonly InkOperator Equal           = new("==");
-            public static readonly InkOperator LowerOrEqual    = new("<=");
-            public static readonly InkOperator GreaterOrEqual  = new(">=");
-            public static readonly InkOperator NotEqual        = new("!=");
-            public static readonly InkOperator LogicalNegation = new("!");
-            public static readonly InkOperator ConditionalAnd  = new("&&");
-            public static readonly InkOperator ConditionalOr   = new("||");
+            //priority refer to : https://learn.microsoft.com/zh-cn/dotnet/csharp/language-reference/operators/
+            public static readonly InkOperator ParenthisLeft      = new("(", 1);   //1.圆括号 (  - 用于改变默认的优先级。
+            public static readonly InkOperator ParenthisRight     = new(")", 1);   //1.圆括号 )  - 用于改变默认的优先级。
+            public static readonly InkOperator Dot                = new(".", 2);   //2.成员访问 .
+            public static readonly InkOperator SquareBracketStart = new("[", 2);   //2.数组索引 []
+            public static readonly InkOperator SquareBracketEnd   = new("]", 2);   //2.数组索引 []
+            public static readonly InkOperator Increment          = new("++", 2);  //2.suffix ++ (prefix 3) 
+            public static readonly InkOperator Decrement          = new("--", 2);  //2.suffix -- (prefix 3)
+            public static readonly InkOperator LogicalNegation    = new("!", 3);   //3.逻辑非 !
+            public static readonly InkOperator BitwiseComplement  = new("~", 3);   //3.位 非 ~
+            public static readonly InkOperator Cast               = new("()", 4);  //4.显式类型转换
+            public static readonly InkOperator Multiply           = new("*", 5);   //5.乘 *
+            public static readonly InkOperator Divide             = new("/", 5);   //5.除 /
+            public static readonly InkOperator Modulo             = new("%", 5);   //5.取模 %
+            public static readonly InkOperator Plus               = new("+", 6);   //6.加 + (一元加号优先级3) 
+            public static readonly InkOperator Minus              = new("-", 6);   //6.减 - (一元减号优先级3)
+            public static readonly InkOperator LeftShift          = new("<<", 7);  //7.左移 <<
+            public static readonly InkOperator RightShift         = new(">>", 7);  //7.右移 >>
+            public static readonly InkOperator Lower              = new("<", 8);   //8.小于 <
+            public static readonly InkOperator Greater            = new(">", 8);   //8.大于 >
+            public static readonly InkOperator LowerOrEqual       = new("<=", 8);  //8.小于等于 <=
+            public static readonly InkOperator GreaterOrEqual     = new(">=", 8);  //8.大于等于 >=
+            public static readonly InkOperator Equal              = new("==", 9);  //9.等于 ==     (等价比较运算
+            public static readonly InkOperator NotEqual           = new("!=", 9);  //9.不等于 !=   (等价比较运算
+            public static readonly InkOperator BitwiseAnd         = new("&", 10);  //8.按位与 &
+            public static readonly InkOperator BitwiseXor         = new("^", 11);  //9.按位异或 ^
+            public static readonly InkOperator BitwiseOr          = new("|", 12);  //10.按位或 |
+            public static readonly InkOperator ConditionalAnd     = new("&&", 13); //11.逻辑与 &&  (短路逻辑运算
+            public static readonly InkOperator ConditionalOr      = new("||", 14); //12.逻辑或 ||  (短路逻辑运算
+            public static readonly InkOperator Conditional        = new("?:", 15); //15.条件运算 ?: - 三元条件运算符。
+            public static readonly InkOperator Assign             = new("=", 16);  //16.赋值 =、加等 +=、减等 -=、乘等 *=、除等 /=、模等 %=、左移等 <<=、右移等 >>=、按位与等 &=、按位或等 |=、按位异或等 ^= - 赋值运算。
+            public static readonly InkOperator Comma              = new(",", 16);  //17.逗号 , - 用于分隔表达式
+            public static readonly InkOperator Lambda             = new("=>", 17); //17. Lambda 表达式
+
+            protected static short indexer;
 
 
-            protected static ushort indexer;
-            protected        ushort OperatorValue { get; }
+            protected readonly short OperatorValue;
 
-            protected InkOperator(string name)
+            /// <summary>the lower the value, the higher the priority</summary>
+            protected readonly short PriorityIndex;
+
+            protected InkOperator(string name, short priorityIndex)
             {
                 OperatorValue = indexer++;
+                PriorityIndex = priorityIndex;
+
                 Dic_Values.Add(name, this);
             }
 

@@ -1,0 +1,496 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>JetBrains.Platform.DocumentManager</name>
+    </assembly>
+    <members>
+        <member name="T:JetBrains.DocumentManagers.DocumentsOnProjectFiles">
+            <summary>
+            For those documents that are created over project files, exposes the mapping, and allows to create documents over project files on-demand.
+            Uses <see cref="T:JetBrains.DocumentManagers.DocumentToProjectFileMappingStorage"/> as the backing store.
+            </summary>
+        </member>
+        <member name="M:JetBrains.DocumentManagers.DocumentsOnProjectFiles.GetOrCreateDocument(JetBrains.ProjectModel.IProjectFile)">
+            <summary>
+            Gets the existing document over the project file, if it has already been created and has not yet expired.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:JetBrains.DocumentManagers.DocumentsOnProjectFiles.GetProjectFile(JetBrains.DocumentModel.IDocument)">
+            <summary>
+            If this document has been created over a project file, returns that project file.
+            Otherwise, throws an exception.
+            </summary>
+        </member>
+        <member name="M:JetBrains.DocumentManagers.DocumentsOnProjectFiles.SynchronizeAllDocumentContentsWithDiskFiles(JetBrains.DocumentModel.Storage.IDocumentStorageHelpers)">
+            <summary>
+            Forces all known documents sync with disk. Used primarily to workaround file changes in tests when IFileSystemTracker is disabled.
+            Do not use <see cref="M:JetBrains.DocumentManagers.DocumentsOnProjectFiles.ClearDocuments"/>. Consider using the method instead
+            </summary>
+            <param name="documentStorageHelpers">IDocumentStorageHelpers component</param>
+        </member>
+        <member name="T:JetBrains.DocumentManagers.DocumentManager">
+            <summary>
+            Manages file-based documents that are backed with <see cref="T:JetBrains.ProjectModel.IProjectFile"/>s.
+            Simple in-memory documents can be created with <see cref="T:JetBrains.DocumentModel.IInMemoryDocumentFactory"/> and used independently of this class.
+            Note: this class does not (and MUST NOT) have any own logic, it's only an aggregate of single-responsibility components. This prevents circular dependencies.
+            </summary>
+        </member>
+        <member name="F:JetBrains.DocumentManagers.DocumentManager.OptionDontAssertNonVsDocumentModifications">
+            <summary>
+            Limits <see cref="M:JetBrains.DocumentManagers.SolutionDocumentChangeProvider.AssertOnFileBasedDocumentModification(JetBrains.DocumentModel.Impl.DocumentBase,JetBrains.ProjectModel.IProjectFile)"/> for legacy code.
+            </summary>
+        </member>
+        <member name="M:JetBrains.DocumentManagers.DocumentManager.GetOrCreateDocument(JetBrains.ProjectModel.IProjectFile)">
+            <summary>
+            Gets document by project item.
+            Creates if it hasn't been created yet for this project file.
+            </summary>
+        </member>
+        <member name="M:JetBrains.DocumentManagers.DocumentManager.TryGetDocument(JetBrains.ProjectModel.IProjectFile)">
+            <summary>
+            Gets the already created document by project item.
+            </summary>
+            <returns>The document if it has been already created; otherwise, null.</returns>
+        </member>
+        <member name="M:JetBrains.DocumentManagers.DocumentManager.GetOrCreateDocument(JetBrains.Util.VirtualFileSystemPath)">
+            <summary>
+            Gets document by project item.
+            Creates if it hasn't been created yet for this disk path.
+            </summary>
+        </member>
+        <member name="M:JetBrains.DocumentManagers.DocumentManager.TryGetProjectFile(JetBrains.DocumentModel.IDocument)">
+            <summary>
+            If this document has been created over a project file, returns that project file.
+            Otherwise, returns <c>Null</c>.
+            </summary>
+        </member>
+        <member name="M:JetBrains.DocumentManagers.DocumentManager.GetProjectFile(JetBrains.DocumentModel.IDocument)">
+            <summary>
+            If this document has been created over a project file, returns that project file.
+            Otherwise, throws an exception.
+            For safe check use <see cref="M:JetBrains.DocumentManagers.DocumentToProjectFileMappingStorage.TryGetProjectFile(JetBrains.DocumentModel.IDocument)"/>
+            </summary>
+        </member>
+        <member name="M:JetBrains.DocumentManagers.DocumentManager.EnsureWritable(JetBrains.DocumentModel.IDocument,System.Action{JetBrains.Util.ModificationCookie})">
+            <summary>
+            Get clearance for write access to the document, for example, at the Source Code Control.
+            You MUST scope file-based-document modifications with this method.
+            </summary>
+        </member>
+        <member name="M:JetBrains.DocumentManagers.DocumentManager.EnsureWritableSuccess(JetBrains.DocumentModel.IDocument,System.Action)">
+            <summary>
+            Get clearance for write access to the document, for example, at the Source Code Control.
+            Executes the <paramref name="onSucceeded"/> action only if the modification query
+            succeeds (<see cref="P:JetBrains.Util.ModificationCookie.EnsureWritableResult"/> is <see cref="F:JetBrains.Util.EnsureWritableResult.SUCCESS"/>).
+            You MUST scope file-based-document modifications with this method.
+            </summary>
+        </member>
+        <member name="P:JetBrains.DocumentManagers.DocumentManager.BeforeAnyDocumentChanged">
+            <summary>
+            Fires before a document is modified.
+            Aggregates the <see cref="E:JetBrains.DocumentModel.IDocument.BeforeDocumentChanged"/> event on all the documents.
+            </summary>
+        </member>
+        <member name="P:JetBrains.DocumentManagers.DocumentManager.BeforeAnyDocumentCopyChanged">
+            <summary>
+            Ask Serjik.
+            </summary>
+        </member>
+        <member name="P:JetBrains.DocumentManagers.DocumentManager.ChangeProvider">
+            <summary>
+            Gets the change provider that's firing <see cref="T:JetBrains.DocumentModel.DocumentChange"/> and <see cref="T:JetBrains.DocumentModel.DocumentCopyChanged"/>.
+            </summary>
+        </member>
+        <member name="M:JetBrains.DocumentManagers.DocumentManager.GetSharedDocuments(JetBrains.DocumentModel.IDocument)">
+            <summary>
+            Returns list of documents corresponding to "shared" project files (i.e. project files with the same location) including the argument.
+            </summary>
+            <param name="document">Any document</param>
+            <returns>List of documents corresponding to "shared" project files (i.e. project files with the same location) including the argument.</returns>
+        </member>
+        <member name="T:JetBrains.DocumentManagers.DocumentToProjectFileMappingStorage">
+            <summary>
+            Just stores the mapping between documents and project files.
+            You should rather use the <see cref="T:JetBrains.DocumentManagers.DocumentManager"/> facade in high-level code, or <see cref="T:JetBrains.DocumentManagers.DocumentsOnProjectFiles"/> inside document-vs-project-model cases.
+            </summary>
+        </member>
+        <member name="F:JetBrains.DocumentManagers.DocumentToProjectFileMappingStorage.myProjectItemKey">
+            <summary>
+            Key for backmapping from document to project file. Currently, the mapping is stored on the document's userdata (as document lifetime is CLR-defined, while for a project file there's explicit removal).
+            Note: must be a new key instance per component instance, to avoid mixing up documents from different solutions (like, getting project file from another solution). <see cref="T:JetBrains.Util.Key`1"/>'s equality is only by reference, string is just for diag.
+            </summary>
+        </member>
+        <member name="F:JetBrains.DocumentManagers.DocumentToProjectFileMappingStorage.Added">
+            <summary>
+            Fires when a new mapping gets added.
+            Bool set to true when the document is new, otherwise - false. Old document may happen if it was mapped to a path and then remapped to a project file
+            </summary>
+        </member>
+        <member name="F:JetBrains.DocumentManagers.DocumentToProjectFileMappingStorage.AddedExplicitly">
+            <summary>
+            Fires when a mapping gets explicitly added.
+            Note that it will NOT fire for each <see cref="F:JetBrains.DocumentManagers.DocumentToProjectFileMappingStorage.Added"/> item because mappings are weak-references and might expire on their own.
+            </summary>
+        </member>
+        <member name="F:JetBrains.DocumentManagers.DocumentToProjectFileMappingStorage.RemovedExplicitly">
+            <summary>
+            Fires when a mapping gets explicitly removed.
+            Note that it will NOT fire for each <see cref="F:JetBrains.DocumentManagers.DocumentToProjectFileMappingStorage.Added"/> item because mappings are weak-references and might expire on their own.
+            </summary>
+        </member>
+        <member name="M:JetBrains.DocumentManagers.DocumentToProjectFileMappingStorage.TryGetDocumentByProjectFile(JetBrains.ProjectModel.IProjectFile)">
+            <summary>
+            Gets document by project item, if it's already created.
+            </summary>
+        </member>
+        <member name="M:JetBrains.DocumentManagers.DocumentToProjectFileMappingStorage.TryGetDocumentByProjectFileNoValidityCheck(JetBrains.ProjectModel.IProjectFile)">
+            <summary>
+            Gets document by project item, if it's already created.
+            </summary>
+        </member>
+        <member name="M:JetBrains.DocumentManagers.DocumentToProjectFileMappingStorage.TryGetDocumentByPath(JetBrains.Util.VirtualFileSystemPath)">
+            <summary>
+            Gets document by project item, if it's already created.
+            </summary>
+        </member>
+        <member name="M:JetBrains.DocumentManagers.DocumentToProjectFileMappingStorage.GetAllDocuments">
+            <summary>
+            Gets a copy of registered mapped items in a form of a list.
+            </summary>
+        </member>
+        <member name="M:JetBrains.DocumentManagers.DocumentToProjectFileMappingStorage.TryGetProjectFile(JetBrains.DocumentModel.IDocument)">
+            <summary>
+            If this document has a mapping to a project file, returns that project file.
+            Otherwise, returns <c>Null</c>.
+            </summary>
+        </member>
+        <member name="M:JetBrains.DocumentManagers.DocumentToProjectFileMappingStorage.TryGetInvalidProjectFile(JetBrains.DocumentModel.IDocument)">
+            <summary>
+            If this document has a mapping to a project file, returns that project file.
+            Also returns project file if one is invalid (ex. was removed from project model but transaction is committing)
+            Otherwise, returns <c>Null</c>.
+            </summary>
+        </member>
+        <member name="T:JetBrains.DocumentManagers.IIsFileOpenedProvider">
+            <summary>
+            Needed to avoid direct dependency from documents/project model to a text control
+            </summary>
+        </member>
+        <member name="M:JetBrains.DocumentManagers.impl.DocumentOperationsImpl.IsDocumentWithCorrespondingPathOpenInTheEditorAndWillBeHandledByTheEditor(JetBrains.Util.VirtualFileSystemPath)">
+            <summary>
+            Checks wether the document with <see cref="!:documentPath"/> is open in the editor and external change is handled by the editor
+            </summary>
+            <param name="documentPath">Document paths</param>
+            <returns>True is the editor handles the external change</returns>
+        </member>
+        <member name="M:JetBrains.DocumentManagers.impl.DocumentOperationsImpl.IsDocumentWithCorrespondingPathOpenInTheEditor(JetBrains.Util.VirtualFileSystemPath)">
+            <summary>
+            Checks wether the document with <see cref="!:documentPath"/> is open in the editor
+            </summary>
+            <param name="documentPath">Document paths</param>
+            <returns>True if document with corresponding path is open in the editor</returns>
+        </member>
+        <member name="M:JetBrains.DocumentManagers.impl.DocumentOperationsImpl.SynchronizeDocumentContentsWithStorage(JetBrains.DocumentModel.IDocument,JetBrains.Util.VirtualFileSystemPath)">
+            <inheritdoc />
+        </member>
+        <member name="P:JetBrains.DocumentManagers.impl.DocumentOperationsImpl.AfterDocumentSaved">
+            <inheritdoc />
+        </member>
+        <member name="P:JetBrains.DocumentManagers.impl.DocumentOperationsImpl.BeforeDocumentSaved">
+            <inheritdoc />
+        </member>
+        <member name="P:JetBrains.DocumentManagers.impl.DocumentOperationsImpl.BeforeDocumentReloaded">
+            <inheritdoc />
+        </member>
+        <member name="M:JetBrains.DocumentManagers.impl.DocumentOperationsImpl.SynchronizeDocumentContentsWithDiskFile(JetBrains.DocumentModel.IDocument,JetBrains.Util.VirtualFileSystemPath)">
+            <inheritdoc />
+        </member>
+        <member name="M:JetBrains.DocumentManagers.impl.DocumentOperationsImpl.MarkReconciledWithExternalVersion(JetBrains.DocumentModel.IDocument,System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:JetBrains.DocumentManagers.impl.DocumentOperationsImpl.CommitFileSystemTrackerChanges(JetBrains.DocumentModel.IDocument)">
+            <inheritdoc />
+        </member>
+        <member name="T:JetBrains.DocumentManagers.LiveTracking.IProjectMarkChangeProvider">
+            <summary>
+            Subscribes and finds affected project marks by file system path
+            </summary>
+        </member>
+        <member name="M:JetBrains.DocumentManagers.LiveTracking.IProjectMarkChangeProvider.GetProjectChanges(JetBrains.Util.VirtualFileSystemPath)">
+            <summary>
+            Return affected project marks by some path
+            </summary>
+        </member>
+        <member name="T:JetBrains.DocumentManagers.LiveTracking.ProjectHostFileSystemChangeTrackerBase">
+            <summary>
+            Handles all file system changes and update solution structure
+            </summary>
+        </member>
+        <member name="P:JetBrains.DocumentManagers.LiveTracking.ProjectHostFileSystemChangeTrackerBase.Change">
+            <summary>
+            Tells other file system handlers that base project model (solution, projects) have already handled
+              file system changes and other components can also handle this change
+            </summary>
+        </member>
+        <member name="M:JetBrains.DocumentManagers.LiveTracking.Providers.ProjectMarkImportsChangeProvider.AddPossibleDirectoryImports(JetBrains.ProjectModel.ProjectsHost.IProjectMark,System.Collections.Generic.HashSet{JetBrains.Util.VirtualFileSystemPath},System.String)">
+            <summary>
+            Support for Directory.Build.props and Directory.Build.targets
+             see https://docs.microsoft.com/en-us/visualstudio/msbuild/customize-your-build#search-scope
+            </summary>
+        </member>
+        <member name="M:JetBrains.DocumentManagers.LiveTracking.UnresolvedAssemblyReferenceMonitor.GetMismatchingHintPath(JetBrains.ProjectModel.IProjectToAssemblyReference)">
+            <summary>
+            Check if actual reference location mismatch expected hint path
+            </summary>
+        </member>
+        <member name="T:JetBrains.DocumentManagers.ProjectFilesRemovedOnDocumentTransactionCommit">
+            <summary>
+            As project files are removed within a transaction, sometimes processing for them must be delayed, as the transaction might be rolled back or something.
+            Listens to project model changes, maintains the list of files removed under transaction, and fires their remove only when transaction gets committed (not rolled back).
+            </summary>
+        </member>
+        <member name="F:JetBrains.DocumentManagers.ProjectFilesRemovedOnDocumentTransactionCommit.ProjectFileRemoved">
+            <summary>
+            Fires when a project file gets removed.
+            If there's no transaction, fires immediately.
+            Under a transaction, fires when it's closed.
+            </summary>
+        </member>
+        <member name="T:JetBrains.DocumentManagers.ProjectModelAwareRangeMarkerManager">
+            <summary>
+            Per-solution range marker manager.
+            </summary>
+        </member>
+        <member name="T:JetBrains.DocumentManagers.RangeMarkersManager_InvalidateFileMarkersOnProjectModelChange">
+            <summary>
+            Listens to solution-specific events on behalf of <see cref="T:JetBrains.DocumentModel.RangeMarkersManager"/>.
+            </summary>
+        </member>
+        <member name="M:JetBrains.DocumentManagers.SharedDocumentsSynchronizer.EnqueueSyncDocuments(System.String,JetBrains.Util.VirtualFileSystemPath,JetBrains.Util.OneToListMap{JetBrains.DocumentModel.IDocument,JetBrains.DocumentModel.DocumentChange},System.Boolean)">
+            <summary>
+            Schedule documents sync. Null in <see cref="!:documentChangesMap"/> means no change detected, sync for the sake of consistency
+            </summary>
+            <param name="reason">Reason for the sync</param>
+            <param name="location">Shared file location</param>
+            <param name="documentChangesMap">Document changes that triggered sync request. Null means the sync for the sake of consistency</param>
+            <param name="executeSyncIfPossible"></param>
+        </member>
+        <member name="T:JetBrains.DocumentManagers.SolutionDocumentChangeEventsAggregator">
+            <summary>
+            Listens to changes in all of the living documents, retranslates them to clients as a single event.
+            </summary>
+        </member>
+        <member name="F:JetBrains.DocumentManagers.SolutionDocumentChangeEventsAggregator.BeforeAnyDocumentChanged">
+            <summary>
+            Fires before a document is modified.
+            Aggregates the <see cref="E:JetBrains.DocumentModel.IDocument.BeforeDocumentChanged"/> event on all the documents.
+            </summary>
+        </member>
+        <member name="F:JetBrains.DocumentManagers.SolutionDocumentChangeEventsAggregator.BeforeAnyDocumentCopyChanged">
+            <summary>
+            Ask Serjik.
+            </summary>
+        </member>
+        <member name="T:JetBrains.DocumentManagers.SolutionDocumentChangeProvider">
+            <summary>
+            The change provider that's firing <see cref="T:JetBrains.DocumentModel.DocumentChange"/> and <see cref="T:JetBrains.DocumentModel.DocumentCopyChanged"/>.
+            </summary>
+        </member>
+        <member name="M:JetBrains.DocumentManagers.SolutionDocumentChangeProvider.AssertOnFileBasedDocumentModification(JetBrains.DocumentModel.Impl.DocumentBase,JetBrains.ProjectModel.IProjectFile)">
+            <summary>
+            When a file-based document is modified, asserts that it's allowed.
+            </summary>
+        </member>
+        <member name="P:JetBrains.DocumentManagers.Transactions.Actions.CopyAction.CreatedItemsMapping">
+            <summary>
+            Key - Created Item, Value - Original Item
+            </summary>
+        </member>
+        <member name="T:JetBrains.DocumentManagers.Transactions.IMsBuildPropertiesEditor">
+            <summary>
+            Interface to edit project's (or configuration) msbuild properties
+            Note, the project might need to be reloaded once modified 
+            </summary>
+        </member>
+        <member name="M:JetBrains.DocumentManagers.Transactions.IMsBuildPropertiesEditor.TryGetValue(System.String)">
+            <summary>
+            Returns the value associated with <see cref="!:propertyName"/> or Null
+            </summary>
+            <param name="propertyName">Property to fetch value</param>
+            <returns>Value associated with <see cref="!:propertyName"/> or Null</returns>
+        </member>
+        <member name="M:JetBrains.DocumentManagers.Transactions.IMsBuildPropertiesEditor.TryRemoveProperty(System.String)">
+            <summary>
+            Removes the property 
+            </summary>
+            <param name="propertyName">Property to remove</param>
+            <returns>True if successful</returns>
+        </member>
+        <member name="M:JetBrains.DocumentManagers.Transactions.IMsBuildPropertiesEditor.SetProperty(System.String,System.String)">
+            <summary>
+            Sets the property value
+            </summary>
+            <param name="propertyName">Property to set value to</param>
+            <param name="propertyValue">New property value</param>
+            <returns>True if successful</returns>
+        </member>
+        <member name="M:JetBrains.DocumentManagers.Transactions.IProjectModelEditor.AddFile(JetBrains.ProjectModel.IProjectFolder,JetBrains.Util.VirtualFileSystemPath,JetBrains.DocumentManagers.Transactions.FileCreationParameters,JetBrains.DocumentManagers.Transactions.IFileCreationContext)">
+            <summary>
+            Adds specified file to the project 
+            </summary>
+            <param name="parentFolder">Parent folder</param>
+            <param name="location">Path to the file being added</param>
+            <param name="parameters">Additional file metadata and build action</param>
+            <param name="context">Additional untyped data that can be used by AddFileAction. Used in C++ to create files in particular 'filter'</param>
+            <returns>Reference to the new project item</returns>
+        </member>
+        <member name="M:JetBrains.DocumentManagers.Transactions.IProjectModelEditor.EditFileProperties(JetBrains.ProjectModel.IProjectFile,System.Action{JetBrains.ProjectModel.Properties.IProjectFileProperties})">
+            <summary>
+            Edits project file properties
+            </summary>
+            <param name="projectFile">Project file to edit</param>
+            <param name="editPropertiesAction">Action that modifies properties</param>
+            <returns>True if succeeded</returns>
+        </member>
+        <member name="M:JetBrains.DocumentManagers.Transactions.IProjectModelEditor.AddFolder(JetBrains.ProjectModel.IProjectFolder,System.String,JetBrains.Util.VirtualFileSystemPath,JetBrains.DocumentManagers.Transactions.IFolderCreationContext)">
+            <summary>
+            Adds a directory to the project
+            </summary>
+            /// <param name="parentFolder">Parent folder</param>
+            <param name="name">Name of the directory being added</param>
+            <param name="folderPath">Path to the directory being added. If null, folderPath equals parentFolder.Location.Combine(name)</param>
+            <param name="context">Some context</param>
+            <returns>Reference to the new project item</returns>
+        </member>
+        <member name="M:JetBrains.DocumentManagers.Transactions.IProjectModelEditor.Rename(JetBrains.ProjectModel.IProjectItem,System.String,System.Boolean)">
+            <summary>
+            Renames the project item.
+            </summary>
+        </member>
+        <member name="M:JetBrains.DocumentManagers.Transactions.IProjectModelEditor.Move(JetBrains.ProjectModel.IProjectItem,JetBrains.ProjectModel.IProjectFolder,JetBrains.DocumentManagers.Transactions.IItemModificationContext)">
+            <summary>
+            Moves the project item so that it becomes a child of the specified parent.
+            If file is linked it will be recreated in new location, so it has to be reloaded after move.
+            </summary>
+            <param name="projectItem">Project item to move</param>
+            <param name="newParentItem">newParentItem == null means project becomes a top-level one</param>
+            <param name="context">Some context</param>
+        </member>
+        <member name="M:JetBrains.DocumentManagers.Transactions.IProjectModelEditor.Copy(JetBrains.ProjectModel.IProjectItem,JetBrains.ProjectModel.IProjectFolder,System.String,JetBrains.DocumentManagers.Transactions.IItemModificationContext)">
+            <summary>
+            Copies the project item so that it's copy becomes a child of the specified parent.
+            </summary>
+            <param name="projectItem">Project item to copy</param>
+            <param name="newParentItem">newParentItem == null means project becomes a top-level one</param>
+            <param name="customItemName">If not null, a projectItem copy will have a custom name different from original projectItem.Name</param>
+            <param name="context">Some context</param>
+            <returns>Reference to the new project item</returns>
+        </member>
+        <member name="M:JetBrains.DocumentManagers.Transactions.IProjectModelEditor.Remove(JetBrains.ProjectModel.IProjectItem,System.Boolean)">
+            <summary>
+            Removes project item.
+            </summary>
+        </member>
+        <member name="M:JetBrains.DocumentManagers.Transactions.IProjectModelEditor.AddModuleReference(JetBrains.ProjectModel.IProject,JetBrains.ProjectModel.IModule,JetBrains.Util.Dotnet.TargetFrameworkIds.TargetFrameworkId,JetBrains.DocumentManagers.Transactions.IReferenceCreationContext)">
+            <summary>
+            Makes the project reference the specified module
+            </summary>
+        </member>
+        <member name="M:JetBrains.DocumentManagers.Transactions.IProjectModelEditor.AddAssemblyReference(JetBrains.ProjectModel.IProject,JetBrains.Util.VirtualFileSystemPath,JetBrains.Util.Dotnet.TargetFrameworkIds.TargetFrameworkId,JetBrains.DocumentManagers.Transactions.IReferenceCreationContext)">
+            <summary>
+            Adds the specified library to the project's references
+            </summary>
+        </member>
+        <member name="M:JetBrains.DocumentManagers.Transactions.IProjectModelEditor.RemoveModuleReference(JetBrains.ProjectModel.IProjectToModuleReference,JetBrains.DocumentManagers.Transactions.IReferenceRemovingContext)">
+            <summary>
+            Removes the specified assembly or project from project's references
+            </summary>
+        </member>
+        <member name="M:JetBrains.DocumentManagers.Transactions.IProjectModelEditor.RemoveNugetPackage(JetBrains.ProjectModel.IProjectToPackageReference)">
+            <summary>
+            Removes NuGet package from project
+            </summary>
+            <param name="reference"></param>
+        </member>
+        <member name="M:JetBrains.DocumentManagers.Transactions.IProjectModelEditor.EditProjectMsBuildProperties(JetBrains.ProjectModel.IProject,System.String,System.Action{JetBrains.DocumentManagers.Transactions.IMsBuildPropertiesEditor})">
+            <summary>
+            Edit project's (or project configuration) msbuild properties.
+            Project reload might be required when done. In VS the opertaion is async.
+            </summary>
+            <param name="project">Project to alter the properties</param>
+            <param name="configurationName">Configuration to alter the properties. If null the changes applied on project level</param>
+            <param name="editFunc">Function to actually edit properties</param>
+        </member>
+        <member name="M:JetBrains.DocumentManagers.Transactions.IProjectModelEditor.CanEditProjectMsBuildProperties(JetBrains.ProjectModel.IProject,System.String@)">
+            <summary>
+            Checks is msbuild project properties are editable
+            </summary>
+            <param name="project">Project to edit properties in</param>
+            <param name="reason">Reason why the operation is impossible</param>
+            <returns>True if properties are editable</returns>
+        </member>
+        <member name="M:JetBrains.DocumentManagers.Transactions.IProjectModelEditorOperations.DoCreateFile(JetBrains.ProjectModel.IProjectFolder,System.String,JetBrains.Util.VirtualFileSystemPath,JetBrains.Collections.CompactList{JetBrains.Util.Pair{JetBrains.Util.Dotnet.TargetFrameworkIds.TargetFrameworkId,JetBrains.ProjectModel.BuildAction}},JetBrains.ProjectModel.Properties.IProjectElementOrigin)">
+            <summary>
+            Create project file in specified parent folder
+            </summary>
+            <param name="parentFolder">Parent folder of project file</param>
+            <param name="name">Custom name of file in case of link creation. If null when name from <paramref name="location"/> will be used</param>
+            <param name="location">Location of project file, in case of links doesn't depend on <paramref name="name"/> or <paramref name="parentFolder"/></param>
+            <param name="buildAction">Build action for the file in the context of <see cref="T:JetBrains.Util.Dotnet.TargetFrameworkIds.TargetFrameworkId"/></param>
+            <param name="origin">Store information of what data the project file was created</param>
+            <returns></returns>
+        </member>
+        <member name="M:JetBrains.DocumentManagers.Transactions.ProjectHostActions.HostProjectModelEditorOperations.CleanupMiscProjectFilesIfNeeded(JetBrains.ProjectModel.IProjectFolder,JetBrains.Util.VirtualFileSystemPath)">
+            <summary>
+            Remove existing misc file for the same physical file, we do not need it anymore
+            In R# case Visual Studio manages misc files so there is no such magic there
+            </summary>
+        </member>
+        <member name="M:JetBrains.DocumentManagers.Transactions.ProjectHostActions.HostProjectModelEditorOperations.GetUnitedProjectItems(JetBrains.ProjectModel.IProjectItem)">
+            <summary>
+            Sometimes a project file is exists only because of another project file. Example from dotnet6:
+            [Content] Page.txt
+            [AdditionalFiles] Page.txt
+            In this case we should not try to change project file for the second file, just adjust R# project model
+            </summary>
+        </member>
+        <member name="T:JetBrains.DocumentManagers.Transactions.ProjectHostActions.IReloadProjectOnChangePolicy">
+            <summary>
+            An extension which allows to specify a rule to reload a project after changes inside made by R# engine
+             (ProjectModelEditor and friends)
+            </summary>
+        </member>
+        <member name="M:JetBrains.DocumentManagers.Transactions.ProjectHostActions.IReloadProjectOnChangePolicy.ShouldReload(JetBrains.ProjectModel.IProjectItem)">
+            <summary>
+            Returns true if project should be reloaded after add/remove/rename change of specified project file
+            </summary>
+        </member>
+        <member name="M:JetBrains.DocumentManagers.Transactions.ProjectHostActions.SharedProjects.ISharedProjectOperations.GetProjectItemInSharedProjects(JetBrains.ProjectModel.IProjectItem)">
+            <summary>
+            Returns a corresponding project items from referenced shared projects.
+            </summary>
+            <param name="projectItem">Any project item</param>
+            <returns>List of project items sharing the same location including the argument in referenced shared projects.</returns>
+        </member>
+        <member name="M:JetBrains.DocumentManagers.Transactions.ProjectHostActions.SharedProjects.ISharedProjectOperations.GetOrCreateParentSharedFoldersInReferencedProjects(JetBrains.ProjectModel.IProjectFolder)">
+            <summary>
+            Gets or creates a corresponding project folder from each referenced project.
+            </summary>
+            <param name="projectFolder">Project folder from a shared project</param>
+            <returns>List of project folders sharing the same location from referenced projects.</returns>
+        </member>
+        <member name="M:JetBrains.DocumentManagers.Transactions.ProjectHostActions.SharedProjects.ISharedProjectOperations.GetSharedProjectItemsInReferencedProjects(JetBrains.ProjectModel.IProjectItem)">
+            <summary>
+            Returns a corresponding project items from referenced projects.
+            </summary>
+            <param name="projectItem">Project item from a shared project</param>
+            <returns>List of project items sharing the same location from referenced projects.</returns>
+        </member>
+        <member name="T:JetBrains.DocumentManagers.Transactions.UpdateReferenceContext">
+            <summary>
+            Use this context to specify `RemoveReference` and `AddReference` should be threated as an update operation
+            </summary>
+        </member>
+    </members>
+</doc>

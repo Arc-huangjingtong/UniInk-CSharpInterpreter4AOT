@@ -1,0 +1,49 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>JetBrains.Platform.ViewModels</name>
+    </assembly>
+    <members>
+        <member name="T:JetBrains.ViewModels.Transport.MouseDownOrClickTransportSession">
+            <summary>
+            Session object for controls which can react either on mouse down or click, and backend decides which should happen.
+            Backend gets a signal on mousedown and responds with this session.
+            1) Backend does not want to handle either mousedown or clicks at this moment — returns NULL session object (<see cref="M:JetBrains.ViewModels.Transport.MouseDownOrClickTransportSession.Refused" />).
+            2) Backend wants to open a drop-down menu, which should happen on mousedown (so that mouseup on a menu item triggered the menu action, all with a single click) — returns a session object with <see cref="F:JetBrains.ViewModels.Transport.MouseDownOrClickTransportSession.IsWaitingForClick" /> set to <c>False</c> (<see cref="M:JetBrains.ViewModels.Transport.MouseDownOrClickTransportSession.HandledMouseDown" />).
+            3) Backend wants to execute an action on click (mousedown + mouseup) — returns a session object with <see cref="F:JetBrains.ViewModels.Transport.MouseDownOrClickTransportSession.IsWaitingForClick" /> set to <c>True</c> and sinks <see cref="F:JetBrains.ViewModels.Transport.MouseDownOrClickTransportSession.BwdOnClick" />, which will be called only if the click is completed with a valid mouseup within the control. The task of the click handler should complete after click handling is done, frontend won't process further clicks until this one completes (<see cref="M:JetBrains.ViewModels.Transport.MouseDownOrClickTransportSession.WaitingForClick(JetBrains.Lifetimes.Lifetime,System.Func{JetBrains.Lifetimes.Lifetime,System.Threading.Tasks.Task})" />).
+            </summary>
+        </member>
+        <member name="M:JetBrains.ViewModels.Transport.MouseDownOrClickTransportSession.HandledMouseDown">
+            <summary>
+            Backend wants to open a drop-down menu, which should happen on mousedown (so that mouseup on a menu item triggered the menu action, all with a single click) — returns a session object with <see cref="F:JetBrains.ViewModels.Transport.MouseDownOrClickTransportSession.IsWaitingForClick" /> set to <c>False</c>.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:JetBrains.ViewModels.Transport.MouseDownOrClickTransportSession.Read(JetBrains.Rd.SerializationCtx,JetBrains.Serialization.UnsafeReader)">
+            <summary>
+            Used by rd reflection serializers.
+            </summary>
+        </member>
+        <member name="M:JetBrains.ViewModels.Transport.MouseDownOrClickTransportSession.Refused">
+            <summary>
+            Backend does not want to handle either mousedown or clicks at this moment.
+            </summary>
+        </member>
+        <member name="M:JetBrains.ViewModels.Transport.MouseDownOrClickTransportSession.WaitingForClick(JetBrains.Lifetimes.Lifetime,System.Func{JetBrains.Lifetimes.Lifetime,System.Threading.Tasks.Task})">
+            <summary>
+            Backend wants to execute an action on click (mousedown + mouseup) — returns a session object with <see cref="F:JetBrains.ViewModels.Transport.MouseDownOrClickTransportSession.IsWaitingForClick" /> set to <c>True</c> and sinks <see cref="F:JetBrains.ViewModels.Transport.MouseDownOrClickTransportSession.BwdOnClick" />, which will be called only if the click is completed with a valid mouseup within the control. The task of the click handler should complete after click handling is done, frontend won't process further clicks until this one completes.
+            </summary>
+            <param name="lifetime">Lifetime for watching the session for a click event.</param>
+            <param name="FOnClick"></param>
+            <returns></returns>
+        </member>
+        <member name="M:JetBrains.ViewModels.Transport.MouseDownOrClickTransportSession.Write(JetBrains.Rd.SerializationCtx,JetBrains.Serialization.UnsafeWriter,JetBrains.ViewModels.Transport.MouseDownOrClickTransportSession)">
+            <summary>
+            Used by rd reflection serializers.
+            </summary>
+        </member>
+        <member name="M:JetBrains.ViewModels.Transport.MouseDownOrClickTransportSession.OnBindNested(JetBrains.Lifetimes.Lifetime)">
+            <inheritdoc />
+        </member>
+    </members>
+</doc>

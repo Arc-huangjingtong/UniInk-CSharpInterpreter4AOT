@@ -1,0 +1,344 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>JetBrains.RdFramework</name>
+    </assembly>
+    <members>
+        <member name="T:JetBrains.Rd.Base.IPerContextMap`2">
+             <summary>
+             <para>
+             A collection that automatically maps values to keys from RdContext's value set.
+             Key-value pairs in this map are automatically managed based on possible values of RdContext.
+             </para>
+            
+             <para>
+             As context value sets are protocol-specific, this map will behave differently depending on whether or not it's bound to a <see cref="T:JetBrains.Rd.IProtocol"/>.
+             An unbound map will automatically create mappings for all context values it's accessed with. When a map is bound later, all values not present in protocol value set will be silently dropped.
+             </para>
+             </summary>
+             <seealso cref="M:JetBrains.Rd.Impl.ProtocolContexts.GetValueSet``1(JetBrains.Rd.RdContext{``0})"/>
+        </member>
+        <member name="P:JetBrains.Rd.Base.IPerContextMap`2.Context">
+            <summary>
+            The context that is used by this map. Must be heavy.
+            </summary>
+        </member>
+        <member name="M:JetBrains.Rd.Base.IPerContextMap`2.GetForCurrentContext">
+            <summary>
+            Gets the value associated with current context value, equivalent to this[Key.Value].
+            If the context doesn't have a value set, or key's protocol value set does not contain the current context value, this will throw an exception
+            </summary>
+        </member>
+        <member name="P:JetBrains.Rd.Base.IPerContextMap`2.Item(`0)">
+            <summary>
+            Gets the value associated with specified context value, or throws an exception if none is associated.
+            When this map is not bound, this will automatically create a new mapping instead of throwing
+            </summary>
+        </member>
+        <member name="M:JetBrains.Rd.Base.IPerContextMap`2.TryGetValue(`0,`1@)">
+            <summary>
+            Gets the value associated with specified context value and returns true, or returns false if none is associated
+            When this map is not bound, this will automatically create a new mapping instead of returning false
+            </summary>
+        </member>
+        <member name="T:JetBrains.Rd.IInternRoot`1">
+            <summary>
+            Interns values sent over protocol
+            </summary>
+        </member>
+        <member name="M:JetBrains.Rd.IInternRoot`1.TryGetInterned(`0)">
+            <summary>
+            Tries to get an ID for a value. Doesn't intern it if it's not interned.
+            </summary>
+        </member>
+        <member name="M:JetBrains.Rd.IInternRoot`1.Intern(`0)">
+            <summary>
+            Interns a value and returns an ID for it. May return invalid ID in case of multithreaded contention.
+            </summary>
+        </member>
+        <member name="M:JetBrains.Rd.IInternRoot`1.UnIntern``1(JetBrains.Rd.InternId)">
+            <summary>
+            Gets a value from an interned ID. Throws an exception if the ID doesn't correspond to a value
+            </summary>
+        </member>
+        <member name="M:JetBrains.Rd.IInternRoot`1.TryUnIntern``1(JetBrains.Rd.InternId,``0@)">
+            <summary>
+            Gets a value from an interned ID. Returns true if successful, false otherwise
+            </summary>
+        </member>
+        <member name="M:JetBrains.Rd.IInternRoot`1.Remove(`0)">
+            <summary>
+            Removes an interned value. Any future attempts to un-intern IDs previously associated with this value will fail.
+            Not thread-safe. It's up to user to ensure that the value being removed is not being used in messages written on background threads.
+            </summary>
+        </member>
+        <member name="T:JetBrains.Rd.InternId">
+            <summary>
+            An ID representing an interned value
+            </summary>
+        </member>
+        <member name="P:JetBrains.Rd.InternId.IsValid">
+            <summary>
+            True if this ID represents an actual interned value. False indicates a failed interning operation or unset value
+            </summary>
+        </member>
+        <member name="P:JetBrains.Rd.InternId.IsLocal">
+            <summary>
+            True if this ID represents a value interned by local InternRoot 
+            </summary>
+        </member>
+        <member name="F:JetBrains.Rd.Impl.Protocol.ProtocolInternRootRdId">
+            <summary>
+            Should match textual RdId of protocol intern root in Kotlin/js/cpp counterpart
+            </summary>
+        </member>
+        <member name="F:JetBrains.Rd.Impl.Protocol.ProtocolInternScopeStringId">
+            <summary>
+            Should match whatever is in rd-gen for ProtocolInternScope
+            </summary>
+        </member>
+        <member name="T:JetBrains.Rd.Impl.ProtocolContexts">
+            <summary>
+            This class handles RdContext on protocol level. It tracks existing contexts and allows access to their value sets (when present)
+            </summary>
+        </member>
+        <member name="M:JetBrains.Rd.Impl.ProtocolContexts.GetValueSet``1(JetBrains.Rd.RdContext{``0})">
+            <summary>
+            Get a value set for a given key. The values are local relative to transform
+            </summary>
+        </member>
+        <member name="M:JetBrains.Rd.Impl.ProtocolContexts.RegisterContext``1(JetBrains.Rd.RdContext{``0})">
+            <summary>
+            Registers a context to be used with this context handler. Must be invoked on protocol's scheduler
+            </summary>
+        </member>
+        <member name="M:JetBrains.Rd.Impl.ProtocolContexts.ReadContextsIntoCookie(JetBrains.Serialization.UnsafeReader)">
+            <summary>
+            Reads context values from a message, sets current context to them, and returns a cookie to restore previous context
+            </summary>
+        </member>
+        <member name="M:JetBrains.Rd.Impl.ProtocolContexts.WriteContexts(JetBrains.Serialization.UnsafeWriter)">
+            <summary>
+            Writes the current context values
+            </summary>
+        </member>
+        <member name="M:JetBrains.Rd.Impl.ProtocolContexts.RegisterCurrentValuesInValueSets">
+            <summary>
+            Adds current values of registered contexts to their respective value sets without writing them to the wire
+            </summary>
+        </member>
+        <member name="M:JetBrains.Rd.Impl.ProtocolContexts.WriteEmptyContexts(JetBrains.Serialization.UnsafeWriter)">
+            <summary>
+            Writes an empty context
+            </summary>
+        </member>
+        <member name="T:JetBrains.Rd.Impl.RdSecureString">
+            <summary>
+            This is a temporary stub for proper secure strings in protocol
+            Unlike a normal string, this one won't be stored in logs or any other string representations of protocol entities
+            </summary>
+        </member>
+        <member name="F:JetBrains.Rd.Impl.SocketWire.Base.TimeoutMs">
+            <summary>
+            Timeout for <see cref="M:System.Net.Sockets.Socket.Connect(System.Net.EndPoint)"/>  and for <see cref="M:System.Net.Sockets.Socket.Receive(System.Byte[],System.Int32,System.Net.Sockets.SocketFlags)"/>  from socket (to guarantee read_thread termination if <see cref="M:System.Net.Sockets.Socket.Close"/> doesn't
+            lead to exception thrown by <see cref="M:System.Net.Sockets.Socket.Receive(System.Byte[],System.Int32,System.Net.Sockets.SocketFlags)"/>
+            </summary>
+        </member>
+        <member name="F:JetBrains.Rd.Impl.SocketWire.Base.Id">
+            <summary>
+            For logging
+            </summary>
+        </member>
+        <member name="F:JetBrains.Rd.Impl.SocketWire.Base.myLifetime">
+            <summary>
+            Lifetime of this wire. If counterpart disconnects, lifetime is not terminate automatically.
+            </summary>
+        </member>
+        <member name="P:JetBrains.Rd.Impl.SocketWire.Base.HeartBeatInterval">
+            <summary>
+            Ping's interval and not actually detection's timeout.
+            Its value must be the same on both sides of connection.
+            </summary>
+        </member>
+        <member name="F:JetBrains.Rd.Impl.SocketWire.Base.myCurrentTimeStamp">
+            <summary>
+            Timestamp of this wire which increases at intervals of <see cref="P:JetBrains.Rd.Impl.SocketWire.Base.HeartBeatInterval"/>
+            </summary>
+        </member>
+        <member name="F:JetBrains.Rd.Impl.SocketWire.Base.myCounterpartTimestamp">
+            <summary>
+            Actual notion about counterpart's <see cref="F:JetBrains.Rd.Impl.SocketWire.Base.myCurrentTimeStamp"/>
+            </summary>
+        </member>
+        <member name="F:JetBrains.Rd.Impl.SocketWire.Base.myCounterpartNotionTimestamp">
+            <summary>
+            The latest received counterpart's notion of this wire's <see cref="F:JetBrains.Rd.Impl.SocketWire.Base.myCurrentTimeStamp"/>
+            </summary>
+        </member>
+        <member name="M:JetBrains.Rd.Impl.SocketWire.Server.#ctor(JetBrains.Lifetimes.Lifetime,JetBrains.Collections.Viewable.IScheduler,System.Net.Sockets.Socket,System.String)">
+            <summary>
+            Creates a server wire with an externally-provided socket. By using this constructor, you are not transferring
+            ownership of the provided socket to created wire. It is consumer's responsibility to manager socket's lifetime.
+            </summary>
+        </member>
+        <member name="T:JetBrains.Rd.Impl.StealingScheduler">
+            <summary>
+            A scheduler with a ability to join all queued tasks at some point and execute them synchronously when necessary
+            </summary>
+        </member>
+        <member name="F:JetBrains.Rd.Impl.StealingScheduler.myActive">
+            <summary>
+            >0: The number of currently simultaneously running tasks.
+            -1: exclusive mode taken by Join when <see cref="F:JetBrains.Rd.Impl.StealingScheduler.myAllowParallelJoin"/> is false, no tasks allowed to process 
+            </summary>
+        </member>
+        <member name="M:JetBrains.Rd.Impl.StealingScheduler.#ctor(System.Threading.Tasks.TaskScheduler,System.Boolean)">
+            <summary>
+            Creates stealing scheduler
+            </summary>
+            <param name="scheduler">Scheduler which used to queue actions in <see cref="!:ConcurrentQueue"/></param>
+            <param name="allowParallelJoin">
+            Indicates whether is it safe to execute tasks simultaneously in <see cref="M:JetBrains.Rd.Impl.StealingScheduler.Join"/> method and provided scheduler.
+            Note, that this is your responsibility to provide limited concurrency scheduler when concurrent processing is forbidden.
+            </param>
+        </member>
+        <member name="M:JetBrains.Rd.Impl.StealingScheduler.ProcessTasks">
+            <summary>
+            Process task from <see cref="F:JetBrains.Rd.Impl.StealingScheduler.myScheduler"/> thread or Join method when parallel processing is allowed.
+            </summary>
+        </member>
+        <member name="M:JetBrains.Rd.ITypesRegistrar.TryRegister(JetBrains.Rd.RdId,JetBrains.Rd.ISerializers)">
+            <summary>
+            Tries to discovery type with specific <see cref="T:JetBrains.Rd.RdId"/>.
+            If it succeeds then should Invoke <see cref="!:ISerializers.Register&lt;T&gt;"/> method on provided serializers.
+            </summary>
+            <param name="id"></param>
+            <param name="serializers"></param>
+        </member>
+        <member name="P:JetBrains.Rd.IWire.IsStub">
+            <summary>
+            Used to indicate that the wire implementation is not supposed to be used with the remote counterpart.
+            These special wires can be used for local protocols instances to support working with the same models both from
+            reactive-distributed way and regular in-process synchronous reactive models.
+            </summary>
+        </member>
+        <member name="M:JetBrains.Rd.WireBase.SendPkg(JetBrains.Serialization.UnsafeWriter.Cookie)">
+            <summary>
+            Actual send package: len(4 bytes) + id (8 bytes) + payload
+            </summary>
+            <param name="pkg">Package to transmit</param>
+        </member>
+        <member name="M:JetBrains.Rd.RdContextBase.UpdateValueBoxed(System.Object)">
+            <summary>
+            Sets current value to <paramref name="newValue"/> and returns a cookie which should restore old value on disposing
+            </summary>
+        </member>
+        <member name="T:JetBrains.Rd.RdContext`1">
+            <summary>
+            Describes a context and provides access to value associated with this context.
+            The associated value is thread-local and synchronized between send/advise pairs on <see cref="T:JetBrains.Rd.IWire"/>. The associated value will be the same in handler method in <see cref="M:JetBrains.Rd.IWire.Advise(JetBrains.Lifetimes.Lifetime,JetBrains.Rd.Base.IRdWireable)"/> as it was in <see cref="M:JetBrains.Rd.IWire.Send``1(JetBrains.Rd.RdId,``0,System.Action{``0,JetBrains.Serialization.UnsafeWriter})"/>.
+            Instances of this class with the same <see cref="!:RdContext.Key"/> will share the associated value.
+            Best practice is to declare contexts in toplevel entities in protocol model using <c>Toplevel.context</c>. Manual declaration is also possible.
+            </summary>
+            <typeparam name="T">The type of value stored by this context</typeparam>
+        </member>
+        <member name="M:JetBrains.Rd.RdContext`1.#ctor(System.String,System.Boolean,JetBrains.Rd.CtxReadDelegate{`0},JetBrains.Rd.CtxWriteDelegate{`0})">
+            <summary>
+            
+            </summary>
+            <param name="key">Textual name of this context. This is used to match this with protocol counterparts</param>
+            <param name="isHeavy">Whether or not this context is heavy. A heavy context maintains a value set and interns values. A light context sends values as-is and does not maintain a value set.</param>
+            <param name="readDelegate">Serializer to be used with this context.</param>
+            <param name="writeDelegate">Serializer to be used with this context.</param>
+        </member>
+        <member name="P:JetBrains.Rd.RdContext`1.Value">
+            <summary>
+            Current value for this context
+            </summary>
+        </member>
+        <member name="P:JetBrains.Rd.RdContext`1.ValueForPerContextEntity">
+            <summary>
+            Value which is used as a key inside per-context entities like <see cref="T:JetBrains.Rd.Impl.RdPerContextMap`2"/>
+            </summary>
+        </member>
+        <member name="M:JetBrains.Rd.RdContext`1.UpdateValue(`0)">
+            <inheritdoc cref="M:JetBrains.Rd.RdContext`1.UpdateValueBoxed(System.Object)"/>
+        </member>
+        <member name="T:JetBrains.Rd.ThreadLocalRdContext`1">
+            <summary>
+            Implementation of <see cref="T:JetBrains.Rd.RdContext`1"/> which uses <see cref="T:System.Threading.ThreadLocal`1"/> or <see cref="T:System.Threading.AsyncLocal`1"/>
+            storage for its value and stack
+            </summary>
+            <typeparam name="T"></typeparam>
+        </member>
+        <member name="P:JetBrains.Rd.ThreadLocalRdContext`1.Value">
+            <summary>
+            Current (thread- or async-local) value for this context
+            </summary>
+        </member>
+        <member name="M:JetBrains.Rd.RdId.DefineByFqn(System.Type)">
+            <summary>
+            Define an RdId by fully-qualified type name.
+            You should use it only in case of C#-C# communication.
+            </summary>
+        </member>
+        <member name="T:JetBrains.Rd.Tasks.RpcTimeouts">
+            <summary>
+            Timeouts for synchronous request by <see cref="M:JetBrains.Rd.Tasks.RdCall`2.Sync(`0,JetBrains.Rd.Tasks.RpcTimeouts)"/>. 
+            </summary>
+        </member>
+        <member name="F:JetBrains.Rd.Tasks.RpcTimeouts.Default">
+            <summary>
+            This timeout is used by <see cref="M:JetBrains.Rd.Tasks.RdCall`2.Sync(`0,JetBrains.Rd.Tasks.RpcTimeouts)"/> if no timeouts specified and <see cref="F:JetBrains.Rd.Tasks.RpcTimeouts.RespectRpcTimeouts"/> is <c>true</c>.
+            If request lasts more than 200 ms from UI Thread it could lead to UI freeze, so <see cref="!:ILog.Warn"/> will be reported after <c>Sync</c> finished.
+            If request lasts more than 3000 ms it's considered as hang. <c>Sync</c> request interrupts and <see cref="!:ILog.Error"/> is reported.
+            </summary>
+        </member>
+        <member name="F:JetBrains.Rd.Tasks.RpcTimeouts.Maximal">
+            <summary>
+            This timeout is used by <see cref="M:JetBrains.Rd.Tasks.RdCall`2.Sync(`0,JetBrains.Rd.Tasks.RpcTimeouts)"/> if no timeouts specified and <see cref="F:JetBrains.Rd.Tasks.RpcTimeouts.RespectRpcTimeouts"/> is <c>false</c>.
+            </summary>
+        </member>
+        <member name="F:JetBrains.Rd.Tasks.RpcTimeouts.RespectRpcTimeouts">
+            <summary>
+            Static property used mainly for tests. <c>true</c> by default. If <c>false</c> <see cref="F:JetBrains.Rd.Tasks.RpcTimeouts.Maximal"/> timeouts are used by
+            <see cref="M:JetBrains.Rd.Tasks.RdCall`2.Sync(`0,JetBrains.Rd.Tasks.RpcTimeouts)"/> by default.
+            </summary>
+        </member>
+        <member name="M:JetBrains.Rd.Tasks.RpcTimeouts.Max(JetBrains.Rd.Tasks.RpcTimeouts,JetBrains.Rd.Tasks.RpcTimeouts)">
+            <summary>
+            Choose maximal of two timeouts maximizing Warn and Error await time among two.
+            </summary>
+            <param name="x">First timeouts</param>
+            <param name="y">Second timeouts</param>
+            <returns></returns>
+        </member>
+        <member name="F:JetBrains.Rd.Tasks.RpcTimeouts.WarnAwaitTime">
+            <summary>
+            Time after which <see cref="!:ILog.Warn"/> is reported.
+            </summary>
+        </member>
+        <member name="F:JetBrains.Rd.Tasks.RpcTimeouts.ErrorAwaitTime">
+            <summary>
+            Time after which <see cref="!:ILog.Error"/> is reported.
+            </summary>
+        </member>
+        <member name="M:JetBrains.Rd.Tasks.RpcTimeouts.#ctor(System.TimeSpan,System.TimeSpan)">
+            <summary>
+            Creates new timeouts
+            </summary>
+            <param name="warnAwaitTime">Must be more than 0 ms and less or equal than <paramref name="errorAwaitTime"/>.</param>
+            <param name="errorAwaitTime">Must be more or equal than <paramref name="warnAwaitTime"/></param>.
+        </member>
+        <member name="M:JetBrains.Rd.Tasks.RpcTimeouts.GetRpcTimeouts(JetBrains.Rd.Tasks.RpcTimeouts)">
+            <summary>
+            Returns a mix of optionally provided timeouts and default one.
+            </summary>
+        </member>
+        <member name="M:JetBrains.Rd.Text.Impl.RdTextBuffer.#ctor">
+            <summary>
+            Slave of the text buffer supports a list of changes that were introduced locally and can be rolled back when master buffer reports incompatible change
+            </summary>
+        </member>
+    </members>
+</doc>

@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>JetBrains.CommandLine.Interop</name>
+    </assembly>
+    <members>
+        <member name="T:JetBrains.CommandLine.Interop.Logging.LoggingOptions">
+            <summary>
+            Logging options provided via command line interface.<br/>
+            This class intended to be used with <see cref="T:JetBrains.Util.CommandLineMapper.ICommandLineMapper`1">ICommandLineMapper</see>
+            </summary>  
+        </member>
+        <member name="T:JetBrains.CommandLine.Interop.Profiler.ProfilerCoreOptions">
+            <summary>
+            Profiler core options provided via command line interface.<br/>
+            This class intended to be used with <see cref="T:JetBrains.Util.CommandLineMapper.ICommandLineMapper`1">ICommandLineMapper</see>
+            </summary>
+            <remarks>
+            Why not in `Profiler` sub-platform?<br/>
+            This is because options model is used both for parsing and for building command line.
+            For example, when starting dotMemoryUnit from VS.
+            So it looks strange to reference `Profiler` from VS integration plug-in.
+            </remarks>
+        </member>
+    </members>
+</doc>

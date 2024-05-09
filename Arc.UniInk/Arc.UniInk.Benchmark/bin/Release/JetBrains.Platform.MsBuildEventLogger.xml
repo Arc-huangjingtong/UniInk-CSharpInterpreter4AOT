@@ -1,0 +1,54 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>JetBrains.Platform.MsBuildEventLogger</name>
+    </assembly>
+    <members>
+        <member name="T:JetBrains.Platform.MsBuildEventLogger.MsBuildUtil.MsBuildPath">
+            <inheritdoc />
+            <summary>
+            Light version of FileSystemPath for MsBuild task
+            </summary>
+        </member>
+        <member name="T:JetBrains.Platform.MsBuildEventLogger.Models.MsBuildExeLoggerModel">
+            <summary>
+            <p>Generated from: MsBuildExeLoggerModel.kt</p>
+            </summary>
+        </member>
+        <member name="T:JetBrains.Platform.MsBuildEventLogger.Models.MsBuildExeBuildEvent">
+            <summary>
+            <p>Generated from: MsBuildExeLoggerModel.kt</p>
+            </summary>
+        </member>
+        <member name="T:JetBrains.Platform.MsBuildEventLogger.Models.MsBuildExeBuildModelInitialized">
+            <summary>
+            <p>Generated from: MsBuildExeLoggerModel.kt</p>
+            </summary>
+        </member>
+        <member name="T:JetBrains.Platform.MsBuildEventLogger.Models.MsBuildExeBuildModelWithParameters">
+            <summary>
+            <p>Generated from: MsBuildExeLoggerModel.kt</p>
+            </summary>
+        </member>
+        <member name="T:JetBrains.Platform.MsBuildEventLogger.Models.MsBuildExeBuildResult">
+            <summary>
+            <p>Generated from: MsBuildExeLoggerModel.kt</p>
+            </summary>
+        </member>
+        <member name="T:JetBrains.Platform.MsBuildEventLogger.Models.MsBuildExeEventKind">
+            <summary>
+            <p>Generated from: MsBuildExeLoggerModel.kt</p>
+            </summary>
+        </member>
+        <member name="T:JetBrains.Platform.MsBuildEventLogger.Models.MsBuildExeLogEntry">
+            <summary>
+            <p>Generated from: MsBuildExeLoggerModel.kt</p>
+            </summary>
+        </member>
+        <member name="T:JetBrains.Platform.MsBuildEventLogger.Models.MsBuildExeLogEntryType">
+            <summary>
+            <p>Generated from: MsBuildExeLoggerModel.kt</p>
+            </summary>
+        </member>
+    </members>
+</doc>

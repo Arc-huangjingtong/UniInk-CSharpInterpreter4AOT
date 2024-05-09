@@ -1,0 +1,157 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>JetBrains.Toolset.ScriptSourcesCompiler.Interface</name>
+    </assembly>
+    <members>
+        <member name="T:JetBrains.Toolset.ScriptSourcesCompiler.Interface.IResolvedScriptSourceDllReference2">
+            <inheritdoc />
+        </member>
+        <member name="P:JetBrains.Toolset.ScriptSourcesCompiler.Interface.IResolvedScriptSourceDllReference2.IsEmbedInteropTypes">
+            <summary>
+            If <c>False</c>, the item would be a regular assembly reference.
+            If <c>True</c>, the item would be a linked assembly in terms of csc cmdline, or EmbedInteropTypes in terms of Visual Studio, when relevant public types are copypasted into the target DLL without writing the DLL reference into the assembly metadata.
+            </summary>
+        </member>
+        <member name="T:JetBrains.Toolset.ScriptSourcesCompiler.Interface.IScriptSourceCache">
+            <summary>
+            Allows to cache calculated stuff per-object, like metadata on a resolved assembly reference.
+            </summary>
+        </member>
+        <member name="P:JetBrains.Toolset.ScriptSourcesCompiler.Interface.IScriptSourceCache.Cache">
+            <summary>
+            Allows caching imported metadata on the compiler side, if the object is to be reused between calls.
+            </summary>
+        </member>
+        <member name="T:JetBrains.Toolset.ScriptSourcesCompiler.Interface.IScriptSourcesCompilerSession2">
+            <summary>
+            An extended interface.
+            </summary>
+        </member>
+        <member name="M:JetBrains.Toolset.ScriptSourcesCompiler.Interface.IScriptSourcesCompilerSession2.SetPublicKey(System.Byte[])">
+            <summary>
+            Sets the public key to do an “OSS Sign” with.
+            </summary>
+        </member>
+        <member name="T:JetBrains.Toolset.ScriptSourcesCompiler.Interface.ScriptSourcesCompilationErrorException">
+            <summary>
+            Formats a build message in a way which is compatible with MSBuild output, which makes it parseable by standard build output parsers (for detecting build errors from text etc).
+            </summary>
+        </member>
+        <member name="M:JetBrains.Toolset.ScriptSourcesCompiler.Interface.ScriptSourcesCompilationErrorException.FormatBuildMessage(System.String,System.String,System.String,System.String,System.String,System.Int32,System.Int32,System.Int32,System.Int32,System.Int32)">
+            <summary>
+            Formats a build message in a way which is compatible with MSBuild output, which makes it parseable by standard build output parsers (for detecting build errors from text etc).
+            </summary>
+        </member>
+        <member name="T:JetBrains.Toolset.ScriptSourcesCompiler.Interface.IScriptSourcesCompiler">
+            <summary>
+            Creates compiler sessions.
+            </summary>
+        </member>
+        <member name="T:JetBrains.Toolset.ScriptSourcesCompiler.Interface.IResolvedScriptSourceDllReference">
+            <summary>
+            References available to build script compilation originate as either in-script reference to DLLs or Nugets, plus build engine own assemblies (and their GAC refs) are implicitly available.
+            After all those get processed and resolved into physical assemblies, they're given here.
+            </summary>
+        </member>
+        <member name="P:JetBrains.Toolset.ScriptSourcesCompiler.Interface.IResolvedScriptSourceDllReference.AssemblySimpleName">
+            <summary>
+            The simple name of the assembly (which matches the name without the file extension).
+            </summary>
+        </member>
+        <member name="P:JetBrains.Toolset.ScriptSourcesCompiler.Interface.IResolvedScriptSourceDllReference.AssemblyTextualIdentity">
+            <summary>
+            The full name of the assembly (= textual identity).
+            </summary>
+        </member>
+        <member name="P:JetBrains.Toolset.ScriptSourcesCompiler.Interface.IResolvedScriptSourceDllReference.FullPathIfOnDisk">
+            <summary>
+            If the assembly is disk-based, returns its full path. The path would be valid while the compiler session is in use.
+            If the assembly is in-memory, returns NULL.
+            </summary>
+            <value></value>
+        </member>
+        <member name="P:JetBrains.Toolset.ScriptSourcesCompiler.Interface.IResolvedScriptSourceDllReference.IsLoadedInMemory">
+            <summary>
+            Whether for this assembly an in-memory stream has already been loaded and can be used directly without requesting the on-disk path.
+            </summary>
+        </member>
+        <member name="M:JetBrains.Toolset.ScriptSourcesCompiler.Interface.IResolvedScriptSourceDllReference.GetInMemoryStreamOrLoadFromDisk">
+            <summary>
+            If the assembly is an in-memory image, returns the stream of that image. The stream would be valid while the compiler session is in use. The caller need not close the stream.
+            If the assembly is disk-based, it's loaded into memory, and the memory stream is returned (or might open the file directly).
+            </summary>
+        </member>
+        <member name="T:JetBrains.Toolset.ScriptSourcesCompiler.Interface.IScriptSourcesCompilerAssemblyItem">
+            <summary>
+                <c>IAssemblyItem2</c>
+            </summary>
+        </member>
+        <member name="T:JetBrains.Toolset.ScriptSourcesCompiler.Interface.IScriptSourcesCompilerExternalObjectsFactory">
+            <summary>
+            Creates implementations for imitation interfaces like <see cref="T:JetBrains.Toolset.ScriptSourcesCompiler.Interface.IScriptSourcesCompilerAssemblyItem" />, <see cref="T:JetBrains.Toolset.ScriptSourcesCompiler.Interface.IScriptSourceToDllReference" /> which have to be produced on the script compiler side.
+            </summary>
+        </member>
+        <member name="T:JetBrains.Toolset.ScriptSourcesCompiler.Interface.IScriptSourcesCompilerFileItem">
+            <summary>
+                <c>SimpleFileItem</c>
+            </summary>
+        </member>
+        <member name="T:JetBrains.Toolset.ScriptSourcesCompiler.Interface.IScriptSourcesCompilerLogger">
+            <summary>
+            Wraps the <c>ILogger</c> for use from the compiler.
+            </summary>
+        </member>
+        <member name="T:JetBrains.Toolset.ScriptSourcesCompiler.Interface.IScriptSourcesCompilerSession">
+            <summary>
+            An object for the single compiler session. Carries out one compiler operation.
+            </summary>
+        </member>
+        <member name="T:JetBrains.Toolset.ScriptSourcesCompiler.Interface.IScriptSourceToDllReference">
+            <summary>
+            Base reference from build script, either to a DLL or to a Nuget all with DLLs.
+            </summary>
+        </member>
+        <member name="T:JetBrains.Toolset.ScriptSourcesCompiler.Interface.IScriptSourceToGacDllReference">
+            <summary>
+            References a specific DLL expected to be found in the current runtime.
+            </summary>
+        </member>
+        <member name="T:JetBrains.Toolset.ScriptSourcesCompiler.Interface.IScriptSourceToNugetPackageReference">
+            <summary>
+            References all DLLs in the nuget (filtered by target platform).
+            </summary>
+        </member>
+        <member name="T:JetBrains.Annotations.CanBeNullAttribute">
+            <summary>
+            Indicates that the value of the marked element could be <c>null</c> sometimes,
+            so the check for <c>null</c> is necessary before its usage.
+            </summary>
+            <example><code>
+            [CanBeNull] object Test() =&gt; null;
+            
+            void UseTest() {
+              var p = Test();
+              var s = p.ToString(); // Warning: Possible 'System.NullReferenceException'
+            }
+            </code></example>
+        </member>
+        <member name="T:JetBrains.Annotations.NotNullAttribute">
+            <summary>
+            Indicates that the value of the marked element could never be <c>null</c>.
+            </summary>
+            <example><code>
+            [NotNull] object Foo() {
+              return null; // Warning: Possible 'null' assignment
+            }
+            </code></example>
+        </member>
+        <member name="T:JetBrains.Annotations.InstantHandleAttribute">
+            <summary>
+            Tells code analysis engine if the parameter is completely handled when the invoked method is on stack.
+            If the parameter is a delegate, indicates that delegate is executed while the method is executed.
+            If the parameter is an enumerable, indicates that it is enumerated while the method is executed.
+            </summary>
+        </member>
+    </members>
+</doc>
