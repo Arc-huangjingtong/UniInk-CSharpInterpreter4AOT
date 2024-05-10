@@ -263,6 +263,7 @@ namespace Arc.UniInk
                     }
 
                     if (!left.GetType().IsValueType || !right.GetType().IsValueType) return null;
+
                     if (left is IConvertible leftConvertible)
                     {
                         left = leftConvertible.ToInt32(null);
@@ -669,6 +670,7 @@ namespace Arc.UniInk
             void ExecuteIfList()
             {
                 if (ifElseStatementsList.Count == 0) return;
+
                 var ifScript = ifElseStatementsList.Find(statement => (bool)ManageJumpStatementsOrExpressionEval(statement[0]))?[1];
 
                 if (!string.IsNullOrEmpty(ifScript)) lastResult = ScriptEvaluate(ifScript, ref isReturn, ref isBreak, ref isContinue);
@@ -1647,6 +1649,7 @@ namespace Arc.UniInk
             }
 
             if (methodInfo == null) return null;
+
             args.Clear();
             args.AddRange(modifiedArgsCache);
 
@@ -1655,9 +1658,11 @@ namespace Arc.UniInk
             bool MethodFilter(MethodInfo m)
             {
                 if (!m.Name.Equals(funcName)) return false;
+
                 var parameterInfos = m.GetParameters();
                 if (parameterInfos.Length == args.Count) return true;
                 if (parameterInfos.Length    > 0          && parameterInfos.Last().IsDefined(typeof(ParamArrayAttribute), false)) return true;
+
                 return parameterInfos.Length > args.Count && parameterInfos.Take(args.Count).All(p => args[p.Position] == null || p.ParameterType.IsInstanceOfType(args[p.Position])) && parameterInfos.Skip(args.Count).All(p => p.HasDefaultValue);
             }
         }
@@ -2211,10 +2216,7 @@ namespace Arc.UniInk
 
             private readonly object target;
 
-            public DelegateWrapper(InternalDelegate lambda)
-            {
-                this.lambda = lambda;
-            }
+            public DelegateWrapper(InternalDelegate lambda) => this.lambda = lambda;
 
 
             public object CallFluidMethod(params object[] args)
@@ -2223,10 +2225,7 @@ namespace Arc.UniInk
                 return target;
             }
 
-            public bool Predicate <T1>(T1 arg1)
-            {
-                return (bool)lambda(arg1);
-            }
+            public bool Predicate <T1>(T1 arg1) => (bool)lambda(arg1);
 
             public void Action0()
             {
@@ -2257,20 +2256,11 @@ namespace Arc.UniInk
 
             public TResult Func1 <T, TResult>(T arg) => (TResult)lambda(arg);
 
-            public TResult Func2 <T1, T2, TResult>(T1 arg1, T2 arg2)
-            {
-                return (TResult)lambda(arg1, arg2);
-            }
+            public TResult Func2 <T1, T2, TResult>(T1 arg1, T2 arg2) => (TResult)lambda(arg1, arg2);
 
-            public TResult Func3 <T1, T2, T3, TResult>(T1 arg1, T2 arg2, T3 arg3)
-            {
-                return (TResult)lambda(arg1, arg2, arg3);
-            }
+            public TResult Func3 <T1, T2, T3, TResult>(T1 arg1, T2 arg2, T3 arg3) => (TResult)lambda(arg1, arg2, arg3);
 
-            public TResult Func4 <T1, T2, T3, T4, TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4)
-            {
-                return (TResult)lambda(arg1, arg2, arg3, arg4);
-            }
+            public TResult Func4 <T1, T2, T3, T4, TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4) => (TResult)lambda(arg1, arg2, arg3, arg4);
         }
 
 

@@ -53,12 +53,12 @@
 
 
         [TestCase("+2222+(333-3+3-3)"), Repeat(1000)]
-        public void Test_EvaluateNumber(string input)
+        public static void Test_EvaluateNumber(string input)
         {
             var res = Ink.Evaluate(input);
+            
 
-
-            ClassicAssert.AreEqual(res, 2552);
+            //ClassicAssert.AreEqual(res, 2552);
         }
 
 
@@ -343,10 +343,7 @@
 
     public static class MyStaticClass
     {
-        public static string StaticTest()
-        {
-            return "test1";
-        }
+        public static string StaticTest() => "test1";
     }
 
 

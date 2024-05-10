@@ -4,7 +4,7 @@
     using System;
     using System.Linq;
     using System.Linq.Expressions;
-    using System.Security.Cryptography;
+    using Arc.UniInk.NunitTest;
     using BenchmarkDotNet.Attributes;
 
 
@@ -67,14 +67,16 @@
         [Benchmark]
         public void INT_3()
         {
-            Main2();
+            NUnit_UniInk.Test_EvaluateNumber(input2);
+            NUnit_UniInk.Test_EvaluateNumber(input3);
+            NUnit_UniInk.Test_EvaluateNumber(input4);
+            NUnit_UniInk.Test_EvaluateNumber(input5);
+            NUnit_UniInk.Test_EvaluateNumber(input6);
+            NUnit_UniInk.Test_EvaluateNumber(input7);
         }
-
-        [Benchmark]
-        public void INT_4()
-        {
-            Main3();
-        }
+        //
+        // [Benchmark]
+        // public void INT_4() => Main3();
 
         public static void Main2()
         {
@@ -114,8 +116,6 @@
             // 生成一个从 0 到 100 的整数序列，过滤出偶数，然后将其转换为 byte 类型
             var result = Enumerable.Range(0, 100).Where(compiledLambda).Select(i => (byte)i).ToArray();
         }
-        
-        
     }
 
 }

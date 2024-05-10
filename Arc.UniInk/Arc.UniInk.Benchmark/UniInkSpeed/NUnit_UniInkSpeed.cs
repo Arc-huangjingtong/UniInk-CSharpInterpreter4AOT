@@ -3,7 +3,6 @@
 
     using NUnit.Framework;
     using Arc.UniInk;
-    using System;
 
 
     [TestFixture]

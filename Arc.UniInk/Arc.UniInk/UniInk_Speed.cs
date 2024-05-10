@@ -6,7 +6,7 @@
      *  🔖 Version  : 1.0.0                                                                                           |*
      *  😀 Author   : Arc (https://github.com/Arc-huangjingtong)                                                      |*
      *  🔑 Licence  : MIT (https://github.com/Arc-huangjingtong/UniInk-CSharpInterpreter4Unity/blob/main/LICENSE)     |*
-     *  🤝 Support  : [.NET Framework 4+] [C# 8.0+] [IL2CPP Support]                                                  |*
+     *  🤝 Support  : [.NET Framework 4+] [C# 9.0+] [IL2CPP Support]                                                  |*
      *  📝 Desc     : [High performance] [zero box & unbox] [zero reflection runtime] [Easy-use] ⚠but                 |*
     /*******************************************************************************************************************/
 
@@ -15,7 +15,7 @@
     using System.Text;
 
 
-    public class UniInk_Speed
+    public partial class UniInk_Speed
     {
         /// <summary> Constructor </summary>
         /// <param name="context"  > Set context use as "This" or use internal member variables directly </param>
@@ -33,7 +33,7 @@
 
 
         /// <summary>用于解释方法的委托</summary>
-        private delegate object InternalDelegate(params object[] args);
+        protected delegate object InternalDelegate(params object[] args);
 
 
         /// <summary> Some Escaped Char mapping  </summary>
@@ -62,7 +62,6 @@
                     return true;
                 }
             }
-
             // foreach (var operatorStr in InkOperator.List_Keys)
             // {
             //     if (StartsWithInputStrFromIndex(expression, operatorStr, i))
@@ -131,14 +130,14 @@
             return false;
         }
 
-        public static readonly Queue<object> queue = new();
+        public static readonly Queue<object> Queue = new();
 
         /// <summary> Evaluate a expression       </summary>
         /// <returns> return the result object    </returns>
         public static object Evaluate(string expression, int startIndex, int endIndex)
         {
-            queue.Clear();
-            return Internal_Evaluate(expression, startIndex, endIndex, queue);
+            Queue.Clear();
+            return Internal_Evaluate(expression, startIndex, endIndex, Queue);
         }
 
         private static object Internal_Evaluate(string expression, int startIndex, int endIndex, Queue<object> stack)
@@ -176,17 +175,16 @@
             {
                 var pop = queue.Dequeue();
 
-                if (pop is not InkOperator)
-                {
-                    cache = pop;
-                }
-
-                else if (pop is InkOperator @operator)
+                if (pop is InkOperator @operator)
                 {
                     var left  = cache;
                     var right = queue.Dequeue();
 
                     cache = dic_OperatorsFunc[@operator](left, right);
+                }
+                else
+                {
+                    cache = pop;
                 }
             }
 
@@ -284,7 +282,8 @@
             public static readonly InkValue        Empty = null;
             public static readonly Stack<InkValue> pool  = new();
 
-            public static InkValue Get() => pool.Count > 0 ? pool.Pop() : new InkValue();
+            public static InkValue Get()     => pool.Count > 0 ? pool.Pop() : new InkValue();
+            public static void     Release() => pool.Clear();
 
             public static void Release(InkValue value)
             {
@@ -293,6 +292,7 @@
                 value.isCalculate = false;
                 pool.Push(value);
             }
+
 
 
             public enum InkValueType
@@ -446,7 +446,9 @@
         }
 
 
-        public class InkOperator
+
+        /// <summary>UniInk Operator : Custom your own Operator!</summary>
+        protected internal class InkOperator
         {
             public static readonly Dictionary<string, InkOperator> Dic_Values = new();
 
@@ -503,7 +505,6 @@
             public override bool Equals(object otherOperator) => otherOperator is InkOperator Operator && OperatorValue == Operator.OperatorValue;
             public override int  GetHashCode()                => OperatorValue;
 
-
             public static object InkOperator_Plus(object left, object right)
             {
                 switch (left)
@@ -558,11 +559,38 @@
         }
 
 
-        public class InkSyntaxException : Exception
+        /// <summary>UniInk Syntax Tree : Custom your own AST , you can create your own Language</summary>
+        protected internal class SyntaxTree
         {
-            public InkSyntaxException(string message) : base(message) { }
+            public static readonly SyntaxTree        Empty = null;
+            public static readonly Stack<SyntaxTree> Pool  = new();
+
+            public static SyntaxTree Get()     => Pool.Count > 0 ? Pool.Pop() : new SyntaxTree();
+            public static void       Release() => Pool.Clear();
+
+            public static void Release(SyntaxTree tree)
+            {
+                tree.Parent = null;
+                tree.Children.Clear();
+                tree.Value = null;
+                Pool.Push(tree);
+            }
+
+            public SyntaxTree(SyntaxTree parent = null) => Parent = parent;
+
+
+            public SyntaxTree Parent;
+
+            public List<SyntaxTree> Children = new(4);
+
+            public object Value;
         }
 
+
+        // 9*((1+2*3)/2)
+        // 9 * ( ( 1 + 2 * 3 ) / 2 ) 
+        // * { 9 {/ {+ {1 , {* 2 3 }, 2 } 
+        
 
         /// <summary>Find <see cref="input"/> is whether start with [(] from <see cref="startIndex"/></summary>
         protected static bool StartsWithParenthisFromIndex(string input, int startIndex, out int len)
@@ -575,6 +603,7 @@
             len = 0;
 
             if (input[startIndex].Equals(')')) throw new InkSyntaxException("missing match [)]");
+
             if (input[startIndex].Equals('('))
             {
                 var bracketCount = 0;
@@ -740,7 +769,7 @@
         {
             var i = startIndex;
 
-            if (i < input.Length - 1 && (input[i].Equals('@') || input[i].Equals('$') && input[i + 1].Equals('\"')))
+            if (i < input.Length - 1 && (input[i].Equals('@') || (input[i].Equals('$') && input[i + 1].Equals('\"'))))
             {
                 throw new Exception("don't support [@] [$]");
             }
@@ -793,23 +822,32 @@
 
 
         /// <summary> Some UnaryPostfix Operators mark</summary>
-        protected static readonly Dictionary<InkOperator, Func<object, object, object>> dic_OperatorsFunc = new()
+        protected internal static readonly Dictionary<InkOperator, Func<object, object, object>> dic_OperatorsFunc = new()
         {
             { InkOperator.Plus, InkOperator.InkOperator_Plus }         //
           , { InkOperator.Minus, InkOperator.InkOperator_Minus }       //
           , { InkOperator.Multiply, InkOperator.InkOperator_Multiply } //
           , { InkOperator.Divide, InkOperator.InkOperator_Divide }     //
-          , { InkOperator.Modulo, (left,          right) => null }     //
-          , { InkOperator.Lower, (left,           right) => null }     //
-          , { InkOperator.Greater, (left,         right) => null }     //
-          , { InkOperator.Equal, (left,           right) => null }     //
-          , { InkOperator.LowerOrEqual, (left,    right) => null }     //
-          , { InkOperator.GreaterOrEqual, (left,  right) => null }     //
-          , { InkOperator.NotEqual, (left,        right) => null }     //
-          , { InkOperator.LogicalNegation, (left, right) => null }     //
-          , { InkOperator.ConditionalAnd, (left,  right) => null }     //
-          , { InkOperator.ConditionalOr, (left,   right) => null }     //
+          , { InkOperator.Modulo, (_,          _) => null }     //
+          , { InkOperator.Lower, (_,           _) => null }     //
+          , { InkOperator.Greater, (_,         _) => null }     //
+          , { InkOperator.Equal, (_,           _) => null }     //
+          , { InkOperator.LowerOrEqual, (_,    _) => null }     //
+          , { InkOperator.GreaterOrEqual, (_,  _) => null }     //
+          , { InkOperator.NotEqual, (_,        _) => null }     //
+          , { InkOperator.LogicalNegation, (_, _) => null }     //
+          , { InkOperator.ConditionalAnd, (_,  _) => null }     //
+          , { InkOperator.ConditionalOr, (_,   _) => null }     //
         };
     }
 
+
+    /// <summary>UniInk Syntax Exception</summary>
+    public class InkSyntaxException : Exception
+    {
+        public InkSyntaxException(string message) : base(message) { }
+    }
+
+    
+    
 }

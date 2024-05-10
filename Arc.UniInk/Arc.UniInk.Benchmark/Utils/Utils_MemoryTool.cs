@@ -8,10 +8,7 @@
     {
         public static MemoryTool Create() => new();
 
-        public MemoryTool()
-        {
-            _memory_start = GC.GetTotalMemory(true);
-        }
+        public MemoryTool() => _memory_start = GC.GetTotalMemory(true);
 
 
         public long _memory_start = 0;
