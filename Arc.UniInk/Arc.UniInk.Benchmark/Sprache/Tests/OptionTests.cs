@@ -7,16 +7,16 @@ namespace Sprache.Tests
 
     public class OptionTests
     {
-        private Parser<IOption<char>> ParserOptionalSelect = Parse.Char('a').Optional().Select(o => o.Select(c => char.ToUpperInvariant(c)));
+        private readonly Parser<IOption<char>> ParserOptionalSelect = Parse.MatchChar('a').Optional().Select(o => o.Select(c => char.ToUpperInvariant(c)));
 
-        private Parser<IOption<string>> ParserOptionalSelectMany =
-                from o1 in Parse.Char('a').Optional()
-                from o2 in Parse.Char('b').Optional()
+        private readonly Parser<IOption<string>> ParserOptionalSelectMany =
+                from o1 in Parse.MatchChar('a').Optional()
+                from o2 in Parse.MatchChar('b').Optional()
                 select o1.SelectMany(c1 => o2.Select(c2 => $"{c2}{c1}"));
 
-        private Parser<IOption<string>> ParserOptionalLinq =
-                from o1 in Parse.Char('a').Optional()
-                from o2 in Parse.Char('b').Optional()
+        private readonly Parser<IOption<string>> ParserOptionalLinq =
+                from o1 in Parse.MatchChar('a').Optional()
+                from o2 in Parse.MatchChar('b').Optional()
                 select (from c1 in o1 from c2 in o2 select $"{c2}{c1}");
 
         private void AssertSome<T>(IOption<T> option, T expected) =>  ClassicAssert.True(option.IsDefined && option.Get().Equals(expected));

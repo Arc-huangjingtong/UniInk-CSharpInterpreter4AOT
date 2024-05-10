@@ -20,7 +20,7 @@ namespace Sprache.Tests
         [Test]
         public void FailureShowsNearbyParseResults()
         {
-            var p = from a in Parse.Char('x') from b in Parse.Char('y') select $"{a},{b}";
+            var p = from a in Parse.MatchChar('x') from b in Parse.MatchChar('y') select $"{a},{b}";
 
             var r = (Result<string>)p.TryParse("x{");
 

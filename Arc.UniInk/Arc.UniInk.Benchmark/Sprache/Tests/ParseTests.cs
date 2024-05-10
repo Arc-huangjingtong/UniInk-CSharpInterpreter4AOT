@@ -11,31 +11,31 @@
         [Test]
         public void Parser_OfChar_AcceptsThatChar()
         {
-            AssertParser.SucceedsWithOne(Parse.Char('a').Once(), "a", 'a');
+            AssertParser.SucceedsWithOne(Parse.MatchChar('a').Once(), "a", 'a');
         }
 
         [Test]
         public void Parser_OfChar_AcceptsOnlyOneChar()
         {
-            AssertParser.SucceedsWithOne(Parse.Char('a').Once(), "aaa", 'a');
+            AssertParser.SucceedsWithOne(Parse.MatchChar('a').Once(), "aaa", 'a');
         }
 
         [Test]
         public void Parser_OfChar_DoesNotAcceptNonMatchingChar()
         {
-            AssertParser.FailsAt(Parse.Char('a').Once(), "b", 0);
+            AssertParser.FailsAt(Parse.MatchChar('a').Once(), "b", 0);
         }
 
         [Test]
         public void Parser_OfChar_DoesNotAcceptEmptyInput()
         {
-            AssertParser.Fails(Parse.Char('a').Once(), "");
+            AssertParser.Fails(Parse.MatchChar('a').Once(), "");
         }
 
         [Test]
         public void Parser_OfChars_AcceptsAnyOfThoseChars()
         {
-            var parser = Parse.Chars('a', 'b', 'c').Once();
+            var parser = Parse.MatchChars('a', 'b', 'c').Once();
             AssertParser.SucceedsWithOne(parser, "a", 'a');
             AssertParser.SucceedsWithOne(parser, "b", 'b');
             AssertParser.SucceedsWithOne(parser, "c", 'c');
@@ -44,7 +44,7 @@
         [Test]
         public void Parser_OfChars_UsingString_AcceptsAnyOfThoseChars()
         {
-            var parser = Parse.Chars("abc").Once();
+            var parser = Parse.MatchChars("abc").Once();
             AssertParser.SucceedsWithOne(parser, "a", 'a');
             AssertParser.SucceedsWithOne(parser, "b", 'b');
             AssertParser.SucceedsWithOne(parser, "c", 'c');
@@ -53,37 +53,37 @@
         [Test]
         public void Parser_OfManyChars_AcceptsEmptyInput()
         {
-            AssertParser.SucceedsWithAll(Parse.Char('a').Many(), "");
+            AssertParser.SucceedsWithAll(Parse.MatchChar('a').Many(), "");
         }
 
         [Test]
         public void Parser_OfManyChars_AcceptsManyChars()
         {
-            AssertParser.SucceedsWithAll(Parse.Char('a').Many(), "aaa");
+            AssertParser.SucceedsWithAll(Parse.MatchChar('a').Many(), "aaa");
         }
 
         [Test]
         public void Parser_OfAtLeastOneChar_DoesNotAcceptEmptyInput()
         {
-            AssertParser.Fails(Parse.Char('a').AtLeastOnce(), "");
+            AssertParser.Fails(Parse.MatchChar('a').AtLeastOnce(), "");
         }
 
         [Test]
         public void Parser_OfAtLeastOneChar_AcceptsOneChar()
         {
-            AssertParser.SucceedsWithAll(Parse.Char('a').AtLeastOnce(), "a");
+            AssertParser.SucceedsWithAll(Parse.MatchChar('a').AtLeastOnce(), "a");
         }
 
         [Test]
         public void Parser_OfAtLeastOneChar_AcceptsManyChars()
         {
-            AssertParser.SucceedsWithAll(Parse.Char('a').AtLeastOnce(), "aaa");
+            AssertParser.SucceedsWithAll(Parse.MatchChar('a').AtLeastOnce(), "aaa");
         }
 
         [Test]
         public void ConcatenatingParsers_ConcatenatesResults()
         {
-            var p = Parse.Char('a').Once().Then(a => Parse.Char('b').Once().Select(b => a.Concat(b)));
+            var p = Parse.MatchChar('a').Once().Then(a => Parse.MatchChar('b').Once().Select(b => a.Concat(b)));
             AssertParser.SucceedsWithAll(p, "ab");
         }
 
@@ -105,7 +105,7 @@
         [Test]
         public void CanSpecifyParsersUsingQueryComprehensions()
         {
-            var p = from a in Parse.Char('a').Once() from bs in Parse.Char('b').Many() from cs in Parse.Char('c').AtLeastOnce() select a.Concat(bs).Concat(cs);
+            var p = from a in Parse.MatchChar('a').Once() from bs in Parse.MatchChar('b').Many() from cs in Parse.MatchChar('c').AtLeastOnce() select a.Concat(bs).Concat(cs);
 
             AssertParser.SucceedsWithAll(p, "abbbc");
         }
@@ -113,15 +113,15 @@
         [Test]
         public void WhenFirstOptionSucceedsButConsumesNothing_SecondOptionTried()
         {
-            var p = Parse.Char('a').Many().XOr(Parse.Char('b').Many());
+            var p = Parse.MatchChar('a').Many().XOr(Parse.MatchChar('b').Many());
             AssertParser.SucceedsWithAll(p, "bbb");
         }
 
         [Test]
         public void WithXOr_WhenFirstOptionFailsAndConsumesInput_SecondOptionNotTried()
         {
-            var first  = Parse.Char('a').Once().Concat(Parse.Char('b').Once());
-            var second = Parse.Char('a').Once();
+            var first  = Parse.MatchChar('a').Once().Concat(Parse.MatchChar('b').Once());
+            var second = Parse.MatchChar('a').Once();
             var p      = first.XOr(second);
             AssertParser.FailsAt(p, "a", 1);
         }
@@ -129,8 +129,8 @@
         [Test]
         public void WithOr_WhenFirstOptionFailsAndConsumesInput_SecondOptionTried()
         {
-            var first  = Parse.Char('a').Once().Concat(Parse.Char('b').Once());
-            var second = Parse.Char('a').Once();
+            var first  = Parse.MatchChar('a').Once().Concat(Parse.MatchChar('b').Once());
+            var second = Parse.MatchChar('a').Once();
             var p      = first.Or(second);
             AssertParser.SucceedsWithAll(p, "a");
         }
@@ -145,7 +145,7 @@
         [Test]
         public void WithMany_WhenLastElementFails_FailureReportedAtLastElement()
         {
-            var ab = from a in Parse.Char('a') from b in Parse.Char('b') select "ab";
+            var ab = from a in Parse.MatchChar('a') from b in Parse.MatchChar('b') select "ab";
 
             var p = ab.Many().End();
 
@@ -155,7 +155,7 @@
         [Test]
         public void WithXMany_WhenLastElementFails_FailureReportedAtLastElement()
         {
-            var ab = from a in Parse.Char('a') from b in Parse.Char('b') select "ab";
+            var ab = from a in Parse.MatchChar('a') from b in Parse.MatchChar('b') select "ab";
 
             var p = ab.XMany().End();
 
@@ -314,14 +314,14 @@
         [Test]
         public void IgnoreCaseParser()
         {
-            var ab = Parse.IgnoreCase("ab").Text();
+            var ab = Parse.MatchCharIgnoreCase("ab").Text();
             AssertParser.SucceedsWith(ab, "Ab", m => ClassicAssert.AreEqual("Ab", m));
         }
 
         [Test]
         public void RepeatParserConsumeInputOnSuccessfulMatch()
         {
-            var repeated = Parse.Char('a').Repeat(3);
+            var repeated = Parse.MatchChar('a').Repeat(3);
             var r        = repeated.TryParse("aaabbb");
             ClassicAssert.True(r.WasSuccessful);
             ClassicAssert.AreEqual(3, r.Remainder.Position);
@@ -330,7 +330,7 @@
         [Test]
         public void RepeatParserDoesntConsumeInputOnFailedMatch()
         {
-            var repeated = Parse.Char('a').Repeat(3);
+            var repeated = Parse.MatchChar('a').Repeat(3);
             var r        = repeated.TryParse("bbbaaa");
             ClassicAssert.True(!r.WasSuccessful);
             ClassicAssert.AreEqual(0, r.Remainder.Position);
@@ -339,7 +339,7 @@
         [Test]
         public void RepeatParserCanParseWithCountOfZero()
         {
-            var repeated = Parse.Char('a').Repeat(0);
+            var repeated = Parse.MatchChar('a').Repeat(0);
             var r        = repeated.TryParse("bbb");
             ClassicAssert.True(r.WasSuccessful);
             ClassicAssert.AreEqual(0, r.Remainder.Position);
@@ -348,7 +348,7 @@
         [Test]
         public void RepeatParserCanParseAMinimumNumberOfValues()
         {
-            var repeated = Parse.Char('a').Repeat(4, 5);
+            var repeated = Parse.MatchChar('a').Repeat(4, 5);
 
             // Test failure.
             var r = repeated.TryParse("aaa");
@@ -364,7 +364,7 @@
         [Test]
         public void RepeatParserCanParseAMaximumNumberOfValues()
         {
-            var repeated = Parse.Char('a').Repeat(4, 5);
+            var repeated = Parse.MatchChar('a').Repeat(4, 5);
 
             var r = repeated.TryParse("aaaa");
             ClassicAssert.True(r.WasSuccessful);
@@ -382,7 +382,7 @@
         [Test]
         public void RepeatParserErrorMessagesAreReadable()
         {
-            var repeated = Parse.Char('a').Repeat(4, 5);
+            var repeated = Parse.MatchChar('a').Repeat(4, 5);
 
             var expectedMessage        = "Parsing failure: Unexpected 'end of input'; expected 'a' between 4 and 5 times, but found 3";
             var expectedColumnPosition = 1;
@@ -401,7 +401,7 @@
         [Test]
         public void RepeatExactlyParserErrorMessagesAreReadable()
         {
-            var repeated = Parse.Char('a').Repeat(4);
+            var repeated = Parse.MatchChar('a').Repeat(4);
 
             var expectedMessage        = "Parsing failure: Unexpected 'end of input'; expected 'a' 4 times, but found 3";
             var expectedColumnPosition = 1;
@@ -420,7 +420,7 @@
         [Test]
         public void RepeatParseWithOnlyMinimum()
         {
-            var repeated = Parse.Char('a').Repeat(4, null);
+            var repeated = Parse.MatchChar('a').Repeat(4, null);
 
 
             ClassicAssert.AreEqual(4,  repeated.TryParse("aaaa").Remainder.Position);
@@ -440,7 +440,7 @@
         [Test]
         public void RepeatParseWithOnlyMaximum()
         {
-            var repeated = Parse.Char('a').Repeat(null, 6);
+            var repeated = Parse.MatchChar('a').Repeat(null, 6);
 
             ClassicAssert.AreEqual(4, repeated.TryParse("aaaa").Remainder.Position);
             ClassicAssert.AreEqual(6, repeated.TryParse("aaaaaa").Remainder.Position);
@@ -451,7 +451,7 @@
         [Test]
         public void CanParseSequence()
         {
-            var sequence = Parse.Char('a').DelimitedBy(Parse.Char(','));
+            var sequence = Parse.MatchChar('a').DelimitedBy(Parse.MatchChar(','));
             var r        = sequence.TryParse("a,a,a");
             ClassicAssert.True(r.WasSuccessful);
             ClassicAssert.True(r.Remainder.AtEnd);
@@ -460,7 +460,7 @@
         [Test]
         public void DelimitedWithMinimumAndMaximum()
         {
-            var sequence = Parse.Char('a').DelimitedBy(Parse.Char(','), 3, 4);
+            var sequence = Parse.MatchChar('a').DelimitedBy(Parse.MatchChar(','), 3, 4);
             ClassicAssert.AreEqual(3, sequence.TryParse("a,a,a").Value.Count());
             ClassicAssert.AreEqual(4, sequence.TryParse("a,a,a,a").Value.Count());
             ClassicAssert.AreEqual(4, sequence.TryParse("a,a,a,a,a").Value.Count());
@@ -470,7 +470,7 @@
         [Test]
         public void DelimitedWithMinimum()
         {
-            var sequence = Parse.Char('a').DelimitedBy(Parse.Char(','), 3, null);
+            var sequence = Parse.MatchChar('a').DelimitedBy(Parse.MatchChar(','), 3, null);
             ClassicAssert.AreEqual(3, sequence.TryParse("a,a,a").Value.Count());
             ClassicAssert.AreEqual(4, sequence.TryParse("a,a,a,a").Value.Count());
             ClassicAssert.AreEqual(5, sequence.TryParse("a,a,a,a,a").Value.Count());
@@ -480,7 +480,7 @@
         [Test]
         public void DelimitedWithMaximum()
         {
-            var sequence = Parse.Char('a').DelimitedBy(Parse.Char(','), null, 4);
+            var sequence = Parse.MatchChar('a').DelimitedBy(Parse.MatchChar(','), null, 4);
             //Assert.Single(sequence.TryParse("a").Value);
             ClassicAssert.AreEqual(3, sequence.TryParse("a,a,a").Value.Count());
             ClassicAssert.AreEqual(4, sequence.TryParse("a,a,a,a").Value.Count());
@@ -490,7 +490,7 @@
         [Test]
         public void FailGracefullyOnSequence()
         {
-            var sequence = Parse.Char('a').XDelimitedBy(Parse.Char(','));
+            var sequence = Parse.MatchChar('a').XDelimitedBy(Parse.MatchChar(','));
             AssertParser.FailsWith(sequence, "a,a,b", _ =>
             {
                 // Assert.Contains("unexpected 'b'", result.Message);
@@ -501,7 +501,7 @@
         [Test]
         public void CanParseContained()
         {
-            var parser = Parse.Char('a').Contained(Parse.Char('['), Parse.Char(']'));
+            var parser = Parse.MatchChar('a').Contained(Parse.MatchChar('['), Parse.MatchChar(']'));
             var r      = parser.TryParse("[a]");
             ClassicAssert.True(r.WasSuccessful);
             ClassicAssert.True(r.Remainder.AtEnd);
@@ -532,7 +532,7 @@
         [Test]
         public void PreviewParserAlwaysSucceedsLikeOptionalParserButDoesntConsumeAnyInput()
         {
-            var parser = Parse.Char('a').XAtLeastOnce().Text().Token().Preview();
+            var parser = Parse.MatchChar('a').XAtLeastOnce().Text().Token().Preview();
             var r      = parser.TryParse("   aaa   ");
 
             ClassicAssert.True(r.WasSuccessful);

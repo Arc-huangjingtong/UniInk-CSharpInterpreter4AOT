@@ -10,9 +10,9 @@
 
     public class AmqpErrorTests
     {
-        private static readonly Parser<char> itemSeparator     = Parse.Char(',');
-        private static readonly Parser<char> stringDelimiter   = Parse.Char('"');
-        private static readonly Parser<char> keyValueDelimiter = Parse.Char('=');
+        private static readonly Parser<char> itemSeparator     = Parse.MatchChar(',');
+        private static readonly Parser<char> stringDelimiter   = Parse.MatchChar('"');
+        private static readonly Parser<char> keyValueDelimiter = Parse.MatchChar('=');
 
         private static readonly Parser<char> stringContent = Parse.AnyChar.Except(stringDelimiter);
 
@@ -36,7 +36,10 @@
         {
             yield return head;
 
-            foreach (var item in rest) yield return item;
+            foreach (var item in rest)
+            {
+                yield return item;
+            }
         }
 
 

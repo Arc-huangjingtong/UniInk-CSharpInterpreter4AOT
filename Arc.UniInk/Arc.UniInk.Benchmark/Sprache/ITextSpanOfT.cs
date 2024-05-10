@@ -1,10 +1,11 @@
 ﻿namespace Sprache
 {
+
     /// <summary>
     /// Represents a text span of the matched result.
     /// </summary>
     /// <typeparam name="T">Type of the matched result.</typeparam>
-    public interface ITextSpan<T>
+    public interface ITextSpan <out T>
     {
         /// <summary>
         /// Gets the resulting value.
@@ -26,4 +27,5 @@
         /// </summary>
         int Length { get; }
     }
+
 }

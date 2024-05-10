@@ -1,8 +1,8 @@
-﻿using System;
-
-
-namespace Sprache
+﻿namespace Sprache
 {
+
+    using System;
+
 
     partial class Parse
     {
@@ -23,9 +23,9 @@ namespace Sprache
             {
                 var pr = parser(i);
 
-                if (pr.WasSuccessful) return Result.Success(new Some<T>(pr.Value), pr.Remainder);
+                if (pr.WasSuccessful) return ResultHelper.Success(new Some<T>(pr.Value), pr.Remainder);
 
-                return Result.Success(new None<T>(), i);
+                return ResultHelper.Success(new None<T>(), i);
             };
         }
 
@@ -44,11 +44,11 @@ namespace Sprache
             {
                 var result = parser(i);
 
-                if (result.WasSuccessful) return Result.Success(new Some<T>(result.Value), result.Remainder);
+                if (result.WasSuccessful) return ResultHelper.Success(new Some<T>(result.Value), result.Remainder);
 
-                if (result.Remainder.Equals(i)) return Result.Success(new None<T>(), i);
+                if (result.Remainder.Equals(i)) return ResultHelper.Success(new None<T>(), i);
 
-                return Result.Failure<IOption<T>>(result.Remainder, result.Message, result.Expectations);
+                return ResultHelper.Failure<IOption<T>>(result.Remainder, result.Message, result.Expectations);
             };
         }
 
@@ -69,9 +69,9 @@ namespace Sprache
             {
                 var result = parser(i);
 
-                if (result.WasSuccessful) return Result.Success(new Some<T>(result.Value), i);
+                if (result.WasSuccessful) return ResultHelper.Success(new Some<T>(result.Value), i);
 
-                return Result.Success(new None<T>(), i);
+                return ResultHelper.Success(new None<T>(), i);
             };
         }
     }

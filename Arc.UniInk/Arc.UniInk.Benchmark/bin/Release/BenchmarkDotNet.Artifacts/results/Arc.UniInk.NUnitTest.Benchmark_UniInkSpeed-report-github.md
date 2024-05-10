@@ -1,14 +1,15 @@
 ```
 
-BenchmarkDotNet v0.13.12, Windows 10 (10.0.19044.1415/21H2/November2021Update)
-Intel Core i7-10700F CPU 2.90GHz, 1 CPU, 16 logical and 8 physical cores
-  [Host]     : .NET Framework 4.8 (4.8.4400.0), X86 LegacyJIT
-  DefaultJob : .NET Framework 4.8 (4.8.4400.0), X86 LegacyJIT
+BenchmarkDotNet v0.13.12, Windows 11 (10.0.22631.2506/23H2/2023Update/SunValley3)
+13th Gen Intel Core i5-13400F, 1 CPU, 16 logical and 10 physical cores
+  [Host]     : .NET Framework 4.8.1 (4.8.9181.0), X86 LegacyJIT
+  DefaultJob : .NET Framework 4.8.1 (4.8.9181.0), X86 LegacyJIT
 
 
 ```
-| Method    | Mean           | Error      | StdDev     | Gen0   | Allocated |
-|---------- |---------------:|-----------:|-----------:|-------:|----------:|
-| INT_Limit |      0.0266 ns |  0.0013 ns |  0.0012 ns |      - |         - |
-| INT_2     |  5,701.8748 ns | 11.6599 ns | 10.9067 ns |      - |         - |
-| INT_3     | 17,580.2824 ns | 32.2734 ns | 28.6095 ns | 1.4648 |    7683 B |
+| Method    | Mean           | Error       | StdDev      | Gen0    | Gen1   | Allocated |
+|---------- |---------------:|------------:|------------:|--------:|-------:|----------:|
+| INT_Limit |      0.0000 ns |   0.0000 ns |   0.0000 ns |       - |      - |         - |
+| INT_2     |  3,799.9926 ns |   5.8915 ns |   4.9197 ns |       - |      - |         - |
+| INT_3     | 12,759.1044 ns |  48.8709 ns |  45.7139 ns |  1.4648 |      - |    7683 B |
+| Main4     | 33,267.7189 ns | 248.5775 ns | 220.3575 ns | 12.0239 | 0.0610 |   63315 B |

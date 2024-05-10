@@ -52,9 +52,9 @@ namespace Sprache.Tests.Scenarios
 
         private static readonly Parser<Expression> Constant = Parse.Decimal.Select(x => Expression.Constant(double.Parse(x))).Named("number");
 
-        private static readonly Parser<Expression> Factor = (from lparen in Parse.Char('(') from expr in Parse.Ref(() => Expr) from rparen in Parse.Char(')') select expr).Named("expression").XOr(Constant);
+        private static readonly Parser<Expression> Factor = (from lparen in Parse.MatchChar('(') from expr in Parse.Ref(() => Expr) from rparen in Parse.MatchChar(')') select expr).Named("expression").XOr(Constant);
 
-        private static readonly Parser<Expression> Operand = ((from sign in Parse.Char('-') from factor in Factor select Expression.Negate(factor)).XOr(Factor)).Token();
+        private static readonly Parser<Expression> Operand = ((from sign in Parse.MatchChar('-') from factor in Factor select Expression.Negate(factor)).XOr(Factor)).Token();
 
         private static readonly Parser<Expression> Term = Parse.XChainOperator(Multiply.XOr(Divide), Operand, Expression.MakeBinary);
 

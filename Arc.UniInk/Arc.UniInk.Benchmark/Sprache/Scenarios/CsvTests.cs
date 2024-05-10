@@ -1,22 +1,20 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-
-
-namespace Sprache.Tests.Scenarios
+﻿namespace Sprache.Tests.Scenarios
 {
 
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
     using NUnit.Framework;
     using NUnit.Framework.Legacy;
 
 
     public class CsvTests
     {
-        private static readonly Parser<char> CellSeparator = Parse.Char(',');
+        private static readonly Parser<char> CellSeparator = Parse.MatchChar(',');
 
-        private static readonly Parser<char> QuotedCellDelimiter = Parse.Char('"');
+        private static readonly Parser<char> QuotedCellDelimiter = Parse.MatchChar('"');
 
-        private static readonly Parser<char> QuoteEscape = Parse.Char('"');
+        private static readonly Parser<char> QuoteEscape = Parse.MatchChar('"');
 
         private static Parser<T> Escaped <T>(Parser<T> following)
         {

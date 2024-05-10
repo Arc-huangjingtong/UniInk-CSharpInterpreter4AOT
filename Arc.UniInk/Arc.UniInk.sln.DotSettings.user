@@ -9,13 +9,21 @@
   &lt;Assembly Path="F:\UniInk-CSharpInterpreter4AOT\Arc.UniInk\packages\BenchmarkDotNet.0.13.12\lib\netstandard2.0\BenchmarkDotNet.dll" /&gt;&#xD;
   &lt;Assembly Path="C:\Windows\Microsoft.NET\assembly\GAC_MSIL\System.Core\v4.0_4.0.0.0__b77a5c561934e089\System.Core.dll" /&gt;&#xD;
   &lt;Assembly Path="C:\Windows\Microsoft.Net\assembly\GAC_32\mscorlib\v4.0_4.0.0.0__b77a5c561934e089\mscorlib.dll" /&gt;&#xD;
+  &lt;PhysicalFolder Path="C:\Users\Windows11\.nuget\packages\awssdk.s3\3.7.307.30" Loaded="True" /&gt;&#xD;
+  &lt;PhysicalFolder Path="D:\Project\UniInk\Arc.UniInk\packages\AWSSDK.S3.3.7.307.30" Loaded="True" /&gt;&#xD;
 &lt;/AssemblyExplorer&gt;</s:String>
 	<s:Boolean x:Key="/Default/Environment/Hierarchy/Build/SolBuilderDuo/RunBuildOnSolutionLoaded/@EntryValue">True</s:Boolean>
-	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=b2237348_002Dadcc_002D42d8_002Dbfb2_002Da1dec87cfa11/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="Main2" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;&#xD;
+	
+	
+	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=8c3b45ac_002Dfa35_002D470f_002Da207_002De6449b70ae62/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="Main2" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;&#xD;
   &lt;TestAncestor&gt;&#xD;
     &lt;TestId&gt;NUnit3x::1BA70864-1706-44D0-9D58-669FD5703A14::.NETFramework,Version=v4.8::LinqyCalculator.Program.Main2&lt;/TestId&gt;&#xD;
+    &lt;TestId&gt;NUnit3x::1BA70864-1706-44D0-9D58-669FD5703A14::.NETFramework,Version=v4.8::Arc.UniInk.NUnitTest.Benchmark_UniInkSpeed.Main4&lt;/TestId&gt;&#xD;
+    &lt;TestId&gt;NUnit3x::1BA70864-1706-44D0-9D58-669FD5703A14::.NETFramework,Version=v4.8::Sprache.Parse.Test&lt;/TestId&gt;&#xD;
   &lt;/TestAncestor&gt;&#xD;
 &lt;/SessionState&gt;</s:String>
+	
+	
 	
 	
 	

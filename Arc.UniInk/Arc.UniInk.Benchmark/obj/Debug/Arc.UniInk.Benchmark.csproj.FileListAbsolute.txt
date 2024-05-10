@@ -196,3 +196,7 @@ F:\UniInk-CSharpInterpreter4AOT\Arc.UniInk\Arc.UniInk.Benchmark\bin\Debug\JetBra
 F:\UniInk-CSharpInterpreter4AOT\Arc.UniInk\Arc.UniInk.Benchmark\bin\Debug\JetBrains.dotMemoryUnit.Interop.Console.xml
 F:\UniInk-CSharpInterpreter4AOT\Arc.UniInk\Arc.UniInk.Benchmark\bin\Debug\JetBrains.dotMemoryUnit.Interop.Ide.xml
 F:\UniInk-CSharpInterpreter4AOT\Arc.UniInk\Arc.UniInk.Benchmark\obj\Debug\Arc.UniInk.Benchmark.exe.config
+D:\Project\UniInk\Arc.UniInk\Arc.UniInk.Benchmark\obj\Debug\Arc.UniInk.Benchmark.csproj.AssemblyReference.cache
+D:\Project\UniInk\Arc.UniInk\Arc.UniInk.Benchmark\obj\Debug\Arc.UniInk.Benchmark.GeneratedMSBuildEditorConfig.editorconfig
+D:\Project\UniInk\Arc.UniInk\Arc.UniInk.Benchmark\obj\Debug\Arc.UniInk.Benchmark.csproj.CoreCompileInputs.cache
+D:\Project\UniInk\Arc.UniInk\Arc.UniInk.Benchmark\obj\Debug\Arc.UniInk.Benchmark.exe

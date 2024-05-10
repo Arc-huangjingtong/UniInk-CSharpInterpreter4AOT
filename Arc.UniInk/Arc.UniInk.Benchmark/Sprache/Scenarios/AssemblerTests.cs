@@ -18,13 +18,13 @@ namespace Sprache.Tests.Scenarios
             return from leading in whitespace.Many() from item in parser from trailing in whitespace.Many() select item;
         }
 
-        public static Parser<Tuple<string, string[]>> Instruction = from instructionName in AsmToken(Parse.LetterOrDigit.Many().Text()) from operands in AsmToken(Identifier).XDelimitedBy(Parse.Char(',')) select Tuple.Create(instructionName, operands.ToArray());
+        public static Parser<Tuple<string, string[]>> Instruction = from instructionName in AsmToken(Parse.LetterOrDigit.Many().Text()) from operands in AsmToken(Identifier).XDelimitedBy(Parse.MatchChar(',')) select Tuple.Create(instructionName, operands.ToArray());
 
         public static CommentParser Comment = new CommentParser { Single = ";", NewLine = Environment.NewLine };
 
-        public static Parser<string> LabelId = Parse.Identifier(Parse.Letter.Or(Parse.Chars("._?")), Parse.LetterOrDigit.Or(Parse.Chars("_@#$~.?")));
+        public static Parser<string> LabelId = Parse.Identifier(Parse.Letter.Or(Parse.MatchChars("._?")), Parse.LetterOrDigit.Or(Parse.MatchChars("_@#$~.?")));
 
-        public static Parser<string> Label = from labelName in AsmToken(LabelId) from colon in AsmToken(Parse.Char(':')) select labelName;
+        public static Parser<string> Label = from labelName in AsmToken(LabelId) from colon in AsmToken(Parse.MatchChar(':')) select labelName;
 
         public static readonly Parser<IEnumerable<AssemblerLine>> Assembler = (from label in Label.Optional() from instruction in Instruction.Optional() from comment in AsmToken(Comment.SingleLineComment).Optional() from lineTerminator in Parse.LineTerminator select new AssemblerLine(label.GetOrDefault(), instruction.IsEmpty ? null : instruction.Get().Item1, instruction.IsEmpty ? null : instruction.Get().Item2, comment.GetOrDefault())).XMany().End();
     }

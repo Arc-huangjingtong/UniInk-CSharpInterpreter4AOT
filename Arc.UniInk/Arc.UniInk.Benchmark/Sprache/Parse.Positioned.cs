@@ -18,7 +18,7 @@ namespace Sprache
 
                 if (r.WasSuccessful)
                 {
-                    return Result.Success(r.Value.SetPos(Position.FromInput(i), r.Remainder.Position - i.Position), r.Remainder);
+                    return ResultHelper.Success(r.Value.SetPos(Position.FromInput(i), r.Remainder.Position - i.Position), r.Remainder);
                 }
                 return r;
             };

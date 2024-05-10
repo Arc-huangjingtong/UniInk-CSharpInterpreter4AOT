@@ -74,7 +74,7 @@ namespace Sprache.Tests
         [Test]
         public void Issue166()
         {
-            var letterA = Parse.Char('a');
+            var letterA = Parse.MatchChar('a');
             var letterReferenced = Parse.Ref(() => letterA);
             var someAlternative = letterReferenced.Or(letterReferenced);
 
@@ -83,10 +83,10 @@ namespace Sprache.Tests
 
         private static readonly Parser<IEnumerable<char>> ASeq =
             (from first in Parse.Ref(() => ASeq)
-             from comma in Parse.Char(',')
-             from rest in Parse.Char('a').Once()
+             from comma in Parse.MatchChar(',')
+             from rest in Parse.MatchChar('a').Once()
              select first.Concat(rest))
-            .Or(Parse.Char('a').Once());
+            .Or(Parse.MatchChar('a').Once());
 
         [Test]
         public void DetectsLeftRecursion()
@@ -96,15 +96,15 @@ namespace Sprache.Tests
 
         private static readonly Parser<IEnumerable<char>> ABSeq =
             (from first in Parse.Ref(() => BASeq)
-             from rest in Parse.Char('a').Once()
+             from rest in Parse.MatchChar('a').Once()
              select first.Concat(rest))
-            .Or(Parse.Char('a').Once());
+            .Or(Parse.MatchChar('a').Once());
 
         private static readonly Parser<IEnumerable<char>> BASeq =
             (from first in Parse.Ref(() => ABSeq)
-             from rest in Parse.Char('b').Once()
+             from rest in Parse.MatchChar('b').Once()
              select first.Concat(rest))
-            .Or(Parse.Char('b').Once());
+            .Or(Parse.MatchChar('b').Once());
 
         [Test]
         public void DetectsMutualLeftRecursion()

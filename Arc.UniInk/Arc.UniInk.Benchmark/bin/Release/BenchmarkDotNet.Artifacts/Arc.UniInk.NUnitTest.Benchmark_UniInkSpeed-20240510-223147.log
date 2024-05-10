@@ -1,0 +1,4 @@
+// Validating benchmarks:
+// Benchmark Benchmark_UniInkSpeed.Main4: DefaultJob
+//    * Benchmarked method `Main4` is static. Benchmarks MUST be instance methods, static methods are not supported.
+

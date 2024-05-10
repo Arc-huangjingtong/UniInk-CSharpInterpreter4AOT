@@ -6,11 +6,13 @@
     using System.Linq.Expressions;
     using Arc.UniInk.NunitTest;
     using BenchmarkDotNet.Attributes;
+    using LinqyCalculator;
+    using NUnit.Framework;
 
 
 
-    [MemoryDiagnoser]               // we need to enable it in explicit way
-    [RyuJitX64Job, LegacyJitX86Job] // let's run the benchmarks for 32 & 64 bit
+    [MemoryDiagnoser]                // we need to enable it in explicit way
+    [RyuJitX64Job] [LegacyJitX86Job] // let's run the benchmarks for 32 & 64 bit
     public class Benchmarks
     {
         [Benchmark]
@@ -115,6 +117,15 @@
 
             // 生成一个从 0 到 100 的整数序列，过滤出偶数，然后将其转换为 byte 类型
             var result = Enumerable.Range(0, 100).Where(compiledLambda).Select(i => (byte)i).ToArray();
+        }
+
+
+        [Benchmark] [Test]
+        public void Main4()
+        {
+            var parsed = ExpressionParser.ParseExpression("9*((1+2*3)/2)");
+            var result = parsed.Compile().Invoke();// 
+            Console.WriteLine(result);
         }
     }
 

@@ -1480,6 +1480,13 @@
             Occurs after an exception is encountered.
             </summary>
         </member>
+        <member name="M:Amazon.Runtime.AmazonServiceClient.UpdateSecurityProtocol">
+            <summary>
+            Some AWS services like Cloud 9 require at least TLS 1.1. Version of .NET Framework 4.5 and earlier 
+            do not eanble TLS 1.1 and TLS 1.2 by default. This code adds those protocols if using an earlier 
+            version of .NET that explicitly set the protocol and didn't have TLS 1.1 and TLS 1.2. 
+            </summary>
+        </member>
         <member name="M:Amazon.Runtime.AmazonServiceClient.ComposeUrl(Amazon.Runtime.Internal.IRequest)">
             <summary>
             Assembles the Uri for a given SDK request
@@ -1530,7 +1537,7 @@
         </member>
         <member name="P:Amazon.Runtime.AmazonServiceException.ErrorType">
             <summary>
-            Whether the error was attributable to <c>Sender</c> or <c>Reciever</c>.
+            Whether the error was attributable to <c>Sender</c> or <c>Receiver</c>.
             </summary>
         </member>
         <member name="P:Amazon.Runtime.AmazonServiceException.ErrorCode">
@@ -2190,7 +2197,14 @@
             The value of this entry has a maximum length of 128.
             </summary>
         </member>
-        <!-- Badly formed XML comment ignored for member "P:Amazon.Runtime.Internal.MonitoringAPICallEvent.FinalAWSExceptionMessage" -->
+        <member name="P:Amazon.Runtime.Internal.MonitoringAPICallEvent.FinalAWSExceptionMessage">
+            <summary>
+            Contains the full text of the
+            Aws exception message returned in the response to the final attempt at
+            fulfilling this API call.The value of this entry has a maximum length limit
+            of 512.
+            </summary>
+        </member>
         <member name="P:Amazon.Runtime.Internal.MonitoringAPICallEvent.FinalHttpStatusCode">
             <summary>
             Contains the attempt's response status code, 
@@ -2755,13 +2769,6 @@
             </param>
             <returns>The uri encoded query string parameters in canonical ordering</returns>
         </member>
-        <member name="M:Amazon.Runtime.Internal.Auth.AWS4Signer.GetRequestPayloadBytes(Amazon.Runtime.Internal.IRequest)">
-            <summary>
-            Returns the request parameters in the form of a query string.
-            </summary>
-            <param name="request">The request instance</param>
-            <returns>Request parameters in query string format</returns>
-        </member>
         <member name="T:Amazon.Runtime.Internal.Auth.AWS4PreSignedUrlSigner">
             <summary>
             AWS4 protocol signer for Amazon S3 presigned urls.
@@ -3046,6 +3053,60 @@
             </summary>
             <typeparam name="K"></typeparam>
             <typeparam name="V"></typeparam>
+        </member>
+        <member name="T:Amazon.Runtime.Internal.Compression.CompressionFactory">
+            <summary>
+            Compression Factory class
+            </summary>
+        </member>
+        <member name="M:Amazon.Runtime.Internal.Compression.CompressionFactory.GetCompressionAlgorithm(Amazon.Runtime.CompressionEncodingAlgorithm)">
+            <summary>
+            Gets compression algorithm object based on <paramref name="type"/>
+            </summary>
+            <param name="type"> Selected type of compression </param>
+            <returns> An instance object of the selected compression type </returns>
+            <exception cref="T:System.ArgumentException"> We should throw this error when the value of <paramref name="type"/>
+            is NONE which means that the selected compression algorithm is not supported by the SDK </exception>
+        </member>
+        <member name="T:Amazon.Runtime.Internal.Compression.GZipCompression">
+            <summary>
+            Gzip algorithm implementation of <see cref="T:Amazon.Runtime.Internal.Compression.ICompressionAlgorithm"/> interface.
+            Used to compress request payloads using GZip algorithm.
+            </summary>
+        </member>
+        <member name="P:Amazon.Runtime.Internal.Compression.GZipCompression.AlgorithmId">
+            <inheritdoc/>
+        </member>
+        <member name="M:Amazon.Runtime.Internal.Compression.GZipCompression.Compress(System.Byte[])">
+            <inheritdoc/>
+        </member>
+        <member name="M:Amazon.Runtime.Internal.Compression.GZipCompression.GetCompressionStream(System.IO.Stream)">
+            <inheritdoc/>
+        </member>
+        <member name="T:Amazon.Runtime.Internal.Compression.ICompressionAlgorithm">
+            <summary>
+            Interface for an implementation of compression algorithms
+            </summary>
+        </member>
+        <member name="P:Amazon.Runtime.Internal.Compression.ICompressionAlgorithm.AlgorithmId">
+            <summary>
+            The ID of the compression algorithm. This is matched against the algorithm
+            names used in the trait e.g. "gzip"
+            </summary>
+        </member>
+        <member name="M:Amazon.Runtime.Internal.Compression.ICompressionAlgorithm.Compress(System.Byte[])">
+            <summary>
+            Compresses request payload content of fixed length
+            </summary>
+            <param name="content"> Request payload content represented in byte array </param>
+            <returns> Compressed data in a byte array format </returns>
+        </member>
+        <member name="M:Amazon.Runtime.Internal.Compression.ICompressionAlgorithm.GetCompressionStream(System.IO.Stream)">
+            <summary>
+            Wraps <paramref name="inputStream"/> with an instance object of the compression stream algorithm
+            </summary>
+            <param name="inputStream"> The stream that will contain compressed data </param>
+            <returns> Instance of compression stream algorithm </returns>
         </member>
         <member name="T:Amazon.Runtime.Internal.IDefaultConfigurationAutoModeResolver">
             <summary>
@@ -3374,6 +3435,16 @@
             after this request's content.
             </summary>
         </member>
+        <member name="P:Amazon.Runtime.Internal.DefaultRequest.CompressionAlgorithm">
+            <summary>
+            The selected compression algorithm to be used to compress the payload of the request.
+            </summary>
+        </member>
+        <member name="P:Amazon.Runtime.Internal.DefaultRequest.ChecksumData">
+            <summary>
+            Checksum data to calculate checksum after optionally compressing the request payload
+            </summary>
+        </member>
         <member name="M:Amazon.Runtime.Internal.DefaultRequest.IsRequestStreamRewindable">
             <summary>
             Checks if the request stream can be rewinded.
@@ -3392,6 +3463,11 @@
             Returns true if the request has a body, else false.
             </summary>
             <returns>Returns true if the request has a body, else false.</returns>
+        </member>
+        <member name="P:Amazon.Runtime.Internal.DefaultRequest.EndpointAttributes">
+            <summary>
+            Custom endpoint attributes
+            </summary>
         </member>
         <member name="T:Amazon.Runtime.Internal.DiscoveryEndpointBase">
             <summary>
@@ -3831,6 +3907,11 @@
             Endpoint of the EC2 Instance Metadata Service
             </summary>
         </member>
+        <member name="P:Amazon.Runtime.Internal.InternalConfiguration.EC2MetadataV1Disabled">
+            <summary>
+            Controls whether request EC2 metadata v1 fallback is disabled.
+            </summary>
+        </member>
         <member name="P:Amazon.Runtime.Internal.InternalConfiguration.EC2MetadataServiceEndpointMode">
             <summary>
             Internet protocol version to be used for communicating with the EC2 Instance Metadata Service
@@ -3849,6 +3930,30 @@
             <summary>
             Configures the endpoint calculation to go to a FIPS (https://aws.amazon.com/compliance/fips/) endpoint
             for the configured region.
+            </summary>
+        </member>
+        <member name="P:Amazon.Runtime.Internal.InternalConfiguration.IgnoreConfiguredEndpointUrls">
+            <summary>
+            Configures the SDK To ignore configured endpoint URLs in the configuration files or environment variables.
+            The environment variable overrides the value set in the configuration file.
+            </summary>
+        </member>
+        <member name="P:Amazon.Runtime.Internal.InternalConfiguration.DisableRequestCompression">
+            <summary>
+            Controls whether request payloads are automatically compressed for supported operations.
+            This setting only applies to operations that support compression.
+            The default value is "false". Set to "true" to disable compression.
+            </summary>
+        </member>
+        <member name="P:Amazon.Runtime.Internal.InternalConfiguration.RequestMinCompressionSizeBytes">
+            <summary>
+            Minimum size in bytes that a request body should be to trigger compression.
+            </summary>
+        </member>
+        <member name="P:Amazon.Runtime.Internal.InternalConfiguration.ClientAppId">
+            <summary>
+            Customers can opt-in to provide an app id that is intended to identify their applications
+            in the user agent header string. The value should have a maximum length of 50.
             </summary>
         </member>
         <member name="T:Amazon.Runtime.Internal.EnvironmentVariableInternalConfiguration">
@@ -3871,6 +3976,13 @@
             Loads the EC2 Instance Metadata endpoint from the environment variable, and validates it is a well-formed uri
             </summary>
             <returns>Override EC2 instance metadata endpoint if valid, else an empty string</returns>
+        </member>
+        <member name="M:Amazon.Runtime.Internal.EnvironmentVariableInternalConfiguration.GetClientAppIdEnvironmentVariable">
+            <summary>
+            Loads client app id from the environment variable.
+            Throws an exception if the length of client app id is longer than 50.
+            </summary>
+            <returns>Client app id string</returns>
         </member>
         <member name="T:Amazon.Runtime.Internal.ProfileInternalConfiguration">
             <summary>
@@ -3931,6 +4043,11 @@
             Endpoint of the EC2 Instance Metadata Service
             </summary>
         </member>
+        <member name="P:Amazon.Runtime.Internal.FallbackInternalConfigurationFactory.EC2MetadataV1Disabled">
+            <summary>
+            Controls whether request EC2 metadata v1 fallback is disabled.
+            </summary>
+        </member>
         <member name="P:Amazon.Runtime.Internal.FallbackInternalConfigurationFactory.EC2MetadataServiceEndpointMode">
             <summary>
             Internet protocol version to be used for communicating with the EC2 Instance Metadata Service
@@ -3949,6 +4066,30 @@
             <summary>
             Configures the endpoint calculation to go to a FIPS (https://aws.amazon.com/compliance/fips/) endpoint
             for the configured region.
+            </summary>
+        </member>
+        <member name="P:Amazon.Runtime.Internal.FallbackInternalConfigurationFactory.IgnoreConfiguredEndpointUrls">
+            <summary>
+            Configures the SDK To ignore configured endpoint URLs in the configuration files or environment variables.
+            The environment variable overrides the value set in the configuration file.
+            </summary>
+        </member>
+        <member name="P:Amazon.Runtime.Internal.FallbackInternalConfigurationFactory.DisableRequestCompression">
+            <summary>
+            Controls whether request payloads are automatically compressed for supported operations.
+            This setting only applies to operations that support compression.
+            The default value is "false". Set to "true" to disable compression.
+            </summary>
+        </member>
+        <member name="P:Amazon.Runtime.Internal.FallbackInternalConfigurationFactory.RequestMinCompressionSizeBytes">
+            <summary>
+            Minimum size in bytes that a request body should be to trigger compression.
+            </summary>
+        </member>
+        <member name="P:Amazon.Runtime.Internal.FallbackInternalConfigurationFactory.ClientAppId">
+            <summary>
+            Customers can opt-in to provide an app id that is intended to identify their applications
+            in the user agent header string. The value should have a maximum length of 50.
             </summary>
         </member>
         <member name="T:Amazon.Runtime.Internal.InvokeOptionsBase">
@@ -4239,6 +4380,21 @@
             Determine whether to use double encoding for request's signer.
             </summary>
         </member>
+        <member name="P:Amazon.Runtime.Internal.IRequest.EndpointAttributes">
+            <summary>
+            Custom endpoint attributes
+            </summary>
+        </member>
+        <member name="P:Amazon.Runtime.Internal.IRequest.CompressionAlgorithm">
+            <summary>
+            The selected compression algorithm to be used to compress the payload of the request.
+            </summary>
+        </member>
+        <member name="P:Amazon.Runtime.Internal.IRequest.ChecksumData">
+            <summary>
+            Checksum data to calculate checksum after optionally compressing the request payload
+            </summary>
+        </member>
         <member name="P:Amazon.Runtime.Internal.IServiceMetadata.ServiceId">
             <summary>
             Gets the value of the Service Id.
@@ -4277,13 +4433,6 @@
         </member>
         <member name="M:Amazon.Runtime.Internal.RuntimeInformationProvider.IsMobile">
             <inheritdoc/>
-            <remarks>
-            SDK does not do intelligent checks like checking package references or reflection to determine whether
-            the current project is a mobile project because of performance reasons. Moving forward, when .NET 6 support is added,
-            it should use OperatingSystem.IsAndroid <see href="https://docs.microsoft.com/en-us/dotnet/api/system.operatingsystem.isandroid"/>
-            or OperatingSystem.IsIOS <see href="https://docs.microsoft.com/en-us/dotnet/api/system.operatingsystem.isios"/> to determine
-            whether the current application is running on Mobile or not.
-            </remarks>
         </member>
         <member name="T:Amazon.Runtime.Internal.RuntimePipelineCustomizerRegistry">
             <summary>
@@ -4385,6 +4534,7 @@
             Given the current position in the XML stream, extract a T.
             </summary>
             <param name="input">The XML parsing context</param>
+            <param name="errorResponse"></param>
             <returns>An object of type T populated with data from the XML stream.</returns>
         </member>
         <member name="T:Amazon.Runtime.Internal.Transform.IResponseUnmarshaller`2">
@@ -4593,6 +4743,14 @@
         <member name="T:Amazon.Runtime.Internal.Transform.NullableIntUnmarshaller">
             <summary>
             Unmarshaller for nullable int fields. Implemented only for JSON context
+            to handle cases where value can be null e.g. {'Priority': null}.
+            This unmarshaller is not implemented for XML context, as XML responses
+            will null elements (xsi:nil='true') will be skipped by the XML parser.
+            </summary>
+        </member>
+        <member name="T:Amazon.Runtime.Internal.Transform.NullableBoolUnmarshaller">
+            <summary>
+            Unmarshaller for nullable bool fields. Implemented only for JSON context
             to handle cases where value can be null e.g. {'Priority': null}.
             This unmarshaller is not implemented for XML context, as XML responses
             will null elements (xsi:nil='true') will be skipped by the XML parser.
@@ -4991,16 +5149,25 @@
             <returns>Name of the HTTP header key for the given algorithm</returns>
         </member>
         <member name="M:Amazon.Runtime.Internal.Util.ChecksumUtils.SetRequestChecksum(Amazon.Runtime.Internal.IRequest,System.String,System.Boolean)">
+            <remarks> 
+            Note, this was called directly from service packages prior to compression support
+            being added shortly after 3.7.200. It's important to preserve the signature and functionality
+            until the next minor version for those older 3.7.* service packages.
+            </remarks>
             <summary>
             Attempts to select and then calculate the checksum for a request
             </summary>
             <param name="request">Request to calculate the checksum for</param>
             <param name="checksumAlgorithm">Checksum algorithm to use, specified on the request using a service-specific enum</param>
             <param name="fallbackToMD5">If checksumAlgorithm is <see cref="F:Amazon.Runtime.CoreChecksumAlgorithm.NONE"/>,
-            this flag controls whether or not to fallback to using a MD5 to generate a checksum.
-            </param>
+            this flag controls whether or not to fallback to using a MD5 to generate a checksum. </param>
         </member>
         <member name="M:Amazon.Runtime.Internal.Util.ChecksumUtils.SetRequestChecksumMD5(Amazon.Runtime.Internal.IRequest)">
+            <remarks> 
+            Note, this was called directly from service packages prior to compression support
+            being added shortly after 3.7.200. It's important to preserve the signature and functionality
+            until the next minor version for those older 3.7.* service packages.
+            </remarks>
             <summary>
             Attempts to select and then calculate a MD5 checksum for a request
             </summary>
@@ -5038,6 +5205,44 @@
             <param name="selectedServiceChecksum">Checksum algorithm as a string</param>
             <returns>Enum value reprsenting the checksum algorithm</returns>
             <exception cref="T:Amazon.Runtime.AmazonClientException">Thrown if a matching enum value could not be found</exception>
+        </member>
+        <member name="M:Amazon.Runtime.Internal.Util.ChecksumUtils.SetChecksumData(Amazon.Runtime.Internal.IRequest,System.String,System.Boolean)">
+            <summary>
+            Set checksum data in marshaller in order to call method <see cref="M:Amazon.Runtime.Internal.Util.ChecksumUtils.SetRequestChecksum(Amazon.Runtime.Internal.IRequest,System.String,System.Boolean)"/> 
+            after compressing request payload in <see cref="T:Amazon.Runtime.Internal.CompressionHandler"/> class
+            </summary>
+            <param name="request">Request to calculate the checksum for </param>
+            <param name="checksumAlgorithm">Checksum algorithm to use, specified on the request using a service-specific enum</param>
+            <param name="fallbackToMD5">If checksumAlgorithm is <see cref="F:Amazon.Runtime.CoreChecksumAlgorithm.NONE"/>,
+            this flag controls whether or not to fallback to using a MD5 to generate a checksum. </param>
+        </member>
+        <member name="M:Amazon.Runtime.Internal.Util.ChecksumUtils.SetChecksumData(Amazon.Runtime.Internal.IRequest)">
+            <summary>
+            Set checksum data in marshaller in order to call method <see cref="M:Amazon.Runtime.Internal.Util.ChecksumUtils.SetRequestChecksumMD5(Amazon.Runtime.Internal.IRequest)"/> 
+            after compressing request payload in <see cref="T:Amazon.Runtime.Internal.CompressionHandler"/> class
+            </summary>
+            <param name="request">Request to calculate the checksum for</param>
+        </member>
+        <member name="T:Amazon.Runtime.Internal.Util.ChecksumData">
+            <summary>
+            Class containing necessary data to calculate checksum
+            </summary>
+        </member>
+        <member name="P:Amazon.Runtime.Internal.Util.ChecksumData.SelectedChecksum">
+            <summary>
+            Checksum algorithm to use, specified on the request using a service-specific enum
+            </summary>
+        </member>
+        <member name="P:Amazon.Runtime.Internal.Util.ChecksumData.IsMD5Checksum">
+            <summary>
+            Flag to check if we want to call method <see cref="M:Amazon.Runtime.Internal.Util.ChecksumUtils.SetRequestChecksumMD5(Amazon.Runtime.Internal.IRequest)"/>
+            </summary>
+        </member>
+        <member name="P:Amazon.Runtime.Internal.Util.ChecksumData.FallbackToMD5">
+            <summary>
+            This flag controls whether or not to fallback to using a MD5 to generate a checksum if
+            <see cref="P:Amazon.Runtime.Internal.Util.ChecksumData.SelectedChecksum"/> is not set to NONE
+            </summary>
         </member>
         <member name="T:Amazon.Runtime.Internal.Util.ChunkedUploadWrapperStream">
             <summary>
@@ -5197,6 +5402,134 @@
             </summary>
             <typeparam name="TKey"></typeparam>
             <typeparam name="TValue"></typeparam>
+        </member>
+        <member name="T:Amazon.Runtime.Internal.Util.CompressionAlgorithmUtils">
+            <summary>
+            Utilities for working with compressing request payloads using supported algortihms
+            </summary>
+        </member>
+        <member name="M:Amazon.Runtime.Internal.Util.CompressionAlgorithmUtils.SetCompressionAlgorithm(Amazon.Runtime.Internal.IRequest,Amazon.Runtime.CompressionEncodingAlgorithm)">
+            <summary>
+            Sets the <see cref="T:Amazon.Runtime.CompressionEncodingAlgorithm"/> enum member of <see cref="T:Amazon.Runtime.Internal.IRequest"/>
+            based off its enum value.
+            </summary>
+            <param name="request"> The request containing the payload that we want to compress </param>
+            <param name="compressionAlgorithm"> The enum value of <see cref="T:Amazon.Runtime.CompressionEncodingAlgorithm"/> </param>
+        </member>
+        <member name="M:Amazon.Runtime.Internal.Util.CompressionAlgorithmUtils.SetRequestHeader(Amazon.Runtime.Internal.IRequest,Amazon.Runtime.CompressionEncodingAlgorithm)">
+            <summary>
+            Sets or appends <see cref="T:Amazon.Runtime.CompressionEncodingAlgorithm"/> to the request header <see cref="F:Amazon.Util.HeaderKeys.ContentEncodingHeader"/>
+            </summary>
+            <param name="request"> The request containing the payload that we want to compress </param>
+            <param name="compressionEncodingAlgorithm"> Enum containing the value of the compression algortihm </param>
+        </member>
+        <member name="T:Amazon.Runtime.Internal.Util.CompressionWrapperStream">
+            <summary>
+            Wrapper stream class for compressing a stream
+            </summary>
+        </member>
+        <member name="M:Amazon.Runtime.Internal.Util.CompressionWrapperStream.#ctor(System.IO.Stream,Amazon.Runtime.Internal.Compression.ICompressionAlgorithm)">
+            <summary>
+            Constructs a new instance of <see cref="T:Amazon.Runtime.Internal.Util.CompressionWrapperStream"/> class and initializes fields needed for compressing a stream.
+            </summary>
+            <param name="baseStream">The stream that we want to read from before compressing it</param>
+            <param name="compressionAlgorithm">The compression algorithm that want to use</param>
+        </member>
+        <member name="M:Amazon.Runtime.Internal.Util.CompressionWrapperStream.Init">
+            <summary>
+            Initializes fields needed for compressing a stream.
+            </summary>
+        </member>
+        <member name="M:Amazon.Runtime.Internal.Util.CompressionWrapperStream.Reset">
+            <summary>
+            Resets all compression stream resources.
+            </summary>
+        </member>
+        <member name="M:Amazon.Runtime.Internal.Util.CompressionWrapperStream.Read(System.Byte[],System.Int32,System.Int32)">
+            <summary>
+            Reads a sequence of bytes from the current stream and compresses it. The compressed bytes
+            are written into internal buffer <see cref="F:Amazon.Runtime.Internal.Util.CompressionWrapperStream._outputBufferStream"/>. If the count of compressed bytes
+            is larger than <paramref name="count"/>, we still write the leftover bytes into the internal buffer.
+            We then write the compressed bytes into the <paramref name="buffer"/> up to <paramref name="count"/>.
+            However, if we have leftover bytes from previous iteration(s), we would not read or compress the stream, 
+            but instead, we would write leftover bytes into the <paramref name="buffer"/> up to <paramref name="count"/>.
+            </summary>
+            <param name="buffer">
+            An array of bytes. When this method returns, the buffer contains the specified
+            byte array with the values between offset and (offset + count - 1) replaced
+            by the bytes read from the current source.
+            </param>
+            <param name="offset">
+            The zero-based byte offset in buffer at which to begin storing the data read
+            from the current stream.
+            </param>
+            <param name="count">
+            The maximum number of bytes to be read from the current stream.
+            </param>
+            <returns>
+            The total number of compressed bytes returned into the buffer. This can be less than the
+            number of bytes requested if that many bytes are not currently available,
+            or zero (0) if the end of the stream has been reached.
+            </returns>
+        </member>
+        <member name="M:Amazon.Runtime.Internal.Util.CompressionWrapperStream.ReadAsync(System.Byte[],System.Int32,System.Int32,System.Threading.CancellationToken)">
+            <summary>
+            Reads a sequence of bytes from the current stream and compresses it. The compressed bytes
+            are written into internal buffer <see cref="F:Amazon.Runtime.Internal.Util.CompressionWrapperStream._outputBufferStream"/>. If the count of compressed bytes
+            is larger than <paramref name="count"/>, we still write the leftover bytes into the internal buffer.
+            We then write the compressed bytes into the <paramref name="buffer"/> up to <paramref name="count"/>.
+            However, if we have leftover bytes from previous iteration(s), we would not read or compress the stream, 
+            but instead, we would write leftover bytes into the <paramref name="buffer"/> up to <paramref name="count"/>.
+            </summary>
+            <param name="buffer">
+            An array of bytes. When this method returns, the buffer contains the specified
+            byte array with the values between offset and (offset + count - 1) replaced
+            by the bytes read from the current source.
+            </param>
+            <param name="offset">
+            The zero-based byte offset in buffer at which to begin storing the data read
+            from the current stream.
+            </param>
+            <param name="count">
+            The maximum number of bytes to be read from the current stream.
+            </param>
+            <param name="cancellationToken">
+            The token to monitor for cancellation requests.
+            </param>
+            <returns>
+            The total number of compressed bytes returned into the buffer. This can be less than the
+            number of bytes requested if that many bytes are not currently available,
+            or zero (0) if the end of the stream has been reached.
+            </returns>
+        </member>
+        <member name="M:Amazon.Runtime.Internal.Util.CompressionWrapperStream.Close">
+            <summary>
+            Closes the compression and memory streams
+            </summary>
+        </member>
+        <member name="M:Amazon.Runtime.Internal.Util.CompressionWrapperStream.Dispose(System.Boolean)">
+            <summary>
+            Disposes the compression and memory streams
+            </summary>
+        </member>
+        <member name="P:Amazon.Runtime.Internal.Util.CompressionWrapperStream.HasLength">
+            <summary>
+            HasLength is false when compressing a stream. This avoids the client
+            needing to read and compress the entire stream prior to sending the request.
+            </summary>
+        </member>
+        <member name="P:Amazon.Runtime.Internal.Util.CompressionWrapperStream.CanSeek">
+            <summary>
+            Gets a value indicating whether the current stream supports seeking.
+            <see cref="T:Amazon.Runtime.Internal.Util.CompressionWrapperStream"/> does not support seeking, this will always be false.
+            </summary>
+        </member>
+        <member name="P:Amazon.Runtime.Internal.Util.CompressionWrapperStream.Position">
+            <summary>
+            Gets or sets the position within the current stream.
+            CompressionWrapperStream does not support seeking, attempting to set Position
+            will throw NotSupportedException.
+            </summary>
         </member>
         <member name="T:Amazon.Runtime.Internal.Util.CrtCrc32">
             <summary>
@@ -5908,6 +6241,17 @@
             Validates a label value
             </summary>        
         </member>
+        <member name="T:Amazon.Runtime.Internal.Util.NestedProperty">
+            <summary>
+            A NestedProperty is a value in a configuration file that has a parent key 
+            and one or more key value pairs associate with it.
+            For example 
+            s3 = 
+              max_retries = 10
+            s3 is the parent key, SubpropertyKeys contains ["max_retries"] and SubpropertyValues
+            contains ["10"]
+            </summary>
+        </member>
         <member name="T:Amazon.Runtime.Internal.Util.IniFile">
              <summary>
              Provides read/write access to a file in the INI format.
@@ -6003,6 +6347,14 @@
             <param name="sectionName">name of section to look for</param>
             <returns>true if the section exists, false otherwise</returns>
         </member>
+        <member name="M:Amazon.Runtime.Internal.Util.IniFile.SectionExists(System.Text.RegularExpressions.Regex,System.String@)">
+            <summary>
+            Determine if a section exists in the INI file.
+            </summary>
+            <param name="sectionNameRegex">Regex to match name of section to look for</param>
+            <param name="sectionName">name of section if regex matches</param>
+            <returns>true if the section exists, false otherwise</returns>
+        </member>
         <member name="M:Amazon.Runtime.Internal.Util.IniFile.TryGetSection(System.String,System.Collections.Generic.Dictionary{System.String,System.String}@)">
             <summary>
             Return the properties for the section if it exists.
@@ -6019,6 +6371,15 @@
             <param name="properties">properties contained in the section</param>
             <returns>True if the section was found, false otherwise</returns>
         </member>
+        <member name="M:Amazon.Runtime.Internal.Util.IniFile.TryGetSection(System.Text.RegularExpressions.Regex,System.Collections.Generic.Dictionary{System.String,System.String}@,System.Collections.Generic.Dictionary{System.String,System.Collections.Generic.Dictionary{System.String,System.String}}@)">
+            <summary>
+            Returns the properties and subproperties for a section if it exists
+            </summary>
+            <param name="sectionNameRegex"></param>
+            <param name="properties"></param>
+            <param name="nestedProperties"></param>
+            <returns></returns>
+        </member>
         <member name="M:Amazon.Runtime.Internal.Util.IniFile.TryGetSection(System.Text.RegularExpressions.Regex,System.String@,System.Collections.Generic.Dictionary{System.String,System.String}@)">
             <summary>
             Return the properties for the section if it exists.
@@ -6026,6 +6387,22 @@
             <param name="sectionNameRegex">Regex to match name of section to get</param>
             <param name="sectionName">name of section if regex matches</param>
             <param name="properties">properties contained in the section</param>
+            <returns>True if the section was found, false otherwise</returns>
+        </member>
+        <member name="M:Amazon.Runtime.Internal.Util.IniFile.TryGetSection(System.Text.RegularExpressions.Regex,System.String@,System.Collections.Generic.Dictionary{System.String,System.String}@,System.Collections.Generic.Dictionary{System.String,System.Collections.Generic.Dictionary{System.String,System.String}}@)">
+            <summary>
+            Return the properties for the section if it exists.
+            </summary>
+            <param name="sectionNameRegex">Regex to match name of section to get</param>
+            <param name="sectionName">name of section if regex matches</param>
+            <param name="properties">properties contained in the section</param>
+            <param name = "nestedProperties">properties with nested attributes in the section</param>
+            For example, for a profile with the following values:
+            [profile foo]
+            s3 = 
+              max_retries = 10
+              max_concurrent_requests_ = 50
+            nestedProperties will contain:{s3: {max_retries: 10}, {max_concurrent_requests:50}}
             <returns>True if the section was found, false otherwise</returns>
         </member>
         <member name="M:Amazon.Runtime.Internal.Util.InternalConsoleLogger.Error(System.Exception,System.String,System.Object[])">
@@ -6460,6 +6837,111 @@
             The destructor for the client class.
             </summary>
         </member>
+        <member name="T:Amazon.Runtime.Internal.Util.MultiValueHeaderParser">
+            <summary>
+            Functions for parsing multiple comma-delimited header values out of a
+            single header. This parsing adheres to
+            [RFC-7230's specification of header values](https://datatracker.ietf.org/doc/html/rfc7230#section-3.2.6).
+            </summary>
+        </member>
+        <member name="M:Amazon.Runtime.Internal.Util.MultiValueHeaderParser.ToStringList(System.String)">
+            <summary>
+            Reads a header string which is optionally comma-delimited and converts it to a list of 
+            strings.
+            </summary>
+            <param name="header">The header string to parse which is optionally a comma-delimited list 
+            of header values. Examples:
+            <list type="bullet">
+                <item>
+                    <description>
+                        "\"b,c\", \"\\\"def\\\"\", a" => ["b,c", "\"def\"", "a"]
+                    </description>
+                </item>
+                <item>
+                    <description>
+                        "1, 2, 3" => ["1", "2", "3"]
+                    </description>
+                </item>
+                <item>
+                    <description>
+                        "a" => ["a"]
+                    </description>
+                </item>
+                <item>
+                    <description>
+                        "" => []
+                    </description>
+                </item>
+            </list>
+            </param>
+            <returns>A list of strings representing the comma-delimited header values.</returns>
+        </member>
+        <member name="M:Amazon.Runtime.Internal.Util.MultiValueHeaderParser.ToDateTimeList(System.String,System.String)">
+            <summary>
+            Reads a header string which is optionally comma-delimited and converts it to a list of 
+            DateTime values.
+            </summary>        
+            <param name="header">The header string to parse which is optionally a comma-delimited list 
+            of header value timestamps matching the specified format. Examples:
+            <list type="bullet">
+                <item>
+                    <description>
+                        "2019-12-16T23:48:18Z, 2019-12-16T23:48:18Z" => [ DateTime, DateTime ]
+                    </description>
+                </item>
+                <item>
+                    <description>
+                        "Mon, 16 Dec 2019 23:48:18 GMT, Mon, 16 Dec 2019 23:48:18 GMT" => [ DateTime, DateTime ]
+                    </description>
+                </item>
+                <item>
+                    <description>
+                        "1576540098, 1576540098" => [ DateTime, DateTime ]
+                    </description>
+                </item>
+                <item>
+                    <description>
+                        "" => []
+                    </description>
+                </item>
+            </list>
+            </param>
+            <param name="format">ISO8601, RFC822, UnixTimestamp</param>
+            <returns>List of DateTimes processed from the comma separated string.</returns>
+        </member>
+        <member name="M:Amazon.Runtime.Internal.Util.MultiValueHeaderParser.ToValueTypeList``1(System.String)">
+            <summary>
+            Reads a header string which is optionally comma-delimited and converts it to a list of 
+            type T.
+            </summary>
+            <typeparam name="T">A value type such as int, double, etc.</typeparam>
+            <param name="header">The header string to parse which is optionally a comma-delimited list 
+            of header values. Examples:
+            <list type="bullet">
+                <item>
+                    <description>
+                        "1.1, 1.2, 1.3" => [1.1, 1.2, 1.3]
+                    </description>
+                </item>
+                <item>
+                    <description>
+                        "1, 2, 3" => [1, 2, 3]
+                    </description>
+                </item>
+                <item>
+                    <description>
+                        "1" => [1]
+                    </description>
+                </item>
+                <item>
+                    <description>
+                        "" => []
+                    </description>
+                </item>
+            </list>
+            </param>
+            <returns>A list of type T representing the comma-delimited header values.</returns>
+        </member>
         <member name="T:Amazon.Runtime.Internal.Util.NonDisposingWrapperStream">
             <summary>
             A wrapper stream which supresses disposal of the underlying stream.
@@ -6822,12 +7304,23 @@
         </member>
         <member name="T:Amazon.Runtime.Internal.Util.StringUtils">
             <summary>
-            Utilities for converting objects to strings. Used by the marshaller classes.
+            Utilities for converting objects to strings or strings to objects. Used by the marshaller classes.
             </summary>
         </member>
         <member name="M:Amazon.Runtime.Internal.Util.StringUtils.FromDateTimeToISO8601(System.DateTime)">
             <summary>
             Converts a DateTime to ISO8601 formatted string.
+            </summary>
+        </member>
+        <member name="M:Amazon.Runtime.Internal.Util.StringUtils.FromDateTimeToISO8601NoMs(System.DateTime)">
+            <summary>
+            Converts a DateTime to ISO8601 formatted string without milliseconds.
+            </summary>
+        </member>
+        <member name="M:Amazon.Runtime.Internal.Util.StringUtils.FromDateTimeToISO8601WithOptionalMs(System.DateTime)">
+            <summary>
+            Converts a DateTime to ISO8601 formatted string with milliseconds
+            if they are not zero.
             </summary>
         </member>
         <member name="M:Amazon.Runtime.Internal.Util.StringUtils.FromDateTimeToRFC822(System.DateTime)">
@@ -6842,14 +7335,14 @@
         </member>
         <member name="M:Amazon.Runtime.Internal.Util.StringUtils.FromList(System.Collections.Generic.IEnumerable{System.Enum})">
             <summary>
-            Combines a list of enums into a comma-separated string to be marshalled as a header
+            Combines an enumerable of enums into a comma-separated string to be marshalled as a header.
             </summary>
             <param name="values">List of enums</param>
             <returns>Header value representing the list of enums</returns>
         </member>
         <member name="M:Amazon.Runtime.Internal.Util.StringUtils.FromList(System.Collections.Generic.List{System.Enum})">
             <summary>
-            Combines a list of enums into a comma-separated string to be marshalled as a header
+            Combines a list of enums into a comma-separated string to be marshalled as a header.
             </summary>
             <param name="values">List of enums</param>
             <returns>Header value representing the list of enums</returns>
@@ -6867,6 +7360,20 @@
             </summary>
             <param name="values">List of enums</param>
             <returns>Header value representing the list of enums</returns>
+        </member>
+        <member name="M:Amazon.Runtime.Internal.Util.StringUtils.FromValueTypeList``1(System.Collections.Generic.IEnumerable{``0})">
+            <summary>
+            Combines an enumerable of T into a comma-separated string to be marshalled as a header.
+            </summary>
+            <param name="values">List of T</param>
+            <returns>Header value representing the list of T.</returns>
+        </member>
+        <member name="M:Amazon.Runtime.Internal.Util.StringUtils.FromValueTypeList``1(System.Collections.Generic.List{``0})">
+            <summary>
+            Combines a List of T into a comma-separated string to be marshalled as a header.
+            </summary>
+            <param name="values">List of T</param>
+            <returns>Header value representing the list of T</returns>
         </member>
         <member name="M:Amazon.Runtime.Internal.Util.StringUtils.FromList(System.Collections.Generic.IEnumerable{System.String})">
             <summary>
@@ -7213,7 +7720,7 @@
             interrogate AWS SSO Services.
             </summary>
         </member>
-        <member name="M:Amazon.Runtime.Internal.SSOServiceClientHelpers.CreateClient``1(Amazon.RegionEndpoint,System.String,System.String,System.String,System.Net.WebProxy)">
+        <member name="M:Amazon.Runtime.Internal.SSOServiceClientHelpers.CreateClient``1(Amazon.RegionEndpoint,System.String,System.String,System.String,System.String,System.Net.WebProxy)">
             <summary>
             Attempts to get a service client at runtime which cannot be made a project reference.
             </summary>
@@ -7288,7 +7795,7 @@
             Handles and processes any exception thrown from underlying handlers.
             </summary>
             <param name="executionContext">The execution context which contains both the
-            requests and response context.</param>
+            request and response context.</param>
         </member>
         <member name="M:Amazon.Runtime.Internal.ErrorHandler.InvokeAsync``1(Amazon.Runtime.IExecutionContext)">
             <summary>
@@ -7419,6 +7926,14 @@
             Service-specific handling, we code-gen override per service.
             </summary>
         </member>
+        <member name="M:Amazon.Runtime.Internal.BaseEndpointResolver.IsCrtDependencyAvailable">
+            <summary>
+            Validates whether the CRT dependency is available by trying to create an <see cref="T:Amazon.Runtime.Internal.Auth.AWS4aSignerCRTWrapper"/> instance.
+            </summary>
+            <returns>
+            True if the CRT package is available at runtime, false otherwise.
+            </returns>
+        </member>
         <member name="M:Amazon.Runtime.Internal.BaseEndpointResolver.InjectHostPrefix(Amazon.Runtime.IRequestContext)">
             <summary>
             Inject host prefix into request endpoint.
@@ -7451,7 +7966,7 @@
             in the pipeline.
             </summary>
             <param name="executionContext">The execution context which contains both the
-            requests and response context.</param>
+            request and response context.</param>
         </member>
         <member name="M:Amazon.Runtime.Internal.CallbackHandler.InvokeAsync``1(Amazon.Runtime.IExecutionContext)">
             <summary>
@@ -7475,6 +7990,68 @@
             Executes the OnPreInvoke action as part of post-invoke.
             </summary>
             <param name="executionContext">The execution context, it contains the
+            request and response context.</param>
+        </member>
+        <member name="T:Amazon.Runtime.Internal.ChecksumHandler">
+            <summary>
+            This handler manages the calculation of the checksum of the payload request when the checksum of a request is supported.
+            It also sets the checksum header of the request.
+            </summary>
+        </member>
+        <member name="M:Amazon.Runtime.Internal.ChecksumHandler.InvokeSync(Amazon.Runtime.IExecutionContext)">
+            <summary>
+            Calls pre invoke logic before calling the next handler 
+            in the pipeline.
+            </summary>
+            <param name="executionContext">The execution context which contains both the
+            request and response context.</param>
+        </member>
+        <member name="M:Amazon.Runtime.Internal.ChecksumHandler.InvokeAsync``1(Amazon.Runtime.IExecutionContext)">
+            <summary>
+            Calls pre invoke logic before calling the next handler 
+            in the pipeline.
+            </summary>
+            <typeparam name="T">The response type for the current request.</typeparam>
+            <param name="executionContext">The execution context, it contains the
+            request and response context.</param>
+            <returns>A task that represents the asynchronous operation.</returns>
+        </member>
+        <member name="M:Amazon.Runtime.Internal.ChecksumHandler.PreInvoke(Amazon.Runtime.IExecutionContext)">
+            <summary>
+            Calculates the checksum of the payload of a request, and sets the checksum request header only once.
+            </summary>
+            <param name="executionContext">The execution context which contains both the
+            request and response context.</param>
+        </member>
+        <member name="T:Amazon.Runtime.Internal.CompressionHandler">
+            <summary>
+            This handler manages the compression of the payload request when compression is supported
+            by its service operation.
+            </summary>
+        </member>
+        <member name="M:Amazon.Runtime.Internal.CompressionHandler.InvokeSync(Amazon.Runtime.IExecutionContext)">
+            <summary>
+            Calls pre invoke logic before calling the next handler 
+            in the pipeline.
+            </summary>
+            <param name="executionContext">The execution context which contains both the
+            request and response context.</param>
+        </member>
+        <member name="M:Amazon.Runtime.Internal.CompressionHandler.InvokeAsync``1(Amazon.Runtime.IExecutionContext)">
+            <summary>
+            Calls pre invoke logic before calling the next handler 
+            in the pipeline.
+            </summary>
+            <typeparam name="T">The response type for the current request.</typeparam>
+            <param name="executionContext">The execution context, it contains the
+            request and response context.</param>
+            <returns>A task that represents the asynchronous operation.</returns>
+        </member>
+        <member name="M:Amazon.Runtime.Internal.CompressionHandler.PreInvoke(Amazon.Runtime.IExecutionContext)">
+            <summary>
+            Handles the logic of compressing the payload of a request.
+            </summary>
+            <param name="executionContext">The execution context which contains both the
             request and response context.</param>
         </member>
         <member name="T:Amazon.Runtime.Internal.CredentialsRetriever">
@@ -7939,36 +8516,12 @@
             The request factory for System.Net.HttpWebRequest.
             </summary>    
         </member>
-        <member name="M:Amazon.Runtime.Internal.HttpWebRequestFactory.#ctor(Amazon.Runtime.Internal.IAmazonSecurityProtocolManager)">
-            <summary>
-            Some AWS services like Cloud 9 require at least TLS 1.1. Version of .NET Framework 4.5 and earlier 
-            do not eanble TLS 1.1 and TLS 1.2 by default. This code adds those protocols if using an earlier 
-            version of .NET that explicitly set the protocol and didn't have TLS 1.1 and TLS 1.2. 
-            </summary>
-            <param name="amazonSecurityProtocolManager"></param>
-        </member>
-        <member name="M:Amazon.Runtime.Internal.HttpWebRequestFactory.#ctor(Amazon.Runtime.Internal.IAmazonSecurityProtocolManager,Amazon.Runtime.Internal.Util.ILogger)">
-            <summary>
-            Some AWS services like Cloud 9 require at least TLS 1.1. Version of .NET Framework 4.5 and earlier 
-            do not eanble TLS 1.1 and TLS 1.2 by default. This code adds those protocols if using an earlier 
-            version of .NET that explicitly set the protocol and didn't have TLS 1.1 and TLS 1.2. 
-            </summary>
-            <param name="amazonSecurityProtocolManager"></param>
-            <param name="logger"></param>
-        </member>
         <member name="M:Amazon.Runtime.Internal.HttpWebRequestFactory.CreateHttpRequest(System.Uri)">
             <summary>
             Creates an HTTP request for the given URI.
             </summary>
             <param name="requestUri">The request URI.</param>
             <returns>An HTTP request.</returns>
-        </member>
-        <member name="M:Amazon.Runtime.Internal.HttpWebRequestFactory.SetIsProtocolUpdated(System.Boolean)">
-            <summary>
-            This method is used for unit testing purposes. It allows setting of the flag
-            that indicates protocol setting was attempted.
-            </summary>
-            <param name="value">The new value</param>
         </member>
         <member name="M:Amazon.Runtime.Internal.HttpWebRequestFactory.Dispose">
             <summary>
@@ -8051,6 +8604,7 @@
             <param name="requestContent">The destination where the content stream is written.</param>
             <param name="content">The content stream to be written.</param>
             <param name="contentHeaders">HTTP content headers.</param>
+            <param name="cancellationToken"></param>
         </member>
         <member name="M:Amazon.Runtime.Internal.HttpRequest.GetRequestContentAsync">
             <summary>
@@ -8835,6 +9389,18 @@
             to a service.
             </summary>    
         </member>
+        <member name="F:Amazon.Runtime.ClientConfig.UpperLimitCompressionSizeBytes">
+            <summary>
+            Represents upper limit value for <see cref="P:Amazon.Runtime.ClientConfig.RequestMinCompressionSizeBytes"/>
+            </summary>
+        </member>
+        <member name="P:Amazon.Runtime.ClientConfig.Profile">
+            <summary>
+            Specifies the profile to be used. When this is set on the ClientConfig and that config is passed to 
+            the service client constructor the sdk will try to find the credentials associated with the Profile.Name property
+            If set, this will override AWS_PROFILE and AWSConfigs.ProfileName.
+            </summary>
+        </member>
         <member name="P:Amazon.Runtime.ClientConfig.AWSTokenProvider">
             <inheritdoc />
         </member>
@@ -8940,6 +9506,17 @@
             Gets and sets the AuthenticationServiceName property.
             Used in AWS4 request signing, this is the short-form
             name of the service being called.
+            </summary>
+        </member>
+        <member name="P:Amazon.Runtime.ClientConfig.ServiceId">
+            <summary>
+            The serviceId for the service, which is specified in the metadata in the ServiceModel.
+            The transformed value of the service ID (replace any spaces in the service ID 
+            with underscores and uppercase all letters) is used to set service-specific endpoint urls.
+            I.e: AWS_ENDPOINT_URL_ELASTIC_BEANSTALK
+            For configuration files, replace any spaces with underscores and lowercase all letters
+            I.e. elastic_beanstalk = 
+                endpoint_url = http://localhost:8000
             </summary>
         </member>
         <member name="P:Amazon.Runtime.ClientConfig.MaxErrorRetry">
@@ -9055,6 +9632,17 @@
             </summary>
         </member>
         <member name="P:Amazon.Runtime.ClientConfig.Timeout">
+            <summary>
+            .NET Framework 3.5
+            ------------------
+            Overrides the default request timeout value.
+            This field does not impact Begin*/End* calls. A manual timeout must be implemented.
+            
+            .NET Framework 4.5
+            ------------------
+            Overrides the default request timeout value.
+            This field does not impact *Async calls. A manual timeout (for instance, using CancellationToken) must be implemented.
+            </summary>
             <remarks>
             <para>
             If the value is set, the value is assigned to the Timeout property of the HttpWebRequest/HttpClient object used
@@ -9074,8 +9662,6 @@
             <summary>
             Generates a <see cref="T:System.Threading.CancellationToken"/> based on the value
             for <see cref="P:Amazon.Runtime.DefaultConfiguration.TimeToFirstByteTimeout"/>.
-            <para />
-            NOTE: <see cref="!:Amazon.Runtime.HttpWebRequestMessage.GetResponseAsync"/> uses 
             </summary>
         </member>
         <member name="P:Amazon.Runtime.ClientConfig.UseDualstackEndpoint">
@@ -9094,6 +9680,37 @@
             Configures the endpoint calculation to go to a FIPS (https://aws.amazon.com/compliance/fips/) endpoint
             for the configured region.
             </summary>
+        </member>
+        <member name="P:Amazon.Runtime.ClientConfig.IgnoreConfiguredEndpointUrls">
+            <summary>
+            If set to true the SDK will ignore the configured endpointUrls in the config file or in the environment variables.
+            By default it is set to false.
+            </summary>
+        </member>
+        <member name="P:Amazon.Runtime.ClientConfig.DisableRequestCompression">
+            <summary>
+            Controls whether request payloads are automatically compressed for supported operations.
+            This setting only applies to operations that support compression.
+            The default value is "false". Set to "true" to disable compression.
+            </summary>
+        </member>
+        <member name="P:Amazon.Runtime.ClientConfig.RequestMinCompressionSizeBytes">
+            <summary>
+            Minimum size in bytes that a request body should be to trigger compression.
+            </summary>
+        </member>
+        <member name="P:Amazon.Runtime.ClientConfig.ClientAppId">
+            <summary>
+            <para>
+            ClientAppId is an optional application specific identifier that can be set. When set it will be appended to the User-Agent header of every request in the form of <c>app/{ClientAppId}</c>. 
+            </para>
+            <para>
+            If the ClientAppId is not set on the object the SDK will search the environment variable <c>AWS_SDK_UA_APP_ID</c> and the shared config profile attribute <c>sdk_ua_app_id</c> for a potential value for the ClientAppId.
+            </para>
+            </summary>
+            <remarks>
+            See <see href="https://docs.aws.amazon.com/sdkref/latest/guide/settings-reference.html"/> for more information on environment variables and shared config settings.
+            </remarks>
         </member>
         <member name="P:Amazon.Runtime.ClientConfig.ThrottleRetries">
             <summary>
@@ -9134,7 +9751,7 @@
             and the SDK has determined that there is a difference between local
             and server times.
             
-            If <seealso cref="!:CorrectForClockSkew"/> is set to true, this
+            If <seealso cref="P:Amazon.AWSConfigs.CorrectForClockSkew"/> is set to true, this
             value will still be set to the correction, but it will not be used by the
             SDK and clock skew errors will not be retried.
             </summary>
@@ -9402,6 +10019,17 @@
             A named group of options that are persisted and used to obtain AWSCredentials.
             </summary>
         </member>
+        <member name="P:Amazon.Runtime.CredentialManagement.CredentialProfile.NestedProperties">
+            <summary>
+            An optional Dictionary of Dictionaries that can contain nested properties.
+            For example: in a configuration file like so:
+            [profile foo]
+            s3 = 
+              max_retries = 10
+              max_concurrent_requests = 50
+            NestedProperties contains: {{s3:{max_retries:10},{max_concurrent_requests:50}}}
+            </summary>
+        </member>
         <member name="P:Amazon.Runtime.CredentialManagement.CredentialProfile.Name">
             <summary>
             The name of the CredentialProfile
@@ -9441,6 +10069,11 @@
             If true the region identified in the S3 access point arn will be used when making requests.
             </summary>
         </member>
+        <member name="P:Amazon.Runtime.CredentialManagement.CredentialProfile.S3DisableExpressSessionAuth">
+            <summary>
+            Disables this client's usage of Session Auth for S3Express buckets and reverts to using conventional SigV4.
+            </summary>
+        </member>
         <member name="P:Amazon.Runtime.CredentialManagement.CredentialProfile.S3DisableMultiRegionAccessPoints">
             <summary>
             If true, the use of multi-region access points is disabled.
@@ -9477,6 +10110,14 @@
             Internet protocol version to be used for communicating with the EC2 Instance Metadata Service
             </summary>
         </member>
+        <member name="P:Amazon.Runtime.CredentialManagement.CredentialProfile.EC2MetadataV1Disabled">
+            <summary>
+            If set to true the SDK logic for falling back to V1 will be disabled.
+            When using the SDK on an EC2 instance that has configured instance metadata service to 
+            use V1 only, a InvalidOperationException exception will be thrown when attempting to access
+            the metadata in EC2 instance metadata.This includes AWS credentials and region information.
+            </summary>
+        </member>
         <member name="P:Amazon.Runtime.CredentialManagement.CredentialProfile.UseDualstackEndpoint">
             <summary>
             Configures the endpoint calculation to go to a dual stack (ipv6 enabled) endpoint
@@ -9487,6 +10128,36 @@
             <summary>
             Configures the endpoint calculation to go to a FIPS (https://aws.amazon.com/compliance/fips/) endpoint
             for the configured region.
+            </summary>
+        </member>
+        <member name="P:Amazon.Runtime.CredentialManagement.CredentialProfile.IgnoreConfiguredEndpointUrls">
+            <summary>
+            If this flag is set to true, the SDK will ignore the configured endpoint urls set in the
+            configuration file.
+            </summary>
+        </member>
+        <member name="P:Amazon.Runtime.CredentialManagement.CredentialProfile.EndpointUrl">
+            <summary>
+            This configures the global endpoint URL for a profile. This cannot be used in a services section 
+            and will be ignored if set in the services section.
+            </summary>
+        </member>
+        <member name="P:Amazon.Runtime.CredentialManagement.CredentialProfile.DisableRequestCompression">
+            <summary>
+            Controls whether request payloads are automatically compressed for supported operations.
+            This setting only applies to operations that support compression.
+            The default value is "false". Set to "true" to disable compression.
+            </summary>
+        </member>
+        <member name="P:Amazon.Runtime.CredentialManagement.CredentialProfile.RequestMinCompressionSizeBytes">
+            <summary>
+            Minimum size in bytes that a request body should be to trigger compression.
+            </summary>
+        </member>
+        <member name="P:Amazon.Runtime.CredentialManagement.CredentialProfile.ClientAppId">
+            <summary>
+            Customers can opt-in to provide an app id that is intended to identify their applications
+            in the user agent header string. The value should have a maximum length of 50.
             </summary>
         </member>
         <member name="P:Amazon.Runtime.CredentialManagement.CredentialProfile.Properties">
@@ -9552,7 +10223,21 @@
              In other words, any credentials that require programmatic callbacks at runtime.</param>
              <returns>AWSCredentials for this profile.</returns>
         </member>
-        <!-- Badly formed XML comment ignored for member "T:Amazon.Runtime.CredentialManagement.CredentialProfileOptions" -->
+        <member name="T:Amazon.Runtime.CredentialManagement.CredentialProfileOptions">
+             <summary>
+             The options that are available for creating AWSCredentials with the AWSCredentialsFactory.
+             The type of AWSCredentials that are created depends on which Options are set.
+            
+             Below are the different types of credentials returned, along with the options that are used to obtain them.
+             ([] denotes options that are not required)
+            
+             BasicAWSCredentials         AccessKey SecretKey
+             SessionAWSCredentials       AccessKey SecretKey Token
+             AssmeRoleAWSCredentials     SourceProfile RoleArn [ExternalID] [MfaSerial]
+             FederatedAWSCredentials     EndpointName RoleArn [UserIdentity]
+             SSO                         SsoAccountId SsoRegion SsoRoleName SsoStartUrl SsoSession (Not supported in .NET Framework 3.5)
+             </summary>
+        </member>
         <member name="P:Amazon.Runtime.CredentialManagement.CredentialProfileOptions.AccessKey">
             <summary>
             The access key to be used in the AWSCredentials.
@@ -9619,6 +10304,26 @@
             Absolute path to the file on disk containing an OIDC token.
             </summary>
         </member>
+        <member name="P:Amazon.Runtime.CredentialManagement.CredentialProfileOptions.Services">
+            <summary>
+            The name of the section which contains the custom endpoints for a service or services.
+            For example: 
+            [profile foo]
+            services = bar
+            [services bar]
+            s3 = 
+              endpoint_url = https://custom-endpoint-s3:80
+            ec2 = 
+              endpoint_url = https://custome-endpoint_ec2:80
+            This will tell the SDK to look for custom endpoints in "bar" for the profile "foo.
+            A single Services section can contain configurations for multiple services.
+            </summary>
+        </member>
+        <member name="P:Amazon.Runtime.CredentialManagement.CredentialProfileOptions.EndpointUrl">
+            <summary>
+            The global endpoint to use for a profile. Service specific endpoints will always override this value.
+            </summary>
+        </member>
         <member name="P:Amazon.Runtime.CredentialManagement.CredentialProfileOptions.SsoAccountId">
             <summary>
             The AWS account ID that temporary AWS credentials will be resolved for using AWS SSO.
@@ -9627,6 +10332,11 @@
         <member name="P:Amazon.Runtime.CredentialManagement.CredentialProfileOptions.SsoRegion">
             <summary>
             The AWS region where the SSO directory for <see cref="P:Amazon.Runtime.CredentialManagement.CredentialProfileOptions.SsoStartUrl"/> is hosted.
+            </summary>
+        </member>
+        <member name="P:Amazon.Runtime.CredentialManagement.CredentialProfileOptions.SsoRegistrationScopes">
+            <summary>
+            The SSO scopes that are provided for authorization when using AWS SSO.
             </summary>
         </member>
         <member name="P:Amazon.Runtime.CredentialManagement.CredentialProfileOptions.SsoRoleName">
@@ -10119,6 +10829,36 @@
             SharedCredentialsFile doesn't support the SAML profileTypes.
             </summary>
         </member>
+        <member name="F:Amazon.Runtime.CredentialManagement.SharedCredentialsFile.DefaultDirectory">
+            <summary>
+            The default directory for the credentials file. By default it searches in ~/.aws. This behavior can be overridden.
+            </summary>
+        </member>
+        <member name="P:Amazon.Runtime.CredentialManagement.SharedCredentialsFile.DefaultFilePath">
+            <summary>
+            The default file path for the credentials file. By default it searches for ~/.aws/credentials. This behavior can be overriden.
+            </summary>
+        </member>
+        <member name="F:Amazon.Runtime.CredentialManagement.SharedCredentialsFile.DefaultConfigDirectory">
+            <summary>
+            The default directory for the config file. By default it searches in ~/.aws This behavior can be overriden.
+            </summary>
+        </member>
+        <member name="P:Amazon.Runtime.CredentialManagement.SharedCredentialsFile.DefaultConfigFilePath">
+            <summary>
+            The default file path for the config file. By default it searches in ~/.aws/config
+            </summary>
+        </member>
+        <member name="P:Amazon.Runtime.CredentialManagement.SharedCredentialsFile.FilePath">
+            <summary>
+            The path to the credentials file
+            </summary>
+        </member>
+        <member name="P:Amazon.Runtime.CredentialManagement.SharedCredentialsFile.ConfigFilePath">
+            <summary>
+            The path to the config file
+            </summary>
+        </member>
         <member name="M:Amazon.Runtime.CredentialManagement.SharedCredentialsFile.#ctor">
             <summary>
             Construct a new SharedCredentialsFile in the default location.
@@ -10129,6 +10869,13 @@
             Construct a new SharedCredentialsFile.
             </summary>
             <param name="filePath">The path of the shared credentials file.</param>
+        </member>
+        <member name="M:Amazon.Runtime.CredentialManagement.SharedCredentialsFile.SetUpFilePath(System.String)">
+            <summary>
+            SetUpFilePath sets FilePath and ConfigFilePath using the DefaultFilePath and DefaultConfigFilePath set in
+            the static constructor. If AWSConfigs.AWSProfilesLocation is provided, FilePath supercedes DefaultFilePath
+            </summary>
+            <param name="filePath"></param>
         </member>
         <member name="M:Amazon.Runtime.CredentialManagement.SharedCredentialsFile.RegisterProfile(Amazon.Runtime.CredentialManagement.CredentialProfile)">
             <summary>
@@ -10178,7 +10925,7 @@
             <param name="toProfileName">The name of the new profile.</param>
             <param name="force">If true and the destination profile exists it will be overwritten.</param>
         </member>
-        <member name="M:Amazon.Runtime.CredentialManagement.SharedCredentialsFile.TryGetSection(System.String,System.Boolean,System.Collections.Generic.Dictionary{System.String,System.String}@)">
+        <member name="M:Amazon.Runtime.CredentialManagement.SharedCredentialsFile.TryGetSection(System.String,System.Boolean,System.Boolean,System.Collections.Generic.Dictionary{System.String,System.String}@,System.Collections.Generic.Dictionary{System.String,System.Collections.Generic.Dictionary{System.String,System.String}}@)">
             <summary>
             Try to get a profile that may be partially in the credentials file and partially in the config file.
             If there are identically named properties in both files, the properties in the credentials file take precedence.
@@ -10598,7 +11345,13 @@
             use the given end point to retrieve the credentials.
             </summary>
         </member>
-        <!-- Badly formed XML comment ignored for member "F:Amazon.Runtime.ECSTaskCredentials.ContainerCredentialsURIEnvVariable" -->
+        <member name="F:Amazon.Runtime.ECSTaskCredentials.ContainerCredentialsURIEnvVariable">
+            <summary>
+            These constants should not be consumed by client code.  They are only relevant
+            in the context of ECS container and, especially, AWS_CONTAINER_CREDENTIALS_RELATIVE_URI, AWS_CONTAINER_CREDENTIALS_FULL_URI &amp; AWS_CONTAINER_AUTHORIZATION_TOKEN
+            environment variable should not be overriden by the client code.
+            </summary>
+        </member>
         <member name="T:Amazon.Runtime.EnvironmentVariablesAWSCredentials">
             <summary>
             Uses aws credentials stored in environment variables to construct the credentials object.
@@ -10630,13 +11383,25 @@
             </summary>
             <returns></returns>
         </member>
-        <member name="M:Amazon.Runtime.FallbackCredentialsFactory.ECSEC2CredentialsWrapper">
+        <member name="M:Amazon.Runtime.FallbackCredentialsFactory.ContainerEC2CredentialsWrapper">
+            <summary>
             If either AWS_CONTAINER_CREDENTIALS_RELATIVE_URI or AWS_CONTAINER_CREDENTIALS_FULL_URI environment variables are set, we want to attempt to retrieve credentials
-            using ECS endpoint instead of referring to instance profile credentials.
+            using the generic container provider.
+            
+            If they're not set, we will default to instance profile credentials.
+            </summary>
         </member>
-        <member name="M:Amazon.Runtime.FallbackCredentialsFactory.ECSEC2CredentialsWrapper(System.Net.IWebProxy)">
-            If either AWS_CONTAINER_CREDENTIALS_RELATIVE_URI or AWS_CONTAINER_CREDENTIALS_FULL_URI environment variables are set, we want to attempt to retrieve credentials
-            using ECS endpoint instead of referring to instance profile credentials.
+        <member name="M:Amazon.Runtime.FallbackCredentialsFactory.GetCredentials(Amazon.Runtime.IClientConfig,System.Boolean)">
+            <summary>
+            This overloaded method accepts a config parameter and looks to see if Profile is set on the config.
+            If this value is set, then the SDK tries to return the appropriate credentials for Profile.Name
+            in Profile.Location if it is set. If config.Profile is not set then it fallsback to the regular logic.
+            If config.Profile is set but that profile doesn't exist then an exception is thrown.
+            </summary>
+            <param name="config"></param>
+            <param name="fallbackToAnonymous"></param>
+            <returns></returns>
+            <exception cref="T:Amazon.Runtime.AmazonClientException"></exception>
         </member>
         <member name="T:Amazon.Runtime.FederatedAuthenticationCancelledException">
             <summary>
@@ -10795,6 +11560,56 @@
             is associated with a CredentialProfile.
             </summary>
         </member>
+        <member name="T:Amazon.Runtime.GenericContainerCredentials">
+            <summary>
+            <para>
+            Generic provider that supports retrieval of AWS credentials from an arbitrary HTTP(S) endpoint specified by the environment.
+            </para>
+            
+            <para>
+            This provider is restricted to communication over loopback and allowlisted link-local interfaces unless the target endpoint is over HTTPS. 
+            The credentials request can also include an authentication token loaded through the environment.
+            </para>
+            </summary>
+        </member>
+        <member name="F:Amazon.Runtime.GenericContainerCredentials.MaxRetries">
+            <summary>
+            Number of times the provider will attempt to fetch credentials before escalating any errors.
+            </summary>
+        </member>
+        <member name="M:Amazon.Runtime.GenericContainerCredentials.DetermineEndpoint">
+            <summary>
+            Determines the endpoint where the credentials retrieval request should be sent.
+            This provider will respect the following sources, in order of priority, to determine the request URI:
+            <list type="number">
+            <item>If AWS_CONTAINER_CREDENTIALS_RELATIVE_URI is set, its value is appended to the ECS link-local host</item>
+            <item>If AWS_CONTAINER_CREDENTIALS_FULL_URI is set, its value is taken as-is</item>
+            </list>
+            </summary>
+            <remarks>
+            This provider will also validate the URI hostname satisfies one of the following conditions:
+            <list type="bullet">
+            <item>Is within the loopback CIDR</item>
+            <item>Is the ECS or EKS container host</item>
+            <item>Is using the HTTPS scheme</item>
+            </list>
+            <para>This method is also marked as internal so it can be unit tested.</para>
+            </remarks>
+        </member>
+        <member name="M:Amazon.Runtime.GenericContainerCredentials.CreateAuthorizationHeader">
+            <summary>
+            Reads the authorization token (if present) to be used when retrieving credentials.
+            This provider will respect the following sources, in order of priority, to determine how to present authentication in the request:
+            <list type="number">
+            <item>AWS_CONTAINER_AUTHORIZATION_TOKEN_FILE</item>
+            <item>AWS_CONTAINER_AUTHORIZATION_TOKEN</item>
+            </list>
+            </summary>
+            <exception cref="T:System.InvalidOperationException">
+            Thrown if the resolved value contains the "\r\n" newline sequence (it would otherwise break the resulting HTTP request).
+            </exception>
+            <remarks>This method is marked as internal so it can be unit tested.</remarks>
+        </member>
         <member name="T:Amazon.Runtime.ImmutableCredentials">
             <summary>
             Immutable representation of AWS credentials.
@@ -10852,25 +11667,31 @@
         </member>
         <member name="M:Amazon.Runtime.InstanceProfileAWSCredentials.#ctor(System.String)">
             <summary>
-            Constructs a InstanceProfileAWSCredentials object for specific role
+            Constructs <see cref="T:Amazon.Runtime.InstanceProfileAWSCredentials"/> for the specified role.
             </summary>
-            <param name="role">Role to use</param>
+            <param name="role">Name of the role to use</param>
         </member>
         <member name="M:Amazon.Runtime.InstanceProfileAWSCredentials.#ctor(System.String,System.Net.IWebProxy)">
             <summary>
-            Constructs a InstanceProfileAWSCredentials object for specific role
+            Constructs <see cref="T:Amazon.Runtime.InstanceProfileAWSCredentials"/> for the specified role.
             </summary>
-            <param name="role">Role to use</param>
+            <param name="role">Name of the role to use</param>
+            <param name="proxy">Proxy used to process requests to the instance metadata service</param>
         </member>
         <member name="M:Amazon.Runtime.InstanceProfileAWSCredentials.#ctor">
             <summary>
-            Constructs a InstanceProfileAWSCredentials object for the first found role
+            Constructs <see cref="T:Amazon.Runtime.InstanceProfileAWSCredentials"/> for the first found role.
             </summary>
+            <remarks>This makes an IMDS call to retrieve the name of the IAM role associated with the instance during construction.</remarks>
+            <exception cref="T:Amazon.Runtime.AmazonServiceException">Thrown when unable to retrieve the name of the IAM role.</exception>
         </member>
         <member name="M:Amazon.Runtime.InstanceProfileAWSCredentials.#ctor(System.Net.IWebProxy)">
             <summary>
-            Constructs a InstanceProfileAWSCredentials object for the first found role
+            Constructs <see cref="T:Amazon.Runtime.InstanceProfileAWSCredentials"/> for the first found role.
             </summary>
+            <remarks>This makes an IMDS call to retrieve the name of the IAM role associated with the instance during construction.</remarks>
+            <param name="proxy">Proxy used to process requests to the instance metadata service</param>
+            <exception cref="T:Amazon.Runtime.AmazonServiceException">Thrown when unable to retrieve the name of the IAM role.</exception>
         </member>
         <member name="M:Amazon.Runtime.InstanceProfileAWSCredentials.GetAvailableRoles">
             <summary>
@@ -10966,6 +11787,9 @@
         <member name="M:Amazon.Runtime.Credentials.Internal.ISSOTokenFileCache.SaveSsoToken(Amazon.Runtime.Credentials.Internal.SsoToken,System.String)">
             <inheritdoc cref="M:Amazon.Runtime.Credentials.Internal.ISSOTokenFileCache.SaveSsoTokenAsync(Amazon.Runtime.Credentials.Internal.SsoToken,System.String,System.Threading.CancellationToken)"/>
         </member>
+        <member name="M:Amazon.Runtime.Credentials.Internal.ISSOTokenFileCache.ScanSsoTokens(System.String)">
+            <inheritdoc cref="M:Amazon.Runtime.Credentials.Internal.ISSOTokenFileCache.ScanSsoTokensAsync(System.String,System.Threading.CancellationToken)"/>
+        </member>
         <member name="M:Amazon.Runtime.Credentials.Internal.ISSOTokenFileCache.TryGetSsoTokenAsync(Amazon.Runtime.Credentials.Internal.SSOTokenManagerGetTokenOptions,System.String,System.Threading.CancellationToken)">
             <summary>
             Tries to load a <see cref="T:Amazon.Runtime.Credentials.Internal.SsoToken"/> from the SSO File Cache.
@@ -10990,6 +11814,17 @@
             <param name="token">
             <see cref="T:Amazon.Runtime.Credentials.Internal.SsoToken"/> to persist to disk.
             </param>
+            <param name="ssoCacheDirectory">
+            Optional: Leave null/empty to default to (user profile)/.aws/sso/cache/
+            </param>
+            <param name="cancellationToken">
+            Cancels the operation
+            </param>
+        </member>
+        <member name="M:Amazon.Runtime.Credentials.Internal.ISSOTokenFileCache.ScanSsoTokensAsync(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Scans <paramref name="ssoCacheDirectory"/> for all json files that have accessToken property and returns a list of SsoToken and the file path.
+            </summary>
             <param name="ssoCacheDirectory">
             Optional: Leave null/empty to default to (user profile)/.aws/sso/cache/
             </param>
@@ -11046,6 +11881,9 @@
         <member name="P:Amazon.Runtime.Credentials.Internal.SSOTokenManagerGetTokenOptions.ClientType">
             <inheritdoc cref="P:Amazon.Runtime.SharedInterfaces.GetSsoTokenRequest.ClientType"/>
         </member>
+        <member name="P:Amazon.Runtime.Credentials.Internal.SSOTokenManagerGetTokenOptions.Scopes">
+            <inheritdoc cref="P:Amazon.Runtime.SharedInterfaces.GetSsoTokenRequest.Scopes"/>
+        </member>
         <member name="P:Amazon.Runtime.Credentials.Internal.SSOTokenManagerGetTokenOptions.SsoVerificationCallback">
             <inheritdoc cref="P:Amazon.Runtime.SSOAWSCredentialsOptions.SsoVerificationCallback"/>
         </member>
@@ -11054,7 +11892,7 @@
             This field controls how <see cref="T:Amazon.Runtime.Credentials.Internal.SSOTokenManager"/> should behave if it does not find a valid or
             refreshable token.
             <para />
-            If <c>true</c>, then <see cref="T:Amazon.Runtime.Credentials.Internal.SSOTokenManager"/> will use <see cref="M:Amazon.Runtime.SharedInterfaces.ICoreAmazonSSOOIDC.GetSsoToken(Amazon.Runtime.SharedInterfaces.GetSsoTokenRequest)"/>
+            If <c>true</c>, then <see cref="T:Amazon.Runtime.Credentials.Internal.SSOTokenManager"/> will use ICoreAmazonSSOOIDC.GetSsoToken
             to start an authorization flow and mint a new token and cache the result.
             If <c>false</c> <see cref="T:Amazon.Runtime.Credentials.Internal.SSOTokenManager"/> will throw an exception if it finds
             an expired token.  It will take no action if finds no cached token.
@@ -11091,17 +11929,39 @@
             </summary>
             <param name="token">Token to serialize</param>
         </member>
+        <member name="M:Amazon.Runtime.Credentials.Internal.SsoTokenUtils.RegisteredClientExpired(Amazon.Runtime.Credentials.Internal.SsoToken)">
+            <summary>
+            This determines whether the <seealso cref="P:Amazon.Runtime.Credentials.Internal.SsoToken.RegistrationExpiresAt"/> field is 5 minutes within expiration
+            </summary>
+            <param name="token">The sso token</param>
+            <returns>This returns true if <seealso cref="P:Amazon.Runtime.Credentials.Internal.SsoToken.RegistrationExpiresAt"/> is within 5 minutes of expiration. False otherwise</returns>
+        </member>
         <member name="M:Amazon.Runtime.Credentials.Internal.SsoTokenUtils.ToJson(Amazon.Runtime.Credentials.Internal.SsoToken)">
             <summary>
             Serializes the SSO Token to JSON
             </summary>
             <param name="token">Token to serialize</param>
         </member>
+        <member name="M:Amazon.Runtime.Credentials.Internal.SsoTokenUtils.FromJson(System.String,System.Boolean)">
+            <summary>
+            Deserializes the SSO Token from JSON. Returns null when throwIfTokenInvalid is false and token is invalid.
+            </summary>
+            <param name="json">JSON (string) to deserialize.</param>
+            <param name="throwIfTokenInvalid">if set, throws exception of type AmazonClientException when the json doesn't have AccessToken and ExpiresAt properties.</param>
+        </member>
         <member name="M:Amazon.Runtime.Credentials.Internal.SsoTokenUtils.FromJson(System.String)">
             <summary>
             Deserializes the SSO Token from JSON
             </summary>
             <param name="json">JSON (string) to deserialize</param>
+        </member>
+        <member name="M:Amazon.Runtime.Credentials.Internal.SsoTokenUtils.ConvertRFC3339StringToDateTime(System.String)">
+            <summary>
+            This method takes in an RFC3339 string representing a datetime and converts it to a DateTime object 
+            </summary>
+            <param name="stringFormattedDate">The RFC3339 formatted string</param>
+            <returns>Returns the datetime object serialized to UTC</returns>
+            <exception cref="T:System.ArgumentNullException"></exception>
         </member>
         <member name="T:Amazon.Runtime.ProcessAWSCredentials">
             <summary>
@@ -11465,7 +12325,6 @@
             <summary>
             Performs the SSO flow to authenticate and get credentials
             </summary>
-            <param name="oidc">SSO OIDC client</param>
             <param name="sso">SSO client</param>
             <returns>Resolved credentials</returns>
         </member>
@@ -11531,9 +12390,27 @@
             The name of the sso_session section in the shared configuration file specified to be used when loading the token.
             </summary>
         </member>
+        <member name="P:Amazon.Runtime.SSOAWSCredentialsOptions.Scopes">
+            <summary>
+            The SSO scopes that are provided for authorization when using AWS SSO.
+            </summary>
+        </member>
         <member name="P:Amazon.Runtime.SSOAWSCredentialsOptions.SsoVerificationCallback">
             <summary>
             A callback that is used to initiate the SSO Login flow with the user.
+            </summary>
+        </member>
+        <member name="P:Amazon.Runtime.SSOAWSCredentialsOptions.SupportsGettingNewToken">
+            <summary>
+            This field controls whether a new sso token will be generated if a valid cached token or 
+            refreshable token is not found.
+            <para />
+            If <c>true</c> and a valid cached token or refreshable token is not found then 
+            sso authorization flow is started, a new token is generated and the result is cached.
+            If <c>false</c> and a valid cached token or refreshable token is not found, an exception is thrown.
+            <para />
+            NOTE: If setting to <c>true</c>, <see cref="P:Amazon.Runtime.SSOAWSCredentialsOptions.SsoVerificationCallback"/> must also be set
+            for authorization flow to succeed.
             </summary>
         </member>
         <member name="P:Amazon.Runtime.SSOAWSCredentialsOptions.ProxySettings">
@@ -12012,7 +12889,7 @@
         </member>
         <member name="M:Amazon.Runtime.Documents.Document.AsDictionary">
             <summary>
-            Returns the Document's backing value as a <see cref="!:Dictionary&lt;string,Document&gt;"/>.
+            Returns the Document's backing value.
             </summary>
             <exception cref="T:Amazon.Runtime.Documents.InvalidDocumentTypeConversionException">Thrown if <see cref="P:Amazon.Runtime.Documents.Document.Type"/> is not <see cref="F:Amazon.Runtime.Documents.DocumentType.Dictionary"/></exception>
         </member>
@@ -12440,6 +13317,12 @@
             Algorithms for validating request and response integrity for supported operations.
             These are the algorithms support by the .NET SDK, a given service may 
             only use a subset of these.
+            </summary>
+        </member>
+        <member name="T:Amazon.Runtime.CompressionEncodingAlgorithm">
+            <summary>
+            Supported algorithms for compressing request payloads.
+            A given request payload will be compressed by one of the algorithms below.
             </summary>
         </member>
         <member name="T:Amazon.Runtime.CoreChecksumResponseBehavior">
@@ -13289,6 +14172,48 @@
             The contract for EventStream terminal events.
             </summary>
         </member>
+        <member name="T:Amazon.Runtime.EventStreams.Internal.InitialRequestEvent">
+            <summary>
+            <b>The AWS .NET SDK only supports streaming responses. The <see cref="T:Amazon.Runtime.EventStreams.Internal.InitialRequestEvent"/> class is just a placeholder in case we do decide
+            to add support in the future
+            </b>
+            
+            The InitialRequest <seealso cref="T:Amazon.Runtime.EventStreams.EventStreamMessage"/> is not a modeled event by the service. It is just a message that is sent
+            to signal the beginning of a stream of messages for a streamable request. The InitialRequestEvent may or may not contain 
+            actual data in the payload, and some services may not even send an InitialRequest message. In the case that 
+            the service does send an InitialRequestmessage, this class represents the event that the message is converted into.
+            </summary>
+        </member>
+        <member name="M:Amazon.Runtime.EventStreams.Internal.InitialRequestEvent.#ctor(Amazon.Runtime.EventStreams.IEventStreamMessage)">
+            <summary>
+            The constructor which takes in a message of type <see cref="T:Amazon.Runtime.EventStreams.IEventStreamMessage"/>
+            </summary>
+            <param name="message">The message of type IEventStreamMessage</param>
+        </member>
+        <member name="P:Amazon.Runtime.EventStreams.Internal.InitialRequestEvent.Payload">
+            <summary>
+            The payload of the message
+            </summary>
+        </member>
+        <member name="T:Amazon.Runtime.EventStreams.Internal.InitialResponseEvent">
+            <summary>
+            The InitialResponse <seealso cref="T:Amazon.Runtime.EventStreams.EventStreamMessage"/> is not a modeled event by the service. It is just a message that is sent
+            to signal the beginning of a stream of messages. The InitialResponseEvent may or may not contain 
+            actual data in the payload, and some services may not even send an InitialResponse message. In the case that 
+            the service does send an InitialResponse message, this class represents the event that the message is converted into.
+            </summary>
+        </member>
+        <member name="M:Amazon.Runtime.EventStreams.Internal.InitialResponseEvent.#ctor(Amazon.Runtime.EventStreams.IEventStreamMessage)">
+            <summary>
+            The constructor which takes in a message of type <see cref="T:Amazon.Runtime.EventStreams.IEventStreamMessage"/>
+            </summary>
+            <param name="message">The message of type IEventStreamMessage </param>
+        </member>
+        <member name="P:Amazon.Runtime.EventStreams.Internal.InitialResponseEvent.Payload">
+            <summary>
+            The payload of the message
+            </summary>
+        </member>
         <member name="T:Amazon.Runtime.EventStreams.Internal.UnknownEventStreamEvent">
             <summary>
             This Event is returned if an event is retrieved from the event stream, but a generator function
@@ -13316,6 +14241,27 @@
             </summary>
             <param name="receivedMessage">The Message recieved from the event stream before conversion.</param>
             <param name="eventType">The event type.</param>
+        </member>
+        <member name="T:Amazon.Runtime.EventStreams.Utils.EventStreamUtils">
+            <summary>
+            This class is used to convert an <seealso cref="T:Amazon.Runtime.EventStreams.EventStreamMessage"/> to the appropriate
+            <seealso cref="T:Amazon.Runtime.Internal.Transform.UnmarshallerContext"/>. The payload of the EventStreamMessage is read sent in
+            as the stream to the unmarshaller and it is unmarshalled to the appropriate event class from there.
+            </summary>
+        </member>
+        <member name="M:Amazon.Runtime.EventStreams.Utils.EventStreamUtils.ConvertMessageToXmlContext(Amazon.Runtime.EventStreams.IEventStreamMessage)">
+            <summary>
+            Converts an <seealso cref="T:Amazon.Runtime.EventStreams.EventStreamMessage"/> to a <seealso cref="T:Amazon.Runtime.Internal.Transform.XmlUnmarshallerContext"/>.
+            </summary>
+            <param name="message">The event stream message.</param>
+            <returns>The XmlUnmarshallerContext</returns>
+        </member>
+        <member name="M:Amazon.Runtime.EventStreams.Utils.EventStreamUtils.ConvertMessageToJsonContext(Amazon.Runtime.EventStreams.IEventStreamMessage)">
+            <summary>
+            Converts an <seealso cref="T:Amazon.Runtime.EventStreams.EventStreamMessage"/> to a <seealso cref="T:Amazon.Runtime.Internal.Transform.JsonUnmarshallerContext"/>
+            </summary>
+            <param name="message">The event stream message</param>
+            <returns>The JsonUnmarshallerContext</returns>
         </member>
         <member name="T:Amazon.Runtime.EventStreams.UnknownEventStreamMessageTypeException">
             <summary>
@@ -13378,6 +14324,30 @@
             <summary>
             This interface is the read only access to the ClientConfig object used when setting up service clients. Once service clients
             are initiated the config object should not be changed to avoid issues with using a service client in a multi threaded environment.
+            </summary>
+        </member>
+        <member name="P:Amazon.Runtime.IClientConfig.IgnoreConfiguredEndpointUrls">
+            <summary>
+            If set to true the SDK will ignore the configured endpointUrls in the config file or in the environment variables.
+            By default it is set to false.
+            </summary>
+        </member>
+        <member name="P:Amazon.Runtime.IClientConfig.ServiceId">
+            <summary>
+            The serviceId for the service, which is specified in the metadata in the ServiceModel.
+            The transformed value of the service ID (replace any spaces in the service ID 
+            with underscores and uppercase all letters) is used to set service-specific endpoint urls.
+            I.e: AWS_ENDPOINT_URL_ELASTIC_BEANSTALK
+            For configuration files, replace any spaces with underscores and lowercase all letters
+            I.e. elastic_beanstalk = 
+                endpoint_url = http://localhost:8000
+            </summary>
+        </member>
+        <member name="P:Amazon.Runtime.IClientConfig.Profile">
+            <summary>
+            Specifies the profile to be used. When this is set on the ClientConfig and that config is passed to 
+            the service client constructor the sdk will try to find the credentials associated with the Profile.Name property
+            If set, this will override AWS_PROFILE and AWSConfigs.ProfileName.
             </summary>
         </member>
         <member name="P:Amazon.Runtime.IClientConfig.AWSTokenProvider">
@@ -13584,6 +14554,31 @@
             for the configured region.
             </summary>
         </member>
+        <member name="P:Amazon.Runtime.IClientConfig.DisableRequestCompression">
+            <summary>
+            Controls whether request payloads are automatically compressed for supported operations.
+            This setting only applies to operations that support compression.
+            The default value is "false". Set to "true" to disable compression.
+            </summary>
+        </member>
+        <member name="P:Amazon.Runtime.IClientConfig.RequestMinCompressionSizeBytes">
+            <summary>
+            Minimum size in bytes that a request body should be to trigger compression.
+            </summary>
+        </member>
+        <member name="P:Amazon.Runtime.IClientConfig.ClientAppId">
+            <summary>
+            <para>
+            ClientAppId is an optional application specific identifier that can be set. When set it will be appended to the User-Agent header of every request in the form of <c>app/{ClientAppId}</c>. 
+            </para>
+            <para>
+            If the ClientAppId is not set on the object the SDK will search the environment variable <c>AWS_SDK_UA_APP_ID</c> and the shared config profile attribute <c>sdk_ua_app_id</c> for a potential value for the ClientAppId.
+            </para>
+            </summary>
+            <remarks>
+            See <see href="https://docs.aws.amazon.com/sdkref/latest/guide/settings-reference.html"/> for more information on environment variables and shared config settings.
+            </remarks>
+        </member>
         <member name="P:Amazon.Runtime.IClientConfig.ThrottleRetries">
             <summary>
             Configures a flag enabling to either opt in or opt out of the retry throttling service.
@@ -13715,6 +14710,18 @@
             <summary>
             Returns a WebProxy instance configured to match the proxy settings
             in the client configuration.
+            </summary>
+        </member>
+        <member name="M:Amazon.Runtime.IClientConfig.GetHttpsProxy">
+            <summary>
+            Returns a WebProxy instance to use for HTTPS connections if an
+            explicit web proxy hasn't been configured.
+            </summary>
+        </member>
+        <member name="M:Amazon.Runtime.IClientConfig.GetHttpProxy">
+            <summary>
+            Returns a WebProxy instance to use for HTTP connections if an
+            explicit web proxy hasn't been configured.
             </summary>
         </member>
         <member name="T:Amazon.Runtime.ILogMessage">
@@ -14828,6 +15835,14 @@
             defined in the AWSSDK.SSO assembly.
             </summary>
         </member>
+        <member name="T:Amazon.Runtime.SharedInterfaces.ICoreAmazonSSO_Logout">
+            <summary>
+            ICoreAmazonSSO_Logout is not meant to be used directly. It defines SSO 
+            service with Logout functionality and allows other services to be able to use the service as 
+            a runtime dependency. This interface is implemented by the AmazonSSOClient 
+            defined in the AWSSDK.SSO assembly.
+            </summary>
+        </member>
         <member name="T:Amazon.Runtime.SharedInterfaces.ICoreAmazonSSOOIDC">
             <summary>
             ICoreAmazonSSOOIDC is not meant to be used directly. It defines SSO OIDC
@@ -14838,34 +15853,70 @@
         </member>
         <member name="M:Amazon.Runtime.SharedInterfaces.ICoreAmazonSSOOIDC.GetSsoToken(Amazon.Runtime.SharedInterfaces.GetSsoTokenRequest)">
             <summary>
+            <para>
             This method is used internally to access the Amazon SSO OIDC service within other service assemblies.
             Please use AmazonSSOOIDCClient to access the Amazon SSO OIDC service instead.
+            </para>
             
-            Use Amazon SSO OIDC to get an SSO Token
+            <para>
+            Use Amazon SSO OIDC to get an SSO Token.
+            </para>
             </summary>
         </member>
         <member name="M:Amazon.Runtime.SharedInterfaces.ICoreAmazonSSOOIDC.GetSsoTokenAsync(Amazon.Runtime.SharedInterfaces.GetSsoTokenRequest)">
             <summary>
+            <para>
             This method is used internally to access the Amazon SSO OIDC service within other service assemblies.
             Please use AmazonSSOOIDCClient to access the Amazon SSO OIDC service instead.
+            </para>
             
-            Use Amazon SSO OIDC to get an SSO Token
+            <para>
+            Use Amazon SSO OIDC to get an SSO Token.
+            </para>
             </summary>
         </member>
         <member name="M:Amazon.Runtime.SharedInterfaces.ICoreAmazonSSOOIDC.RefreshToken(Amazon.Runtime.SharedInterfaces.GetSsoTokenResponse)">
             <summary>
+            <para>
             This method is used internally to access the Amazon SSO OIDC service within other service assemblies.
             Please use AmazonSSOOIDCClient to access the Amazon SSO OIDC service instead.
+            </para>
             
-            Use Amazon SSO OIDC to refresh <paramref name="previousResponse"/>
+            <para>
+            Use Amazon SSO OIDC to refresh <paramref name="previousResponse"/>.
+            </para>
             </summary>
         </member>
         <member name="M:Amazon.Runtime.SharedInterfaces.ICoreAmazonSSOOIDC.RefreshTokenAsync(Amazon.Runtime.SharedInterfaces.GetSsoTokenResponse)">
             <summary>
+            <para>
             This method is used internally to access the Amazon SSO OIDC service within other service assemblies.
             Please use AmazonSSOOIDCClient to access the Amazon SSO OIDC service instead.
+            </para>
             
-            Use Amazon SSO OIDC to refresh <paramref name="previousResponse"/>
+            <para>
+            Use Amazon SSO OIDC to refresh <paramref name="previousResponse"/>.
+            </para>
+            </summary>
+        </member>
+        <member name="T:Amazon.Runtime.SharedInterfaces.ICoreAmazonSSOOIDC_V2">
+            <summary>
+            ICoreAmazonSSOOIDC_V2 is not meant to be used directly. It defines SSO OIDC
+            service with basic .NET types and allows other services to be able to use the service as 
+            a runtime dependency. This interface is implemented by the AmazonSSOOIDCClient 
+            defined in the AWSSDK.SSOOIDC assembly.
+            </summary>
+        </member>
+        <member name="M:Amazon.Runtime.SharedInterfaces.ICoreAmazonSSOOIDC_V2.GetSsoTokenAsync(Amazon.Runtime.SharedInterfaces.GetSsoTokenRequest,System.Threading.CancellationToken)">
+            <summary>
+            <para>
+            This method is used internally to access the Amazon SSO OIDC service within other service assemblies.
+            Please use AmazonSSOOIDCClient to access the Amazon SSO OIDC service instead.
+            </para>
+            
+            <para>
+            Use Amazon SSO OIDC to get an SSO Token.
+            </para>
             </summary>
         </member>
         <member name="P:Amazon.Runtime.SharedInterfaces.GetSsoTokenRequest.ClientName">
@@ -14892,6 +15943,11 @@
             <summary>
             Additional properties to provide to the operation.
             Optional, can be null.
+            </summary>
+        </member>
+        <member name="P:Amazon.Runtime.SharedInterfaces.GetSsoTokenRequest.Scopes">
+            <summary>
+            The SSO scopes that are provided for authorization when using AWS SSO.
             </summary>
         </member>
         <member name="P:Amazon.Runtime.SharedInterfaces.GetSsoTokenResponse.AccessToken">
@@ -15001,7 +16057,7 @@
             </summary>
             <remarks>
             This class is the focused public projection of the internal class
-            <see cref="T:Amazon.Runtime.Credentials.Internal.SsoToken"/>
+            Amazon.Runtime.Credentials.Internal.SsoToken
             </remarks>
         </member>
         <member name="T:Amazon.Runtime.AWSTokenProviderChain">
@@ -15035,7 +16091,7 @@
         </member>
         <member name="P:Amazon.Runtime.DefaultAWSTokenProviderChain.ProfileName">
             <summary>
-            Used to initialize <see cref="T:Amazon.Runtime.ProfileTokenProvider"/>.
+            Used to initialize ProfileTokenProvider.
             </summary>
         </member>
         <member name="T:Amazon.Runtime.IAWSTokenProvider">
@@ -15153,7 +16209,7 @@
             and runs some validation logic.
             <para />
             NOTE: Per the Spec, this method can throw exceptions that should bubble up through
-            <see cref="M:Amazon.Runtime.IAWSTokenProvider.TryResolveToken(Amazon.Runtime.AWSToken@)"/>.
+            IAWSTokenProvider.TryResolveToken.
             </summary>
             <returns>
             True if the profile has all necessary data points and should be further processed by
@@ -15538,6 +16594,11 @@
             The RFC822Date Format string. Used when parsing date objects
             </summary>
         </member>
+        <member name="F:Amazon.Util.AWSSDKUtils.ISO8601WithUTCOffset">
+            <summary>
+            Represents the ISO8601 basic date/time format with a UTC offset
+            </summary>
+        </member>
         <member name="M:Amazon.Util.AWSSDKUtils.GetExtension(System.String)">
             <summary>
             Returns an extension of a path.
@@ -15549,6 +16610,14 @@
         </member>
         <member name="M:Amazon.Util.AWSSDKUtils.GetParametersAsString(Amazon.Runtime.Internal.IRequest)">
             Convert request parameters to Url encoded query string
+        </member>
+        <member name="M:Amazon.Util.AWSSDKUtils.GetRequestPayloadBytes(Amazon.Runtime.Internal.IRequest,System.Nullable{System.Boolean})">
+            <summary>
+            Returns the request parameters in the form of a query string.
+            </summary>
+            <param name="request">The request instance</param>
+            <param name="usesQueryString">Optional parameter: if true, we will return an empty string</param>
+            <returns>Request parameters in query string byte array format</returns>
         </member>
         <member name="M:Amazon.Util.AWSSDKUtils.GetParametersAsString(Amazon.Runtime.Internal.ParameterCollection)">
             Convert Dictionary of parameters to Url encoded query string
@@ -15606,6 +16675,15 @@
             <remarks>If resourcePath begins or ends with slash, the resulting canonicalized path will follow suit.</remarks>
             <returns>Canonicalized resource path for the endpoint.</returns>
         </member>
+        <member name="M:Amazon.Util.AWSSDKUtils.GetFullCanonicalizedResourcePath(System.String,System.Collections.Generic.IEnumerable{System.String})">
+            <summary>
+            This method returns the full canonicalized resource path which includes the resource path from the request and the resource path from the endpoint.
+            </summary>
+            <param name="resourcePathFromEndpoint">This is the resource path that comes from the endpoint itself and not the request</param>
+            <param name="encodedSegments">If double encoded, encoded segments contains the encoded segments from the resource path from the request</param>
+            <returns>The full canonicalized resource path that contains the single encoded canonicalized resource path from the endpoint and the double encoded
+            resource path from the request</returns>
+        </member>
         <member name="M:Amazon.Util.AWSSDKUtils.SplitResourcePathIntoSegments(System.String,System.Collections.Generic.IDictionary{System.String,System.String})">
             <summary>
             Splits the resourcePath at / into segments then resolves any keys with the path resource values. Greedy
@@ -15623,6 +16701,13 @@
             <param name="path">If the path property is specified,
             the accepted path characters {/+:} are not encoded.</param>
             <returns>A joined URL with encoded segments</returns>
+        </member>
+        <member name="M:Amazon.Util.AWSSDKUtils.JoinResourcePathSegmentsV2(System.Collections.Generic.IEnumerable{System.String})">
+            <summary>
+            Joins all path segments with the / character and encodes each segment before joining
+            </summary>
+            <param name="pathSegments"></param>
+            <returns></returns>
         </member>
         <member name="M:Amazon.Util.AWSSDKUtils.ResolveResourcePath(System.String,System.Collections.Generic.IDictionary{System.String,System.String})">
             <summary>
@@ -15642,6 +16727,15 @@
             <param name="pathResources">The key/value lookup for the patterned resourcePath</param>
             <param name="skipEncodingValidPathChars">If true valid path characters {/+:} are not encoded</param>
             <returns>A segmented encoded URL</returns>
+        </member>
+        <member name="M:Amazon.Util.AWSSDKUtils.ResolveResourcePathV2(System.String,System.Collections.Generic.IDictionary{System.String,System.String})">
+            <summary>
+            Takes a patterned resource path and resolves it using the key/value path resources into
+            a segmented encoded URL.
+            </summary>
+            <param name="resourcePath">The patterned resourcePath</param>
+            <param name="pathResources">The key/value lookup for the patterned resourcePath</param>
+            <returns></returns>
         </member>
         <member name="M:Amazon.Util.AWSSDKUtils.Join(System.Collections.Generic.List{System.String})">
             <summary>
@@ -15856,6 +16950,11 @@
             </returns>
         </member>
         <member name="M:Amazon.Util.AWSSDKUtils.GenerateChecksumForContent(System.String,System.Boolean)">
+            <remarks> 
+            Note, this was called directly from service packages prior to compression support
+            being added shortly after 3.7.200. It's important to preserve the signature and functionality
+            until the next minor version for those older 3.7.* service packages.
+            </remarks>
             <summary>
             Generates an MD5 Digest for the string-based content
             </summary>
@@ -16103,8 +17202,16 @@
         </member>
         <member name="P:Amazon.Util.EC2InstanceMetadata.IsIMDSEnabled">
             <summary>
-            Returns whether requesting the EC2 Instance Metadata Service is 
-            enabled via the AWS_EC2_METADATA_DISABLED environment variable.
+            If set to true the SDK logic for falling back to V1 will be disabled.
+            When using the SDK on an EC2 instance that has configured instance metadata service to 
+            use V1 only, a InvalidOperationException exception will be thrown when attempting to access
+            the metadata in EC2 instance metadata.This includes AWS credentials and region information.
+            The default value is false.
+            </summary>
+        </member>
+        <member name="P:Amazon.Util.EC2InstanceMetadata.EC2MetadataV1Disabled">
+            <summary>
+            Controls whether request EC2 metadata v1 fallback is disabled.
             </summary>
         </member>
         <member name="P:Amazon.Util.EC2InstanceMetadata.Proxy">
@@ -16493,6 +17600,9 @@
         <member name="M:Amazon.Util.Internal.IDirectory.CreateDirectory(System.String)">
             <inheritdoc cref="M:System.IO.Directory.CreateDirectory(System.String)"/>
         </member>
+        <member name="M:Amazon.Util.Internal.IDirectory.GetFiles(System.String,System.String)">
+            <inheritdoc cref="M:System.IO.Directory.GetFiles(System.String,System.String)"/>
+        </member>
         <member name="T:Amazon.Util.Internal.DirectoryRetriever">
             <inheritdoc cref="T:Amazon.Util.Internal.IDirectory"/>
         </member>
@@ -16528,6 +17638,9 @@
         <member name="M:Amazon.Util.Internal.IFile.WriteAllText(System.String,System.String)">
             <inheritdoc cref="M:System.IO.File.WriteAllText(System.String,System.String)"/>
         </member>
+        <member name="M:Amazon.Util.Internal.IFile.Delete(System.String)">
+            <inheritdoc cref="M:System.IO.File.Delete(System.String)"/>
+        </member>
         <member name="M:Amazon.Util.Internal.IFile.ReadAllTextAsync(System.String,System.Threading.CancellationToken)">
             <inheritdoc cref="M:System.IO.File.ReadAllText(System.String)"/>
         </member>
@@ -16543,6 +17656,28 @@
             This serves as a property for the singleton EnvironmentVariableSource
             </summary>
         </member>
+        <member name="M:Amazon.Util.Internal.InternalSDKUtils.ReplaceInvalidUserAgentCharacters(System.String)">
+            <summary>
+            Replace disallowed characters by a hyphen in <paramref name="userAgent"/>
+            </summary>
+            <param name="userAgent"> Unsanitized user agent string</param>
+            <returns> Sanitized user agent string </returns>
+        </member>
+        <member name="M:Amazon.Util.Internal.InternalSDKUtils.BuildUserAgentString(System.String)">
+            <summary>
+            Build user agent string statically. This method is currently used by PowerShell and high level libraries.
+            </summary>
+            <param name="serviceSdkVersion"> Version of the service </param>
+            <returns> User agent header string </returns>
+        </member>
+        <member name="M:Amazon.Util.Internal.InternalSDKUtils.BuildUserAgentString(System.String,System.String)">
+            <summary>
+            Build user agent string statically. This method is currently used by the .NET SDK.
+            </summary>
+            <param name="serviceId"> Service id of the service being called </param>
+            <param name="serviceSdkVersion"> Version of the service </param>
+            <returns> User agent header string </returns>
+        </member>
         <member name="M:Amazon.Util.Internal.InternalSDKUtils.IsFilePathRootedWithDirectoryPath(System.String,System.String)">
             <summary>
             Tests if the filePath is rooted with the directoryPath when resolved. The filePath and
@@ -16551,6 +17686,12 @@
             <param name="filePath">The filePath to test against the directoryPath.</param>
             <param name="directoryPath">The directoryPath to use as root in the test.</param>
             <returns>true if directoryPath is root of filePath else false</returns>
+        </member>
+        <member name="M:Amazon.Util.Internal.InternalSDKUtils.IsRunningNativeAot">
+            <summary>
+            Returns true if the SDK is being run in an NativeAOT environment.
+            </summary>
+            <returns></returns>
         </member>
         <member name="T:Amazon.Util.Internal.NamedSettingsManager">
              <summary>
@@ -16766,6 +17907,34 @@
             Unregister an object from the store.
             </summary>
             <param name="uniqueKey">The unique key for the object.</param>
+        </member>
+        <member name="T:Amazon.Util.Internal.ArrayEx">
+            <summary>
+            Array extensions for cross compilation across different supported framework versions.
+            </summary>
+        </member>
+        <member name="M:Amazon.Util.Internal.ArrayEx.Empty``1">
+            <summary>
+            Returns an empty array.
+            </summary>
+            <typeparam name="T">The type of the elements of the array.</typeparam>
+            <returns>An empty array.</returns>
+        </member>
+        <member name="T:Amazon.Util.Internal.NoProxyFilter">
+            <summary>
+            This type is used to check if an out going request should not use the https_proxy or http_proxy environment variable if the
+            host matches a pattern in the no_proxy environment variable.
+            
+            The SDK does not do a full implementation of the no_proxy evaluation. It handles host name match with wildcard support. A full
+            implementation would also support DNS IP resolution and CIDR pattern matching.
+            </summary>
+        </member>
+        <member name="M:Amazon.Util.Internal.NoProxyFilter.Match(System.Uri)">
+            <summary>
+            Evaluates if the host in the Uri should be exluded from proxy if it matches a pattern in the no_proxy environment variable.
+            </summary>
+            <param name="uri"></param>
+            <returns></returns>
         </member>
         <member name="T:Amazon.Util.ProcessExecutionResult">
             <summary>
@@ -17492,6 +18661,7 @@
             </summary>
             <param name="requestUri"></param>
             <param name="content"></param>
+            <param name="requestHeaders"></param>
         </member>
         <member name="M:Amazon.Util.AWSHttpClient.GetResponseHeadersAsync(System.String,System.String)">
             <summary>
@@ -17551,6 +18721,7 @@
             Wrapper to allow Services to add StreamContent Headers
             </summary>
             <param name="name"></param>
+            <param name="value"></param>
             <returns></returns>
         </member>
         <member name="M:Amazon.Util.AWSStreamContent.Dispose">
@@ -17635,7 +18806,7 @@
               &lt;proxy host="localhost" port="8888" username="1" password="1" /&gt;
               
               &lt;dynamoDB&gt;
-                &lt;dynamoDBContext tableNamePrefix="Prod-"&gt;
+                &lt;dynamoDBContext tableNamePrefix="Prod-" metadataCachingMode="Default" disableFetchingTableMetadata="false" retrieveDateTimeInUtc="false"&gt;
             
                   &lt;tableAliases&gt;
                     &lt;alias fromTable="FakeTable" toTable="People" /&gt;
@@ -17706,7 +18877,7 @@
             This setting can be configured through the App.config. For example:
             <code>
             &lt;configSections&gt;
-              &lt;section name="aws" type="Amazon.AWSSection, AWSSDK"/&gt;
+              &lt;section name="aws" type="Amazon.AWSSection, AWSSDK.Core"/&gt;
             &lt;/configSections&gt;
             &lt;aws region="us-west-2" /&gt;
             </code>
@@ -17830,7 +19001,7 @@
             Configures if the SDK should use a custom configuration file that defines the regions and endpoints.
             <code>
             &lt;configSections&gt;
-              &lt;section name="aws" type="Amazon.AWSSection, AWSSDK"/&gt;
+              &lt;section name="aws" type="Amazon.AWSSection, AWSSDK.Core"/&gt;
             &lt;/configSections&gt;
             &lt;aws endpointDefinition="c:\config\endpoints.json" /&gt;
             </code>
@@ -17847,10 +19018,32 @@
             Configures if the SDK Cache should be used, the default value is true.
             <code>
             &lt;configSections&gt;
-              &lt;section name="aws" type="Amazon.AWSSection, AWSSDK"/&gt;
+              &lt;section name="aws" type="Amazon.AWSSection, AWSSDK.Core"/&gt;
             &lt;/configSections&gt;
             &lt;aws useSdkCache="true" /&gt;
             </code>
+            </summary>
+        </member>
+        <member name="F:Amazon.AWSConfigs.InitializeCollectionsKey">
+            <summary>
+            Key for the InitializeCollections property.
+            <seealso cref="P:Amazon.AWSConfigs.InitializeCollections"/>
+            </summary>
+        </member>
+        <member name="P:Amazon.AWSConfigs.InitializeCollections">
+            <summary>
+            When true the collections used on the service API request and response objects are initialized
+            to an empty collection. The collections are sent as part of requests when a collection is non-empty.
+            
+            Setting InitializeCollections to false means all collections used on the service API request and 
+            response objects are initialized to null. The collections are sent as part of requests when
+            the collection non-null including an empty collection.
+            
+            The default value is true. In the next major version of the SDK the default will change to false.
+            This will improve performance not creating unnecessary collection instances and provide more
+            control when the collection is sent to the service.
+            
+            Setting this property is not thread safe and should only be set at application startup.
             </summary>
         </member>
         <member name="P:Amazon.AWSConfigs.LoggingConfig">
@@ -17861,7 +19054,7 @@
             Example section:
             <code>
             &lt;configSections&gt;
-              &lt;section name="aws" type="Amazon.AWSSection, AWSSDK"/&gt;
+              &lt;section name="aws" type="Amazon.AWSSection, AWSSDK.Core"/&gt;
             &lt;/configSections&gt;
             &lt;aws&gt;
               &lt;logging logTo="Log4Net, SystemDiagnostics" logResponses="Always" logMetrics="true" /&gt;
@@ -17877,7 +19070,7 @@
             Example section:
             <code>
             &lt;configSections&gt;
-              &lt;section name="aws" type="Amazon.AWSSection, AWSSDK"/&gt;
+              &lt;section name="aws" type="Amazon.AWSSection, AWSSDK.Core"/&gt;
             &lt;/configSections&gt;
             &lt;aws&gt;
               &lt;proxy host="localhost" port="8888" username="1" password="1" bypassList="addressexpr1;addressexpr2;..." bypassOnLocal="true" /&gt;
@@ -17903,7 +19096,7 @@
             Example section:
             <code>
             &lt;configSections&gt;
-              &lt;section name="aws" type="Amazon.AWSSection, AWSSDK"/&gt;
+              &lt;section name="aws" type="Amazon.AWSSection, AWSSDK.Core"/&gt;
             &lt;/configSections&gt;
             &lt;aws region="us-west-2" /&gt;
             </code>
@@ -17929,7 +19122,7 @@
             Changes to this setting will only take effect in newly-constructed objects using this property.
             <code>
             &lt;configSections&gt;
-              &lt;section name="aws" type="Amazon.AWSSection, AWSSDK"/&gt;
+              &lt;section name="aws" type="Amazon.AWSSection, AWSSDK.Core"/&gt;
             &lt;/configSections&gt;
             &lt;aws applicationName="" /&gt;
             </code>
@@ -18021,6 +19214,43 @@
         <member name="F:Amazon.LogMetricsFormatOption.JSON">
             <summary>
             Emit metrics as JSON data
+            </summary>
+        </member>
+        <member name="T:Amazon.Profile">
+            <summary>
+            Represents a profile in the configuration file. For example in ~/.aws/config
+            [profile foo]
+            name = value
+            Profile profile = new Profile("foo");
+            When this is set on the ClientConfig and that config is passed to 
+            the service client constructor the sdk will try to find the credentials associated with the Profile.Name property
+            If set, this will override AWS_PROFILE and AWSConfigs.ProfileName.
+            </summary>
+        </member>
+        <member name="M:Amazon.Profile.#ctor(System.String)">
+            <summary>
+            This represents a profile in the configuration file with the given name
+            </summary>
+            <param name="name"></param>
+        </member>
+        <member name="M:Amazon.Profile.#ctor(System.String,System.String)">
+            <summary>
+            This represents a profile in the configuration file with the given name
+            in the given location
+            </summary>
+            <param name="name"></param>
+            <param name="location"></param>
+        </member>
+        <member name="P:Amazon.Profile.Name">
+            <summary>
+            The name of the profile you want to use
+            
+            </summary>
+        </member>
+        <member name="P:Amazon.Profile.Location">
+            <summary>
+            Specifies the location of the profile you want to use. This is optional. If none is set then
+            it will look in the default location
             </summary>
         </member>
         <member name="T:Amazon.Internal.GetEndpointForServiceOptions">
@@ -18146,8 +19376,7 @@
             <summary>
             Builds the set used to identify a specific endpoint variant
             </summary>
-            <param name="dualStack">Whether to use a dualstack (IPv6 enabled) endpoint</param>
-            <param name="fips">Whether to use a FIPS-compliant endpoint</param>
+            <param name="options"></param>
             <returns>Set used to identify the combined variant in endpoints.json</returns>
         </member>
         <member name="F:Amazon.Internal.RegionEndpointV3.ServiceMap._serviceMap">
@@ -18411,6 +19640,11 @@
             The Canada (Central) endpoint.
             </summary>
         </member>
+        <member name="F:Amazon.RegionEndpoint.CAWest1">
+            <summary>
+            The Canada West (Calgary) endpoint.
+            </summary>
+        </member>
         <member name="F:Amazon.RegionEndpoint.EUCentral1">
             <summary>
             The Europe (Frankfurt) endpoint.
@@ -18449,6 +19683,11 @@
         <member name="F:Amazon.RegionEndpoint.EUWest3">
             <summary>
             The Europe (Paris) endpoint.
+            </summary>
+        </member>
+        <member name="F:Amazon.RegionEndpoint.ILCentral1">
+            <summary>
+            The Israel (Tel Aviv) endpoint.
             </summary>
         </member>
         <member name="F:Amazon.RegionEndpoint.MECentral1">
@@ -18519,6 +19758,399 @@
         <member name="F:Amazon.RegionEndpoint.USIsobEast1">
             <summary>
             The US ISOB East (Ohio) endpoint.
+            </summary>
+        </member>
+        <member name="T:Amazon.RuntimeDependencies.RuntimeDependencyFactory">
+            <summary>
+            Factory delegate registered by the SDK user into the runtime dependency registry. The registry will invoke the delegate
+            when an instance of the registered type is needed.
+            </summary>
+            <param name="context">Context information the SDK user registering the callback can use to construct the object.</param>
+            <returns>An instance for the registered type in the registry.</returns>
+        </member>
+        <member name="T:Amazon.RuntimeDependencies.BaseRuntimeDependencyRegistry">
+            <summary>
+            Base runtime dependency registry managing the state of the registry and invoking any registered RuntimeDependencyFactory callbacks.
+            </summary>
+        </member>
+        <member name="M:Amazon.RuntimeDependencies.BaseRuntimeDependencyRegistry.RegisterInstance(System.String,System.String,System.Object)">
+            <summary>
+            Register the object for the assemblyName and className.
+            </summary>
+            <param name="assemblyName">The assembly of the instance.</param>
+            <param name="className">The class name of the instance.</param>
+            <param name="instance">The instance to use for the runtime dependency.</param>
+        </member>
+        <member name="M:Amazon.RuntimeDependencies.BaseRuntimeDependencyRegistry.RegisterInstance(System.String,System.String,Amazon.RuntimeDependencies.RuntimeDependencyFactory)">
+            <summary>
+            Register the RuntimeDependencyFactory to create the runtime dependency for the assemblyName and className.
+            </summary>
+            <param name="assemblyName">The assembly of the instance.</param>
+            <param name="className">The class name of the instance.</param>
+            <param name="factory">The factory to create the runtime dependency.</param>
+        </member>
+        <member name="M:Amazon.RuntimeDependencies.BaseRuntimeDependencyRegistry.GetInstance``1(System.String,System.String,Amazon.RuntimeDependencies.CreateInstanceContext)">
+            <summary>
+            Get the registerd runtime dependency instance. This method is used by the SDK's core package and for service packages 
+            to get a reference to another service package service client.
+            </summary>
+            <typeparam name="T">The type that should be returned from the registry.</typeparam>
+            <param name="assemblyName"></param>
+            <param name="className"></param>
+            <param name="context"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Amazon.RuntimeDependencies.BaseRuntimeDependencyRegistry.Dispose">
+            <summary>
+            Dispose the instance.
+            </summary>
+        </member>
+        <member name="T:Amazon.RuntimeDependencies.CreateInstanceContext">
+            <summary>
+            Context object passed into the RuntimeDependencyFactory delegate used by the runtime dependency registry to give the SDK user
+            context for constructed the runtime dependency.
+            </summary>
+        </member>
+        <member name="T:Amazon.RuntimeDependencies.CreateInstanceContext.ContextType">
+            <summary>
+            The type of context.
+            </summary>
+        </member>
+        <member name="F:Amazon.RuntimeDependencies.CreateInstanceContext.ContextType.SecurityTokenServiceClient">
+            <summary>
+            Context for creating AmazonSecurityTokenServiceClient
+            </summary>
+        </member>
+        <member name="F:Amazon.RuntimeDependencies.CreateInstanceContext.ContextType.KeyManagementServiceClient">
+            <summary>
+            Context for creating AmazonSecurityTokenServiceClient
+            </summary>
+        </member>
+        <member name="F:Amazon.RuntimeDependencies.CreateInstanceContext.ContextType.SigV4aCrtSigner">
+            <summary>
+            Context for creating the SigV4aCrtSigner used by the SDK for signing AWS requests with SigV4a
+            </summary>
+        </member>
+        <member name="F:Amazon.RuntimeDependencies.CreateInstanceContext.ContextType.CheckSumProvider">
+            <summary>
+            Context for creating the CheckSumProvider used for computing checksums with algorithms .NET SDK does not natively support. 
+            </summary>
+        </member>
+        <member name="F:Amazon.RuntimeDependencies.CreateInstanceContext.ContextType.SSOClient">
+            <summary>
+            Context for creating AmazonSSOClient
+            </summary>
+        </member>
+        <member name="F:Amazon.RuntimeDependencies.CreateInstanceContext.ContextType.SSOOIDCClient">
+            <summary>
+            Context for creating AmazonSSOOIDCClient
+            </summary>
+        </member>
+        <member name="M:Amazon.RuntimeDependencies.CreateInstanceContext.#ctor(Amazon.RuntimeDependencies.SecurityTokenServiceClientContext)">
+            <summary>
+            Create an instance of CreateInstanceContext with the SecurityTokenServiceClientContext context
+            </summary>
+            <param name="context"></param>
+        </member>
+        <member name="M:Amazon.RuntimeDependencies.CreateInstanceContext.#ctor(Amazon.RuntimeDependencies.KeyManagementServiceClientContext)">
+            <summary>
+            Create an instance of CreateInstanceContext with the KeyManagementServiceClientContext context
+            </summary>
+            <param name="context"></param>
+        </member>
+        <member name="M:Amazon.RuntimeDependencies.CreateInstanceContext.#ctor(Amazon.RuntimeDependencies.SigV4aCrtSignerContext)">
+            <summary>
+            Create an instance of CreateInstanceContext with the SigV4aCrtSignerContext context
+            </summary>
+            <param name="context"></param>
+        </member>
+        <member name="M:Amazon.RuntimeDependencies.CreateInstanceContext.#ctor(Amazon.RuntimeDependencies.CheckSumProviderContext)">
+            <summary>
+            Create an instance of CreateInstanceContext with the CheckSumProviderContext context
+            </summary>
+            <param name="context"></param>
+        </member>
+        <member name="M:Amazon.RuntimeDependencies.CreateInstanceContext.#ctor(Amazon.RuntimeDependencies.SSOClientContext)">
+            <summary>
+            Create an instance of CreateInstanceContext with the SSOClientContext context
+            </summary>
+            <param name="context"></param>
+        </member>
+        <member name="M:Amazon.RuntimeDependencies.CreateInstanceContext.#ctor(Amazon.RuntimeDependencies.SSOOIDCClientContext)">
+            <summary>
+            Create an instance of CreateInstanceContext with the SSOOIDCClientContext context
+            </summary>
+            <param name="context"></param>
+        </member>
+        <member name="P:Amazon.RuntimeDependencies.CreateInstanceContext.Type">
+            <summary>
+            The type of context being sent into the factory method. For each type there is a corresponding Data property set containing any relevant information that can be
+            used for creating the dependency instance.
+            </summary>
+        </member>
+        <member name="P:Amazon.RuntimeDependencies.CreateInstanceContext.SecurityTokenServiceClientContextData">
+            <summary>
+            Data for the SecurityTokenServiceClient context
+            </summary>
+        </member>
+        <member name="P:Amazon.RuntimeDependencies.CreateInstanceContext.KeyManagementServiceClientContextData">
+            <summary>
+            Data for the KeyManagementServiceClient context
+            </summary>
+        </member>
+        <member name="P:Amazon.RuntimeDependencies.CreateInstanceContext.SigV4aCrtSignerContextData">
+            <summary>
+            Data for the SigV4aCrtSigner context
+            </summary>
+        </member>
+        <member name="P:Amazon.RuntimeDependencies.CreateInstanceContext.CheckSumProviderContextData">
+            <summary>
+            Data for the CheckSumProvider context
+            </summary>
+        </member>
+        <member name="P:Amazon.RuntimeDependencies.CreateInstanceContext.SSOClientContextData">
+            <summary>
+            Data for the SSOClient context
+            </summary>
+        </member>
+        <member name="P:Amazon.RuntimeDependencies.CreateInstanceContext.SSOOIDCClientContextData">
+            <summary>
+            Data for the SOOIDCClient context
+            </summary>
+        </member>
+        <member name="T:Amazon.RuntimeDependencies.SecurityTokenServiceClientContext">
+            <summary>
+            Context for the factory method to create the SecurityTokenServiceClient runtime dependency.
+            </summary>
+        </member>
+        <member name="T:Amazon.RuntimeDependencies.SecurityTokenServiceClientContext.ActionContext">
+            <summary>
+            The possibly actions the SecurityTokenServiceClient will be created for.
+            
+            For FederatedAWSCredentials the Amazon.Runtime.AnonymousAWSCredentials can be used as credentials for the STS client
+            because the authentication will come from the SAML endpoint.
+            </summary>
+        </member>
+        <member name="P:Amazon.RuntimeDependencies.SecurityTokenServiceClientContext.Action">
+            <summary>
+            The action the SecurityTokenServiceClient is being created for. For example AssumeRoleAWSCredentials.
+            </summary>
+        </member>
+        <member name="P:Amazon.RuntimeDependencies.SecurityTokenServiceClientContext.Region">
+            <summary>
+            The region the SDK expects the SecurityTokenServiceClient to be configured for.
+            </summary>
+        </member>
+        <member name="P:Amazon.RuntimeDependencies.SecurityTokenServiceClientContext.ProxySettings">
+            <summary>
+            Proxy settings that can be applied to the service client config object.
+            </summary>
+        </member>
+        <member name="T:Amazon.RuntimeDependencies.KeyManagementServiceClientContext">
+            <summary>
+            Context for the factory method to create the KeyManagementServiceClient runtime dependency.
+            </summary>
+        </member>
+        <member name="P:Amazon.RuntimeDependencies.KeyManagementServiceClientContext.ParentServiceClient">
+            <summary>
+            The service client that is creating the KeyManagementServiceClient. The factory method should use the 
+            configuration like AWS region when constructing the KeyManagementServiceClient.
+            </summary>
+        </member>
+        <member name="T:Amazon.RuntimeDependencies.SigV4aCrtSignerContext">
+            <summary>
+            Context for the factory method to create the SigV4aCrtSigner runtime dependency.
+            </summary>
+        </member>
+        <member name="M:Amazon.RuntimeDependencies.SigV4aCrtSignerContext.#ctor(System.Boolean)">
+            <summary>
+            Create an instance of the context
+            </summary>
+            <param name="signPayload"></param>
+        </member>
+        <member name="P:Amazon.RuntimeDependencies.SigV4aCrtSignerContext.SignPayload">
+            <summary>
+            A boolean to pass into the constructor for the Amazon.Extensions.CrtIntegration.CrtAWS4aSigner to control whether the request payload should be signed.
+            </summary>
+        </member>
+        <member name="T:Amazon.RuntimeDependencies.CheckSumProviderContext">
+            <summary>
+            Context for the factory method to create the CheckSumProvider runtime dependency.
+            </summary>
+        </member>
+        <member name="T:Amazon.RuntimeDependencies.SSOClientContext">
+            <summary>
+            Context for the factory method to create the SSOClient runtime dependency.
+            </summary>
+        </member>
+        <member name="P:Amazon.RuntimeDependencies.SSOClientContext.Region">
+            <summary>
+            The region the SDK expects the SSOClient to be configured for.
+            </summary>
+        </member>
+        <member name="P:Amazon.RuntimeDependencies.SSOClientContext.ProxySettings">
+            <summary>
+            Proxy settings that can be applied to the service client config object.
+            </summary>
+        </member>
+        <member name="T:Amazon.RuntimeDependencies.SSOOIDCClientContext">
+            <summary>
+            Context for the factory method to create the SSOOIDCClient runtime dependency.
+            </summary>
+        </member>
+        <member name="P:Amazon.RuntimeDependencies.SSOOIDCClientContext.Region">
+            <summary>
+            The region the SDK expects the SSOOIDCClient to be configured for.
+            </summary>
+        </member>
+        <member name="P:Amazon.RuntimeDependencies.SSOOIDCClientContext.ProxySettings">
+            <summary>
+            Proxy settings that can be applied to the service client config object.
+            </summary>
+        </member>
+        <member name="T:Amazon.RuntimeDependencies.GlobalRuntimeDependencyRegistry">
+            <summary>
+            The GlobalRuntimeDependencyRegistry registry is used to register runtime dependency for the entire process using
+            the AWS SDK for .NET.
+            
+            There are some features of the AWS .NET SDK that at runtime load dependencies from assemblies. The most common
+            example is using credential profiles that require the service client from the AWSSDK.SecurityToken package.
+            Normally these runtime dependencies are resolved by using reflection to load the assembly and the type,
+            In Native AOT with trimming turned on that will not worked because the dependency would be trimmed out.
+            
+            The RuntimeDependencyRegistry is used to work around this limitation by allowing users to explicitly register
+            the runtime dependency instance into the SDK removing any use of reflection.
+            </summary>
+        </member>
+        <member name="M:Amazon.RuntimeDependencies.GlobalRuntimeDependencyRegistry.RegisterChecksumProvider(System.Object)">
+            <summary>
+            Register the Checksum provider. This should be an instance of AWSSDK.Extensions.CrtIntegration.CrtChecksums from AWSSDK.Extensions.CrtIntegration package.
+            
+            The Checksum provider is used for features like S3 object integrity check when choosing certain algorithms that .NET does not support natively. For example CRC32 and CRC32C. 
+            </summary>
+            <param name="instance"></param>
+        </member>
+        <member name="M:Amazon.RuntimeDependencies.GlobalRuntimeDependencyRegistry.RegisterSigV4aProvider(Amazon.RuntimeDependencies.RuntimeDependencyFactory)">
+            <summary>
+            Register the AWS SigV4a provider. This should be an instance of Amazon.Extensions.CrtIntegration.CrtAWS4aSigner from AWSSDK.Extensions.CrtIntegration package.
+            
+            The SigV4a provider is used for features like S3's multi-region access point and EventBridge global endpoints.
+            
+            The context parameter for the factory has a Payload property that must be used when constructing the instance of CrtAWS4aSigner.
+            <code>
+            GlobalRuntimeDependencyRegistry.Instance.RegisterSigV4aProvider((context) =>
+            {
+                return new Amazon.Extensions.CrtIntegration.CrtAWS4aSigner(context.SigV4aCrtSignerContextData.Payload);
+            }
+            </code>
+            </summary>
+            <param name="factory"></param>
+        </member>
+        <member name="M:Amazon.RuntimeDependencies.GlobalRuntimeDependencyRegistry.RegisterKeyManagementServiceClient(System.Object)">
+            <summary>
+            Register the Amazon.KeyManagementService.AmazonKeyManagementServiceClient instance from AWSSDK.KeyManagementService package.
+            
+            The Key Management Service client is used runtime dependency is used in the obsolete S3 encryption client Amazon.S3.Encryption.AmazonS3EncryptionClient inside the AWSSDK.S3.
+            Users of the S3 encryption client should migrate to the standalone Amazon.Extensions.S3.Encryption which includes the Key Management Service client as a compile time
+            dependency.
+            </summary>
+            <param name="instance"></param>
+        </member>
+        <member name="M:Amazon.RuntimeDependencies.GlobalRuntimeDependencyRegistry.RegisterKeyManagementServiceClient(Amazon.RuntimeDependencies.RuntimeDependencyFactory)">
+            <summary>
+            Register the Amazon.KeyManagementService.AmazonKeyManagementServiceClient instance from AWSSDK.KeyManagementService package.
+            
+            The Key Management Service client is used runtime dependency is used in the obsolete S3 encryption client Amazon.S3.Encryption.AmazonS3EncryptionClient inside the AWSSDK.S3.
+            Users of the S3 encryption client should migrate to the standalone Amazon.Extensions.S3.Encryption which includes the Key Management Service client as a compile time
+            dependency.
+            </summary>
+            <param name="factory"></param>
+        </member>
+        <member name="M:Amazon.RuntimeDependencies.GlobalRuntimeDependencyRegistry.RegisterSecurityTokenServiceClient(System.Object)">
+            <summary>
+            Register the Amazon.SecurityToken.AmazonSecurityTokenServiceClient instance from the AWSSDK.SecurityToken package.
+            
+            The Security Token service client is used for credential providers that assume a role.
+            </summary>
+            <param name="instance"></param>
+        </member>
+        <member name="M:Amazon.RuntimeDependencies.GlobalRuntimeDependencyRegistry.RegisterSecurityTokenServiceClient(Amazon.RuntimeDependencies.RuntimeDependencyFactory)">
+            <summary>
+            Register the Amazon.SecurityToken.AmazonSecurityTokenServiceClient instance from the AWSSDK.SecurityToken package.
+            
+            The Security Token service client is used for credential providers that assume a role.
+            
+            The region for Security Token service client is going to be used for can be found in the factory method's context.
+            <code>
+            GlobalRuntimeDependencyRegistry.Instance.RegisterSecurityTokenServiceClient((context) =>
+            {
+                return new Amazon.SecurityToken.AmazonSecurityTokenServiceClient(context.SecurityTokenServiceClientContextData.Region);
+            }
+            </code>
+            </summary>
+            <param name="factory"></param>
+        </member>
+        <member name="M:Amazon.RuntimeDependencies.GlobalRuntimeDependencyRegistry.RegisterSSOClient(System.Object)">
+            <summary>
+            Register the Amazon.SSO.AmazonSSOClient instance from the AWSSDK.SSO package.
+            
+            The SSO service client is used for credentials providers configured for single sign on.
+            </summary>
+            <param name="instance"></param>
+        </member>
+        <member name="M:Amazon.RuntimeDependencies.GlobalRuntimeDependencyRegistry.RegisterSSOClient(Amazon.RuntimeDependencies.RuntimeDependencyFactory)">
+            <summary>
+            Register the Amazon.SecurityToken.AmazonSecurityTokenServiceClient instance from the AWSSDK.SecurityToken package.
+            
+            The SSO service client is used for credentials providers configured for single sign on.
+            </summary>
+            <param name="factory"></param>
+        </member>
+        <member name="M:Amazon.RuntimeDependencies.GlobalRuntimeDependencyRegistry.RegisterSSOOIDCClient(System.Object)">
+            <summary>
+            Register the Amazon.SSOOIDC.AmazonSSOOIDCClient instance from the AWSSDK.SSOOIDC package.
+            
+            The SSO OIDC service client is used for credentials providers configured for single sign on.
+            </summary>
+            <param name="instance"></param>
+        </member>
+        <member name="M:Amazon.RuntimeDependencies.GlobalRuntimeDependencyRegistry.RegisterSSOOIDCClient(Amazon.RuntimeDependencies.RuntimeDependencyFactory)">
+            <summary>
+            Register the Amazon.SSOOIDC.AmazonSSOOIDCClient instance from the AWSSDK.SSOOIDC package.
+            
+            The SSO OIDC service client is used for credentials providers configured for single sign on.
+            </summary>
+            <param name="factory"></param>
+        </member>
+        <member name="T:Amazon.RuntimeDependencies.MissingRuntimeDependencyException">
+            <summary>
+            This exception is thrown when the SDK is used as part of an application compiled for Native AOT with trimming turned on.
+            In this environment assemblies can not be dynamically loaded which is what the SDK will do by default unless the
+            runtime dependencies are registered using the Amazon.RuntimeDependencies.GlobalRuntimeDependencyRegistry.
+            </summary>
+        </member>
+        <member name="M:Amazon.RuntimeDependencies.MissingRuntimeDependencyException.#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
+            <summary>
+            Constructs a new instance of the MissingRuntimeDependencyException class with serialized data.
+            </summary>
+            <param name="info">The <see cref="T:System.Runtime.Serialization.SerializationInfo" /> that holds the serialized object data about the exception being thrown.</param>
+            <param name="context">The <see cref="T:System.Runtime.Serialization.StreamingContext" /> that contains contextual information about the source or destination.</param>
+            <exception cref="T:System.ArgumentNullException">The <paramref name="info" /> parameter is null. </exception>
+            <exception cref="T:System.Runtime.Serialization.SerializationException">The class name is null or <see cref="P:System.Exception.HResult" /> is zero (0). </exception>
+        </member>
+        <member name="P:Amazon.RuntimeDependencies.MissingRuntimeDependencyException.PackageName">
+            <summary>
+            The package containing the runtime dependency
+            </summary>
+        </member>
+        <member name="P:Amazon.RuntimeDependencies.MissingRuntimeDependencyException.ClassName">
+            <summary>
+            The class that must be instantiated and registered to Amazon.RuntimeDependencyRegistry
+            </summary>
+        </member>
+        <member name="P:Amazon.RuntimeDependencies.MissingRuntimeDependencyException.RegisterMethod">
+            <summary>
+            The method on Amazon.RuntimeDependencyRegistry that should be called with an instance or factory method for the type referred by the ClassName property.
             </summary>
         </member>
         <member name="T:AWSSDK.Runtime.Internal.Util.ChecksumCRTWrapper">

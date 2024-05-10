@@ -8,7 +8,7 @@
 
     public class StarDateTest
     {
-        private static readonly Parser<DateTime> StarTrek2009_StarDate = from year in Parse.Digit.Many().Text() from delimiter in Parse.Char('.') from dayOfYear in Parse.Digit.Repeat(1, 3).Text().End() select new DateTime(int.Parse(year), 1, 1).AddDays(int.Parse(dayOfYear) - 1);
+        private static readonly Parser<DateTime> StarTrek2009_StarDate = from year in Parse.Digit.Many().Text() from delimiter in Parse.MatchChar('.') from dayOfYear in Parse.Digit.Repeat(1, 3).Text().End() select new DateTime(int.Parse(year), 1, 1).AddDays(int.Parse(dayOfYear) - 1);
 
         [Test]
         public void ItIsPossibleToParseAStarDate()
