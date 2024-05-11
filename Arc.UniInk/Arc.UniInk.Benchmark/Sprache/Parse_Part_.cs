@@ -14,6 +14,32 @@
         /// <summary>当检测到左递归时, 失败结果的消息</summary> 
         public const string LeftRecursionErrorMessage = "Left recursion in the grammar.";
 
+        /// <summary> 匹配任意字符.</summary>
+        public static readonly Parser<char> AnyChar = MatchChar(_ => true, "any character");
+
+        /// <summary> 匹配一个空白字符.</summary>
+        public static readonly Parser<char> WhiteSpace = MatchChar(char.IsWhiteSpace, "whitespace");
+
+        /// <summary> 匹配一个十进制数字.</summary>
+        public static readonly Parser<char> Digit = MatchChar(char.IsDigit, "digit");
+
+        /// <summary> 匹配一个字母.</summary>
+        public static readonly Parser<char> Letter = MatchChar(char.IsLetter, "letter");
+
+        /// <summary> 匹配一个字母或数字.</summary>
+        public static readonly Parser<char> LetterOrDigit = MatchChar(char.IsLetterOrDigit, "letter or digit");
+
+        /// <summary> 匹配一个小写字母.</summary>
+        public static readonly Parser<char> Lower = MatchChar(char.IsLower, "lowercase letter");
+
+        /// <summary> 匹配一个大写字母.</summary>
+        public static readonly Parser<char> Upper = MatchChar(char.IsUpper, "uppercase letter");
+
+        /// <summary> 匹配一个数字字符.</summary>
+        public static readonly Parser<char> Numeric = MatchChar(char.IsNumber, "numeric character");
+
+
+
         /// <summary>尝试解析一个匹配 'predicate' 的字符.</summary>
         public static Parser<char> MatchChar(Predicate<char> predicate, string description)
         {
@@ -81,32 +107,9 @@
             return str.Select(MatchCharIgnoreCase).Aggregate(Return(Enumerable.Empty<char>()), (a, p) => a.Concat(p.Once())).Named(str);
         }
 
-        /// <summary> 匹配任意字符.</summary>
-        public static readonly Parser<char> AnyChar = MatchChar(_ => true, "any character");
-
-        /// <summary> 匹配一个空白字符.</summary>
-        public static readonly Parser<char> WhiteSpace = MatchChar(char.IsWhiteSpace, "whitespace");
-
-        /// <summary> 匹配一个十进制数字.</summary>
-        public static readonly Parser<char> Digit = MatchChar(char.IsDigit, "digit");
-
-        /// <summary> 匹配一个字母.</summary>
-        public static readonly Parser<char> Letter = MatchChar(char.IsLetter, "letter");
-
-        /// <summary> 匹配一个字母或数字.</summary>
-        public static readonly Parser<char> LetterOrDigit = MatchChar(char.IsLetterOrDigit, "letter or digit");
-
-        /// <summary> 匹配一个小写字母.</summary>
-        public static readonly Parser<char> Lower = MatchChar(char.IsLower, "lowercase letter");
-
-        /// <summary> 匹配一个大写字母.</summary>
-        public static readonly Parser<char> Upper = MatchChar(char.IsUpper, "uppercase letter");
-
-        /// <summary> 匹配一个数字字符.</summary>
-        public static readonly Parser<char> Numeric = MatchChar(char.IsNumber, "numeric character");
 
         /// <summary> 匹配一个字符串, 是否等于<see cref="str"/></summary>
-        public static Parser<IEnumerable<char>> String(string str)
+        public static Parser<IEnumerable<char>> MatchString(string str)
         {
             if (str == null) throw new ArgumentNullException(nameof(str));
 
@@ -147,13 +150,7 @@
             return i => first(i).IfSuccess(s => second(s.Value)(s.Remainder));
         }
 
-        /// <summary>
-        /// Parse a stream of elements.
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="parser"></param>
-        /// <returns></returns>
-        /// <remarks>Implemented imperatively to decrease stack usage.</remarks>
+        /// <summary>多次匹配一系列元素,以命令式实现以减少堆栈使用.</summary> 
         public static Parser<IEnumerable<T>> Many <T>(this Parser<T> parser)
         {
             if (parser == null) throw new ArgumentNullException(nameof(parser));
@@ -177,12 +174,7 @@
             };
         }
 
-        /// <summary>
-        /// Parse a stream of elements, failing if any element is only partially parsed.
-        /// </summary>
-        /// <typeparam name="T">The type of element to parse.</typeparam>
-        /// <param name="parser">A parser that matches a single element.</param>
-        /// <returns>A <see cref="Parser{T}"/> that matches the sequence.</returns>
+        /// <summary> 解析一系列元素, 如果任何元素只解析了一部分, 则失败.</summary>
         /// <remarks>
         /// <para>
         /// Using <seealso cref="XMany{T}(Parser{T})"/> may be preferable to <seealso cref="Many{T}(Parser{T})"/>
@@ -200,26 +192,18 @@
             return parser.Many().Then(m => parser.Once().XOr(Return(m)));
         }
 
-        /// <summary>
-        /// TryParse a stream of elements with at least one item.
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="parser"></param>
-        /// <returns></returns>
+        /// <summary>尝试解析至少一个元素的流.</summary>
         public static Parser<IEnumerable<T>> AtLeastOnce <T>(this Parser<T> parser)
         {
             if (parser == null) throw new ArgumentNullException(nameof(parser));
 
-            return parser.Once().Then(t1 => parser.Many().Select(ts => t1.Concat(ts)));
+            return parser.Once().Then(t1 => parser.Many().Select(t1.Concat));
         }
 
         /// <summary>
         /// TryParse a stream of elements with at least one item. Except the first
         /// item, all other items will be matched with the <code>XMany</code> operator.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="parser"></param>
-        /// <returns></returns>
         public static Parser<IEnumerable<T>> XAtLeastOnce <T>(this Parser<T> parser)
         {
             if (parser == null) throw new ArgumentNullException(nameof(parser));
@@ -243,11 +227,6 @@
         /// <summary>
         /// Take the result of parsing, and project it onto a different domain.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <typeparam name="U"></typeparam>
-        /// <param name="parser"></param>
-        /// <param name="convert"></param>
-        /// <returns></returns>
         public static Parser<U> Select <T, U>(this Parser<T> parser, Func<T, U> convert)
         {
             if (parser  == null) throw new ArgumentNullException(nameof(parser));
@@ -256,14 +235,12 @@
             return parser.Then(t => Return(convert(t)));
         }
 
-        /// <summary>
-        /// Parse the token, embedded in any amount of whitespace characters.
-        /// </summary>
+        /// <summary> 解析令牌, 嵌入在任意数量的空白字符中.</summary>
         public static Parser<T> Token <T>(this Parser<T> parser)
         {
             if (parser == null) throw new ArgumentNullException(nameof(parser));
 
-            return from leading in WhiteSpace.Many() from item in parser from trailing in WhiteSpace.Many() select item;
+            return WhiteSpace.Many().SelectMany(_ => parser, (leading, item) => new { leading, item }).SelectMany(_ => WhiteSpace.Many(), (@t, _) => @t.item);
         }
 
         /// <summary>
@@ -303,11 +280,7 @@
             };
         }
 
-        /// <summary>
-        /// Convert a stream of characters to a string.
-        /// </summary>
-        /// <param name="characters"></param>
-        /// <returns></returns>
+        /// <summary> 将字符流转换为字符串 </summary>
         public static Parser<string> Text(this Parser<IEnumerable<char>> characters)
         {
             return characters.Select(chs => new string(chs.ToArray()));
@@ -424,12 +397,7 @@
             return first.Then(f => second.Select(f.Concat));
         }
 
-        /// <summary>
-        /// Succeed immediately and return value.
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="value"></param>
-        /// <returns></returns>
+        /// <summary> 立即成功并返回值. </summary>
         public static Parser<T> Return <T>(T value)
         {
             return i => ResultHelper.Success(value, i);
@@ -579,12 +547,11 @@
         /// <summary>解析一个数字</summary>
         public static readonly Parser<string> Number = Numeric.AtLeastOnce().Text();
 
-        private static Parser<string> DecimalWithoutLeadingDigits(CultureInfo ci = null) =>
-            from nothing in Return("")
-            // dummy so that CultureInfo.CurrentCulture is evaluated later
-            from dot in String((ci ?? CultureInfo.CurrentCulture).NumberFormat.NumberDecimalSeparator).Text()
-            from fraction in Number
-            select dot + fraction;
+        private static Parser<string> DecimalWithoutLeadingDigits(CultureInfo ci = null)
+        {
+            return Return("").SelectMany(_ => MatchString((ci ?? CultureInfo.CurrentCulture).NumberFormat.NumberDecimalSeparator).Text(), (nothing, dot) 
+                                             => new { nothing, dot }).SelectMany(@t => Number, (@t, fraction) => @t.dot + fraction);
+        }
 
         private static Parser<string> DecimalWithLeadingDigits(CultureInfo ci = null)
         {

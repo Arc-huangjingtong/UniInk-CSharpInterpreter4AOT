@@ -72,7 +72,7 @@
             {
                 if (Single == null) throw new ParseException("Field 'Single' is null; single-line comments not allowed.");
 
-                return from first in Parse.String(Single) from rest in Parse.MatchCharExcept(NewLine).Many().Text() select rest;
+                return from first in Parse.MatchString(Single) from rest in Parse.MatchCharExcept(NewLine).Many().Text() select rest;
             }
             private set { }
         }
@@ -87,7 +87,7 @@
                 if (MultiOpen  == null) throw new ParseException("Field 'MultiOpen' is null; multi-line comments not allowed.");
                 if (MultiClose == null) throw new ParseException("Field 'MultiClose' is null; multi-line comments not allowed.");
 
-                return from first in Parse.String(MultiOpen) from rest in Parse.AnyChar.Until(Parse.String(MultiClose)).Text() select rest;
+                return from first in Parse.MatchString(MultiOpen) from rest in Parse.AnyChar.Until(Parse.MatchString(MultiClose)).Text() select rest;
             }
             private set { }
         }

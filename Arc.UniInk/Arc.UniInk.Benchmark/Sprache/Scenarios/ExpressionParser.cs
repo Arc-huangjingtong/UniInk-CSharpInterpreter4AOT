@@ -13,7 +13,7 @@
         public static Expression<Func<double>> ParseExpression(string text) => Lambda.Parse(text);
 
 
-        private static Parser<ExpressionType> Operator(string op, ExpressionType opType) => Parse.String(op).Token().Return(opType);
+        private static Parser<ExpressionType> Operator(string op, ExpressionType opType) => Parse.MatchString(op).Token().Return(opType);
 
         private static readonly Parser<ExpressionType> ADD = Operator("+", ExpressionType.AddChecked);
         private static readonly Parser<ExpressionType> SUB = Operator("-", ExpressionType.SubtractChecked);
@@ -27,7 +27,10 @@
         private static Expression CallFunction(string name, Expression[] parameters)
         {
             var methodInfo = typeof(Math).GetTypeInfo().GetMethod(name, parameters.Select(e => e.Type).ToArray());
-            if (methodInfo == null) throw new ParseException($"Function '{name}({string.Join(",", parameters.Select(e => e.Type.Name))})' does not exist.");
+            if (methodInfo == null)
+            {
+                throw new ParseException($"Function '{name}({string.Join(",", parameters.Select(e => e.Type.Name))})' does not exist.");
+            }
 
             return Expression.Call(methodInfo, parameters);
         }

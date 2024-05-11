@@ -138,7 +138,7 @@
         [Test]
         public void ParsesString_AsSequenceOfChars()
         {
-            var p = Parse.String("abc");
+            var p = Parse.MatchString("abc");
             AssertParser.SucceedsWithAll(p, "abc");
         }
 
@@ -165,14 +165,14 @@
         [Test]
         public void ExceptStopsConsumingInputWhenExclusionParsed()
         {
-            var exceptAa = Parse.AnyChar.Except(Parse.String("aa")).Many().Text();
+            var exceptAa = Parse.AnyChar.Except(Parse.MatchString("aa")).Many().Text();
             AssertParser.SucceedsWith(exceptAa, "abcaab", r => ClassicAssert.AreEqual("abc", r));
         }
 
         [Test]
         public void UntilProceedsUntilTheStopConditionIsMetAndReturnsAllButEnd()
         {
-            var untilAa = Parse.AnyChar.Until(Parse.String("aa")).Text();
+            var untilAa = Parse.AnyChar.Until(Parse.MatchString("aa")).Text();
             var r       = untilAa.TryParse("abcaab");
             //Assert.IsType<Result<string>>(r);
             var s = (Result<string>)r;
@@ -183,7 +183,7 @@
         [Test]
         public void OptionalParserConsumesInputOnSuccessfulMatch()
         {
-            var optAbc = Parse.String("abc").Text().Optional();
+            var optAbc = Parse.MatchString("abc").Text().Optional();
             var r      = optAbc.TryParse("abcd");
             ClassicAssert.True(r.WasSuccessful);
             ClassicAssert.True(r.Value.IsDefined);
@@ -194,7 +194,7 @@
         [Test]
         public void OptionalParserDoesNotConsumeInputOnFailedMatch()
         {
-            var optAbc = Parse.String("abc").Text().Optional();
+            var optAbc = Parse.MatchString("abc").Text().Optional();
             var r      = optAbc.TryParse("d");
             ClassicAssert.True(r.WasSuccessful);
             ClassicAssert.True(r.Value.IsEmpty);
@@ -204,7 +204,7 @@
         [Test]
         public void XOptionalParserConsumesInputOnSuccessfulMatch()
         {
-            var optAbc = Parse.String("abc").Text().XOptional();
+            var optAbc = Parse.MatchString("abc").Text().XOptional();
             var r      = optAbc.TryParse("abcd");
             ClassicAssert.True(r.WasSuccessful);
             ClassicAssert.True(r.Value.IsDefined);
@@ -215,7 +215,7 @@
         [Test]
         public void XOptionalParserDoesNotConsumeInputOnFailedMatch()
         {
-            var optAbc = Parse.String("abc").Text().XOptional();
+            var optAbc = Parse.MatchString("abc").Text().XOptional();
             var r      = optAbc.TryParse("d");
             ClassicAssert.True(r.WasSuccessful);
             ClassicAssert.True(r.Value.IsEmpty);
@@ -225,7 +225,7 @@
         [Test]
         public void XOptionalParserFailsOnPartialMatch()
         {
-            var optAbc = Parse.String("abc").Text().XOptional();
+            var optAbc = Parse.MatchString("abc").Text().XOptional();
             AssertParser.FailsAt(optAbc, "abd", 2);
             AssertParser.FailsAt(optAbc, "aa",  1);
         }
@@ -272,7 +272,7 @@
         [Test]
         public void PositionedParser()
         {
-            var pos = (from s in Parse.String("winter").Text() select new PosAwareStr { Value = s }).Positioned();
+            var pos = (from s in Parse.MatchString("winter").Text() select new PosAwareStr { Value = s }).Positioned();
             var r   = pos.TryParse("winter");
             ClassicAssert.True(r.WasSuccessful);
             ClassicAssert.AreEqual(0, r.Value.Pos.Pos);
@@ -282,7 +282,7 @@
         [Test]
         public void XAtLeastOnceParser_WhenLastElementFails_FailureReportedAtLastElement()
         {
-            var ab = Parse.String("ab").Text();
+            var ab = Parse.MatchString("ab").Text();
             var p  = ab.XAtLeastOnce().End();
             AssertParser.FailsAt(p, "ababaf", 5);
         }
@@ -290,7 +290,7 @@
         [Test]
         public void XAtLeastOnceParser_WhenFirstElementFails_FailureReportedAtFirstElement()
         {
-            var ab = Parse.String("ab").Text();
+            var ab = Parse.MatchString("ab").Text();
             var p  = ab.XAtLeastOnce().End();
             AssertParser.FailsAt(p, "d", 0);
         }
@@ -298,14 +298,14 @@
         [Test]
         public void NotParserConsumesNoInputOnFailure()
         {
-            var notAb = Parse.String("ab").Text().Not();
+            var notAb = Parse.MatchString("ab").Text().Not();
             AssertParser.FailsAt(notAb, "abc", 0);
         }
 
         [Test]
         public void NotParserConsumesNoInputOnSuccess()
         {
-            var notAb = Parse.String("ab").Text().Not();
+            var notAb = Parse.MatchString("ab").Text().Not();
             var r     = notAb.TryParse("d");
             ClassicAssert.True(r.WasSuccessful);
             ClassicAssert.AreEqual(0, r.Remainder.Position);
@@ -548,7 +548,7 @@
         [Test]
         public void PreviewParserIsSimilarToPositiveLookaheadInRegex()
         {
-            var parser = from test in Parse.String("test").Token().Preview() from testMethod in Parse.String("testMethod").Token().Text() select testMethod;
+            var parser = from test in Parse.MatchString("test").Token().Preview() from testMethod in Parse.MatchString("testMethod").Token().Text() select testMethod;
 
             var result = parser.Parse("   testMethod  ");
             ClassicAssert.AreEqual("testMethod", result);

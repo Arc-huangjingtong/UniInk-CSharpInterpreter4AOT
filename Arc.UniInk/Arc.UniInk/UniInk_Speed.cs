@@ -12,6 +12,8 @@
 
     using System;
     using System.Collections.Generic;
+    using System.Linq;
+    using System.Linq.Expressions;
     using System.Text;
 
 
@@ -22,14 +24,23 @@
         /// <param name="variables"> Set variables can replace a key string with value object            </param>
         public UniInk_Speed(object context = null, Dictionary<string, object> variables = null) { }
 
-        private static readonly List<ParsingMethodDelegate> ParsingMethods = new()
+        public static object Evaluate(string expression) => Evaluate(expression, 0, expression.Length);
+
+        /// <summary> Evaluate a expression       </summary>
+        /// <returns> return the result object    </returns>
+        public static object Evaluate(string expression, int startIndex, int endIndex)
         {
-            EvaluateOperators, EvaluateNumber, EvaluateChar
-          , EvaluateParenthis, EvaluateString,
-        };
+            WordStack.Clear();
+
+            var stack  = LexerAndFill(expression, startIndex, endIndex, WordStack);
+            var result = ProcessQueue(stack);
+
+            return result;
+        }
 
 
-        private delegate bool ParsingMethodDelegate(string expression, Queue<object> stack, ref int i);
+
+        private delegate bool ParsingMethodDelegate(string expression, List<object> stack, ref int i);
 
 
         /// <summary>用于解释方法的委托</summary>
@@ -46,108 +57,53 @@
         };
 
 
-        /// <summary>Evaluate Operators in <see cref="InkOperator"/></summary>
-        /// <param name="expression"> the expression to Evaluate     </param>
-        /// <param name="stack"> the object stack to push or pop     </param>
-        /// <param name="i">the <see cref="expression"/> start index </param>
-        /// <returns> the evaluate is success or not </returns> 
-        private static bool EvaluateOperators(string expression, Queue<object> stack, ref int i)
+
+        public static readonly List<object> WordStack = new();
+
+
+        private static object ProcessQueue(List<object> keys)
         {
-            foreach (var operatorStr in InkOperator.Dic_Values)
+            if (keys.Count == 0) throw new InkSyntaxException("Empty expression and Empty stack !");
+
+            keys.Reverse();
+
+            object cache = null;
+            while (keys.Count > 0)
             {
-                if (StartsWithInputStrFromIndex(expression, operatorStr.Key, i))
+                var pop = Dequeue(keys);
+
+                if (pop is InkOperator @operator)
                 {
-                    stack.Enqueue(operatorStr.Value);
-                    i += operatorStr.Key.Length - 1;
-                    return true;
+                    var left  = cache;
+                    var right = Dequeue(keys);
+
+                    cache = dic_OperatorsFunc[@operator](left, right);
+                }
+                else
+                {
+                    cache = pop;
                 }
             }
-            // foreach (var operatorStr in InkOperator.List_Keys)
-            // {
-            //     if (StartsWithInputStrFromIndex(expression, operatorStr, i))
-            //     {
-            //         stack.Push(InkOperator.Dic_Values[operatorStr]);
-            //         i += operatorStr.Length - 1;
-            //         return true;
-            //     }
-            // }
 
-            return false;
-        }
+            return cache;
 
-        /// <summary>Evaluate Number _eg: -3.64f </summary>
-        /// <param name="expression"> the expression to Evaluate     </param>
-        /// <param name="stack"> the object stack to push or pop     </param>
-        /// <param name="i">the <see cref="expression"/> start index </param>
-        /// <returns>Evaluate is successful?</returns>
-        private static bool EvaluateNumber(string expression, Queue<object> stack, ref int i)
-        {
-            if (StartsWithNumbersFromIndex(expression, i, out var numberMatch, out var len))
+            object Dequeue(List<object> _queue)
             {
-                stack.Enqueue(numberMatch);
-                i += len - 1;
-                return true;
+                var pop = _queue[_queue.Count - 1];
+                _queue.RemoveAt(_queue.Count - 1);
+                return pop;
             }
-
-            return false;
         }
 
-        /// <summary>Evaluate Char or Escaped Char  _eg: 'a' '\d'</summary>
-        /// <param name="expression"> the expression to Evaluate     </param>
-        /// <param name="stack"> the object stack to push or pop     </param>
-        /// <param name="i">the <see cref="expression"/> start index </param>
-        /// <returns> the evaluate is success or not </returns>
-        /// <exception cref="InkSyntaxException">Illegal character or Unknown escape character </exception>
-        private static bool EvaluateChar(string expression, Queue<object> stack, ref int i)
-        {
-            if (StartsWithCharFormIndex(expression, i, out var value, out var len))
-            {
-                stack.Enqueue(value);
-                i += len;
-                return true;
-            }
 
-            return false;
-        }
-
-        /// <summary>Evaluate Parenthis _eg: (xxx)</summary>
-        /// <remarks>the match will recursive execute <see cref="Evaluate"/> </remarks>
-        /// <param name="expression"> the expression to Evaluate     </param>
-        /// <param name="stack"> the object stack to push or pop     </param>
-        /// <param name="i">the <see cref="expression"/> start index </param>
-        /// <returns> the evaluate is success or not </returns> 
-        private static bool EvaluateParenthis(string expression, Queue<object> stack, ref int i)
-        {
-            if (StartsWithParenthisFromIndex(expression, i, out var len))
-            {
-                var temp   = new Queue<object>();
-                var result = Internal_Evaluate(expression, i + 1, i + len - 1, temp);
-                stack.Enqueue(result);
-                i += len;
-                return true;
-            }
-
-            return false;
-        }
-
-        public static readonly Queue<object> Queue = new();
-
-        /// <summary> Evaluate a expression       </summary>
-        /// <returns> return the result object    </returns>
-        public static object Evaluate(string expression, int startIndex, int endIndex)
-        {
-            Queue.Clear();
-            return Internal_Evaluate(expression, startIndex, endIndex, Queue);
-        }
-
-        private static object Internal_Evaluate(string expression, int startIndex, int endIndex, Queue<object> stack)
+        private static List<object> LexerAndFill(string expression, int startIndex, int endIndex, List<object> keys)
         {
             for (var i = startIndex ; i <= endIndex && i < expression.Length ; i++)
             {
                 var any = false;
                 foreach (var parsingMethod in ParsingMethods)
                 {
-                    if (parsingMethod(expression, stack, ref i))
+                    if (parsingMethod(expression, keys, ref i))
                     {
                         any = true;
                         break;
@@ -160,48 +116,19 @@
                 throw new InkSyntaxException($"Invalid character : [{(int)expression[i]}:{expression[i]}] at [{i}  {expression}] ");
             }
 
-            var ans = ProcessQueue(stack);
-
-            return ans;
+            return keys;
         }
-
-
-        public static object ProcessQueue(Queue<object> queue)
-        {
-            if (queue.Count == 0) throw new InkSyntaxException("Empty expression and Empty stack");
-
-            object cache = null;
-            while (queue.Count > 0)
-            {
-                var pop = queue.Dequeue();
-
-                if (pop is InkOperator @operator)
-                {
-                    var left  = cache;
-                    var right = queue.Dequeue();
-
-                    cache = dic_OperatorsFunc[@operator](left, right);
-                }
-                else
-                {
-                    cache = pop;
-                }
-            }
-
-            return cache;
-        }
-
 
         /// <summary>Evaluate String _eg:"string" </summary>
         /// <param name="expression"> the expression to Evaluate     </param>
         /// <param name="stack"> the object stack to push or pop     </param>
         /// <param name="i">the <see cref="expression"/> start index </param>
         /// <returns> the evaluate is success or not </returns> 
-        private static bool EvaluateString(string expression, Queue<object> stack, ref int i)
+        private static bool EvaluateString(string expression, List<object> stack, ref int i)
         {
             if (StartsWithStringFormIndex(expression, i, out var value, out var len))
             {
-                stack.Enqueue(value);
+                stack.Add(value);
                 i += len;
                 return true;
             }
@@ -443,67 +370,93 @@
 
                 throw new Exception("left.ValueType != InkValueType.Int || right.ValueType != InkValueType.Int");
             }
+            
+            
         }
 
 
 
         /// <summary>UniInk Operator : Custom your own Operator!</summary>
-        protected internal class InkOperator
+        protected internal partial class InkOperator
         {
             public static readonly Dictionary<string, InkOperator> Dic_Values = new();
 
             //priority refer to : https://learn.microsoft.com/zh-cn/dotnet/csharp/language-reference/operators/
-            public static readonly InkOperator ParenthisLeft      = new("(", 1);   //1.圆括号 (  - 用于改变默认的优先级。
-            public static readonly InkOperator ParenthisRight     = new(")", 1);   //1.圆括号 )  - 用于改变默认的优先级。
-            public static readonly InkOperator Dot                = new(".", 2);   //2.成员访问 .
-            public static readonly InkOperator SquareBracketStart = new("[", 2);   //2.数组索引 []
-            public static readonly InkOperator SquareBracketEnd   = new("]", 2);   //2.数组索引 []
-            public static readonly InkOperator Increment          = new("++", 2);  //2.suffix ++ (prefix 3) 
-            public static readonly InkOperator Decrement          = new("--", 2);  //2.suffix -- (prefix 3)
-            public static readonly InkOperator LogicalNegation    = new("!", 3);   //3.逻辑非 !
-            public static readonly InkOperator BitwiseComplement  = new("~", 3);   //3.位 非 ~
-            public static readonly InkOperator Cast               = new("()", 4);  //4.显式类型转换
-            public static readonly InkOperator Multiply           = new("*", 5);   //5.乘 *
-            public static readonly InkOperator Divide             = new("/", 5);   //5.除 /
-            public static readonly InkOperator Modulo             = new("%", 5);   //5.取模 %
-            public static readonly InkOperator Plus               = new("+", 6);   //6.加 + (一元加号优先级3) 
-            public static readonly InkOperator Minus              = new("-", 6);   //6.减 - (一元减号优先级3)
-            public static readonly InkOperator LeftShift          = new("<<", 7);  //7.左移 <<
-            public static readonly InkOperator RightShift         = new(">>", 7);  //7.右移 >>
-            public static readonly InkOperator Lower              = new("<", 8);   //8.小于 <
-            public static readonly InkOperator Greater            = new(">", 8);   //8.大于 >
-            public static readonly InkOperator LowerOrEqual       = new("<=", 8);  //8.小于等于 <=
-            public static readonly InkOperator GreaterOrEqual     = new(">=", 8);  //8.大于等于 >=
-            public static readonly InkOperator Equal              = new("==", 9);  //9.等于 ==     (等价比较运算
-            public static readonly InkOperator NotEqual           = new("!=", 9);  //9.不等于 !=   (等价比较运算
-            public static readonly InkOperator BitwiseAnd         = new("&", 10);  //8.按位与 &
-            public static readonly InkOperator BitwiseXor         = new("^", 11);  //9.按位异或 ^
-            public static readonly InkOperator BitwiseOr          = new("|", 12);  //10.按位或 |
-            public static readonly InkOperator ConditionalAnd     = new("&&", 13); //11.逻辑与 &&  (短路逻辑运算
-            public static readonly InkOperator ConditionalOr      = new("||", 14); //12.逻辑或 ||  (短路逻辑运算
-            public static readonly InkOperator Conditional        = new("?:", 15); //15.条件运算 ?: - 三元条件运算符。
-            public static readonly InkOperator Assign             = new("=", 16);  //16.赋值 =、加等 +=、减等 -=、乘等 *=、除等 /=、模等 %=、左移等 <<=、右移等 >>=、按位与等 &=、按位或等 |=、按位异或等 ^= - 赋值运算。
-            public static readonly InkOperator Comma              = new(",", 16);  //17.逗号 , - 用于分隔表达式
-            public static readonly InkOperator Lambda             = new("=>", 17); //17. Lambda 表达式
+            public static readonly InkOperator ParenthisLeft  = new("(", 1);   //1.圆括号 (  - 用于改变默认的优先级。
+            public static readonly InkOperator ParenthisRight = new(")", 1);   //1.圆括号 )  - 用于改变默认的优先级。
+            public static readonly InkOperator Dot            = new(".", 2);   //2.成员访问 .
+            public static readonly InkOperator BracketStart   = new("[", 2);   //2.数组索引 []
+            public static readonly InkOperator BracketEnd     = new("]", 2);   //2.数组索引 []
+            public static readonly InkOperator Increment      = new("++", 2);  //2.suffix ++ (prefix 3) 
+            public static readonly InkOperator Decrement      = new("--", 2);  //2.suffix -- (prefix 3)
+            public static readonly InkOperator LogicalNOT     = new("!", 3);   //3.逻辑非 !
+            public static readonly InkOperator BitNot         = new("~", 3);   //3.位 非 ~
+            public static readonly InkOperator Cast           = new("()", 4);  //4.显式类型转换
+            public static readonly InkOperator Multiply       = new("*", 5);   //5.乘 *
+            public static readonly InkOperator Divide         = new("/", 5);   //5.除 /
+            public static readonly InkOperator Modulo         = new("%", 5);   //5.取模 %
+            public static readonly InkOperator Plus           = new("+", 6);   //6.加 + (一元加号优先级3) 
+            public static readonly InkOperator Minus          = new("-", 6);   //6.减 - (一元减号优先级3)
+            public static readonly InkOperator LeftShift      = new("<<", 7);  //7.左移 <<
+            public static readonly InkOperator RightShift     = new(">>", 7);  //7.右移 >>
+            public static readonly InkOperator Lower          = new("<", 8);   //8.小于 <
+            public static readonly InkOperator Greater        = new(">", 8);   //8.大于 >
+            public static readonly InkOperator LowerOrEqual   = new("<=", 8);  //8.小于等于 <=
+            public static readonly InkOperator GreaterOrEqual = new(">=", 8);  //8.大于等于 >=
+            public static readonly InkOperator Equal          = new("==", 9);  //9.等于 ==     (等价比较运算
+            public static readonly InkOperator NotEqual       = new("!=", 9);  //9.不等于 !=   (等价比较运算
+            public static readonly InkOperator BitwiseAnd     = new("&", 10);  //8.按位与 &
+            public static readonly InkOperator BitwiseXor     = new("^", 11);  //9.按位异或 ^
+            public static readonly InkOperator BitwiseOr      = new("|", 12);  //10.按位或 |
+            public static readonly InkOperator ConditionalAnd = new("&&", 13); //11.逻辑与 &&  (短路逻辑运算
+            public static readonly InkOperator ConditionalOr  = new("||", 14); //12.逻辑或 ||  (短路逻辑运算
+            public static readonly InkOperator Conditional    = new("?:", 15); //15.条件运算 ?: - 三元条件运算符。
+            public static readonly InkOperator Assign         = new("=", 16);  //16.赋值 =、加等 +=、减等 -=、乘等 *=、除等 /=、模等 %=、左移等 <<=、右移等 >>=、按位与等 &=、按位或等 |=、按位异或等 ^= - 赋值运算。
+            public static readonly InkOperator Comma          = new(",", 16);  //17.逗号 , - 用于分隔表达式
+            public static readonly InkOperator Lambda         = new("=>", 17); //17. Lambda 表达式
+            public static readonly InkOperator BraceLeft      = new("{", 20);
+            public static readonly InkOperator BraceRight     = new("}", 20);
+            public static readonly InkOperator Semicolon      = new(";", 20);
+            public static readonly InkOperator Colon          = new(":", -1);
+            public static readonly InkOperator QuestionMark   = new("?", -1);
+            public static readonly InkOperator At             = new("@", -1);
+            public static readonly InkOperator Hash           = new("#", -1);
+            public static readonly InkOperator Dollar         = new("$", -1);
+
+            //keyword refer to :  https://learn.microsoft.com/zh-cn/dotnet/csharp/language-reference/keywords/
+            public static readonly InkOperator KeyIf       = new("if", 20);
+            public static readonly InkOperator KeyElse     = new("else", 20);
+            public static readonly InkOperator KeySwitch   = new("switch", 20);
+            public static readonly InkOperator KeyWhile    = new("while", 20);
+            public static readonly InkOperator KeyFor      = new("for", 20);
+            public static readonly InkOperator KeyForeach  = new("foreach", 20);
+            public static readonly InkOperator KeyIn       = new("in", 20);
+            public static readonly InkOperator KeyReturn   = new("return", 20);
+            public static readonly InkOperator KeyBreak    = new("break", 20);
+            public static readonly InkOperator KeyContinue = new("continue", 20);
+            public static readonly InkOperator KeyVar      = new("var", 20);
 
             protected static short indexer;
 
 
-            protected readonly short OperatorValue;
+            /// <summary>the only value of the operator</summary>
+            protected readonly short OperatorValue = indexer++;
 
             /// <summary>the lower the value, the higher the priority</summary>
             protected readonly short PriorityIndex;
 
             protected InkOperator(string name, short priorityIndex)
             {
-                OperatorValue = indexer++;
                 PriorityIndex = priorityIndex;
-
                 Dic_Values.Add(name, this);
             }
 
             public override bool Equals(object otherOperator) => otherOperator is InkOperator Operator && OperatorValue == Operator.OperatorValue;
-            public override int  GetHashCode()                => OperatorValue;
+
+            public override int    GetHashCode() => OperatorValue;
+            public override string ToString()    => $"Operator : {Dic_Values.FirstOrDefault(pair => Equals(pair.Value, this)).Key}  Priority : {PriorityIndex}";
+
+
 
             public static object InkOperator_Plus(object left, object right)
             {
@@ -587,10 +540,6 @@
         }
 
 
-        // 9*((1+2*3)/2)
-        // 9 * ( ( 1 + 2 * 3 ) / 2 ) 
-        // * { 9 {/ {+ {1 , {* 2 3 }, 2 } 
-        
 
         /// <summary>Find <see cref="input"/> is whether start with [(] from <see cref="startIndex"/></summary>
         protected static bool StartsWithParenthisFromIndex(string input, int startIndex, out int len)
@@ -828,17 +777,99 @@
           , { InkOperator.Minus, InkOperator.InkOperator_Minus }       //
           , { InkOperator.Multiply, InkOperator.InkOperator_Multiply } //
           , { InkOperator.Divide, InkOperator.InkOperator_Divide }     //
-          , { InkOperator.Modulo, (_,          _) => null }     //
-          , { InkOperator.Lower, (_,           _) => null }     //
-          , { InkOperator.Greater, (_,         _) => null }     //
-          , { InkOperator.Equal, (_,           _) => null }     //
-          , { InkOperator.LowerOrEqual, (_,    _) => null }     //
-          , { InkOperator.GreaterOrEqual, (_,  _) => null }     //
-          , { InkOperator.NotEqual, (_,        _) => null }     //
-          , { InkOperator.LogicalNegation, (_, _) => null }     //
-          , { InkOperator.ConditionalAnd, (_,  _) => null }     //
-          , { InkOperator.ConditionalOr, (_,   _) => null }     //
+          , { InkOperator.Modulo, (_,         _) => null }             //
+          , { InkOperator.Lower, (_,          _) => null }             //
+          , { InkOperator.Greater, (_,        _) => null }             //
+          , { InkOperator.Equal, (_,          _) => null }             //
+          , { InkOperator.LowerOrEqual, (_,   _) => null }             //
+          , { InkOperator.GreaterOrEqual, (_, _) => null }             //
+          , { InkOperator.NotEqual, (_,       _) => null }             //
+          , { InkOperator.LogicalNOT, (_,     _) => null }             //
+          , { InkOperator.ConditionalAnd, (_, _) => null }             //
+          , { InkOperator.ConditionalOr, (_,  _) => null }             //
         };
+
+        private static readonly List<ParsingMethodDelegate> ParsingMethods = new()
+        {
+            EvaluateOperators, EvaluateNumber, EvaluateChar
+          , EvaluateParenthis, EvaluateString,
+        };
+
+        /// <summary>Evaluate Operators in <see cref="InkOperator"/></summary>
+        /// <param name="expression"> the expression to Evaluate     </param>
+        /// <param name="stack"> the object stack to push or pop     </param>
+        /// <param name="i">the <see cref="expression"/> start index </param>
+        /// <returns> the evaluate is success or not </returns> 
+        private static bool EvaluateOperators(string expression, List<object> stack, ref int i)
+        {
+            foreach (var operatorStr in InkOperator.Dic_Values)
+            {
+                if (StartsWithInputStrFromIndex(expression, operatorStr.Key, i))
+                {
+                    stack.Add(operatorStr.Value);
+                    i += operatorStr.Key.Length - 1;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>Evaluate Number _eg: -3.64f </summary>
+        /// <param name="expression"> the expression to Evaluate     </param>
+        /// <param name="stack"> the object stack to push or pop     </param>
+        /// <param name="i">the <see cref="expression"/> start index </param>
+        /// <returns>Evaluate is successful?</returns>
+        private static bool EvaluateNumber(string expression, List<object> stack, ref int i)
+        {
+            if (StartsWithNumbersFromIndex(expression, i, out var numberMatch, out var len))
+            {
+                stack.Add(numberMatch);
+                i += len - 1;
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>Evaluate Char or Escaped Char  _eg: 'a' '\d'</summary>
+        /// <param name="expression"> the expression to Evaluate     </param>
+        /// <param name="stack"> the object stack to push or pop     </param>
+        /// <param name="i">the <see cref="expression"/> start index </param>
+        /// <returns> the evaluate is success or not </returns>
+        /// <exception cref="InkSyntaxException">Illegal character or Unknown escape character </exception>
+        private static bool EvaluateChar(string expression, List<object> stack, ref int i)
+        {
+            if (StartsWithCharFormIndex(expression, i, out var value, out var len))
+            {
+                stack.Add(value);
+                i += len;
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>Evaluate Parenthis _eg: (xxx)</summary>
+        /// <remarks>the match will recursive execute <see cref="Evaluate"/> </remarks>
+        /// <param name="expression"> the expression to Evaluate     </param>
+        /// <param name="stack"> the object stack to push or pop     </param>
+        /// <param name="i">the <see cref="expression"/> start index </param>
+        /// <returns> the evaluate is success or not </returns> 
+        private static bool EvaluateParenthis(string expression, List<object> stack, ref int i)
+        {
+            if (StartsWithParenthisFromIndex(expression, i, out var len))
+            {
+                var temp   = new List<object>();
+                var _stack = LexerAndFill(expression, i + 1, i + len - 1, temp);
+                var result = ProcessQueue(_stack);
+                stack.Add(result);
+                i += len;
+                return true;
+            }
+
+            return false;
+        }
     }
 
 
@@ -846,8 +877,26 @@
     public class InkSyntaxException : Exception
     {
         public InkSyntaxException(string message) : base(message) { }
+
+        public static void Throw(string message) => throw new InkSyntaxException(message);
     }
 
-    
-    
 }
+
+
+// TODO_LIST:
+// 1. 基本的数学运算(加减乘除, 乘方, 余数, 逻辑运算, 位运算) 二元运算符
+// 2. 非成员方法调用(单参数,多参数,默认参数,可变参数,泛型方法?)
+// 3. 赋值运算符 =
+// 4. 声明变量 var
+// 5. 基本的逻辑语句 if else
+// 6. 支持类型的隐式转换
+
+// 9 * ( ( 1 + 2 * 3 ) / 2 ) 
+// * { 9 {/ {+ {1 , {* 2 3 }, 2 } 
+
+
+// Architecture Design
+// 1. Lexer : 词法分析器,把字符串转换成Token
+// 2. Parser: 语法分析器,把Token转换成AST
+// 3. Interpreter: 解释器,执行AST

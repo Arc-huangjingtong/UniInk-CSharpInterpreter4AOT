@@ -23,11 +23,11 @@
 
         private static readonly Parser<char> QuotedCellContent = Parse.AnyChar.Except(QuotedCellDelimiter).Or(Escaped(QuotedCellDelimiter));
 
-        private static readonly Parser<char> LiteralCellContent = Parse.AnyChar.Except(CellSeparator).Except(Parse.String(Environment.NewLine));
+        private static readonly Parser<char> LiteralCellContent = Parse.AnyChar.Except(CellSeparator).Except(Parse.MatchString(Environment.NewLine));
 
         private static readonly Parser<string> QuotedCell = from open in QuotedCellDelimiter from content in QuotedCellContent.Many().Text() from end in QuotedCellDelimiter select content;
 
-        private static readonly Parser<string> NewLine = Parse.String(Environment.NewLine).Text();
+        private static readonly Parser<string> NewLine = Parse.MatchString(Environment.NewLine).Text();
 
         private static readonly Parser<string> RecordTerminator = Parse.Return("").End().XOr(NewLine.End()).Or(NewLine);
 

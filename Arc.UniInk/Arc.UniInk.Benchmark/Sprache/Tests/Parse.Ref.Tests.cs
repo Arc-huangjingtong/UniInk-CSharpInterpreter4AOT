@@ -11,14 +11,14 @@ namespace Sprache.Tests
 
     public class ParseRefTests
     {
-        private static Parser<string> ParserHash = Parse.String("#").Text().Named("something");
+        private static Parser<string> ParserHash = Parse.MatchString("#").Text().Named("something");
 
-        private static Parser<string> ParserIdentifier = (from id in Parse.String("id").Text() select id).Named("identifier");
+        private static Parser<string> ParserIdentifier = (from id in Parse.MatchString("id").Text() select id).Named("identifier");
 
         private static Parser<string> Parser1UnderTest =
             (from _0 in Parse.Ref(() => ParserIdentifier)
              from _1 in Parse.Ref(() => ParserHash)
-             from _2 in Parse.String("_")
+             from _2 in Parse.MatchString("_")
              select "alternative_1")
             .Or(from _0 in Parse.Ref(() => ParserIdentifier)
                 from _1 in Parse.Ref(() => ParserHash)
@@ -26,32 +26,32 @@ namespace Sprache.Tests
             .Or(from _0 in ParserIdentifier select _0);
 
         private static Parser<string> Parser2UnderTest = 
-            (from _0 in Parse.String("a").Text()
+            (from _0 in Parse.MatchString("a").Text()
              from _1 in Parse.Ref(() => Parser2UnderTest)
              select _0 + _1)
-            .Or(from _0 in Parse.String("b").Text()
+            .Or(from _0 in Parse.MatchString("b").Text()
                 from _1 in Parse.Ref(() => Parser2UnderTest)
                 select _0 + _1)
-            .Or(from _0 in Parse.String("0").Text() select _0);
+            .Or(from _0 in Parse.MatchString("0").Text() select _0);
 
         private static Parser<string> Parser3UnderTest =
             (from _0 in Parse.Ref(() => Parser3UnderTest)
-             from _1 in Parse.String("a").Text()
+             from _1 in Parse.MatchString("a").Text()
              select _0 + _1)
-            .Or(from _0 in Parse.String("b").Text()
+            .Or(from _0 in Parse.MatchString("b").Text()
                 from _1 in Parse.Ref(() => Parser3UnderTest)
                 select _0 + _1)
-            .Or(from _0 in Parse.String("0").Text() select _0);
+            .Or(from _0 in Parse.MatchString("0").Text() select _0);
 
         private static Parser<string> Parser4UnderTest =
             from _0 in Parse.Ref(() => Parser4UnderTest)
             select "simplest left recursion";
 
         private static Parser<string> Parser5UnderTest =
-          (from _0 in Parse.String("_").Text()
+          (from _0 in Parse.MatchString("_").Text()
            from _1 in Parse.Ref(() => Parser5UnderTest)
            select _0 + _1)
-          .Or(from _0 in Parse.String("+").Text()
+          .Or(from _0 in Parse.MatchString("+").Text()
               from _1 in Parse.Ref(() => Parser5UnderTest)
               select _0 + _1)
           .Or(Parse.Return(""));

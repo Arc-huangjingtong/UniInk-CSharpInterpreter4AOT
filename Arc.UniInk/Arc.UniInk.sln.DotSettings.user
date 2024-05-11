@@ -20,6 +20,9 @@
     &lt;TestId&gt;NUnit3x::1BA70864-1706-44D0-9D58-669FD5703A14::.NETFramework,Version=v4.8::LinqyCalculator.Program.Main2&lt;/TestId&gt;&#xD;
     &lt;TestId&gt;NUnit3x::1BA70864-1706-44D0-9D58-669FD5703A14::.NETFramework,Version=v4.8::Arc.UniInk.NUnitTest.Benchmark_UniInkSpeed.Main4&lt;/TestId&gt;&#xD;
     &lt;TestId&gt;NUnit3x::1BA70864-1706-44D0-9D58-669FD5703A14::.NETFramework,Version=v4.8::Sprache.Parse.Test&lt;/TestId&gt;&#xD;
+    &lt;TestId&gt;NUnit3x::1BA70864-1706-44D0-9D58-669FD5703A14::.NETFramework,Version=v4.8::Arc.UniInk.NUnitTest.NUnit_UniInkSpeed.Test_EvaluateNumber_Int&lt;/TestId&gt;&#xD;
+    &lt;TestId&gt;NUnit3x::1BA70864-1706-44D0-9D58-669FD5703A14::.NETFramework,Version=v4.8::Arc.UniInk.NUnitTest.NUnit_UniInkSpeed.TestTemp_CreateObjectStack&lt;/TestId&gt;&#xD;
+    &lt;TestId&gt;NUnit3x::1BA70864-1706-44D0-9D58-669FD5703A14::.NETFramework,Version=v4.8::Arc.UniInk.NUnitTest.NUnit_UniInkSpeed.TestTemp_StructTest&lt;/TestId&gt;&#xD;
   &lt;/TestAncestor&gt;&#xD;
 &lt;/SessionState&gt;</s:String>
 	

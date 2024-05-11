@@ -42,7 +42,7 @@ namespace Sprache.Tests.Scenarios
 
         private static Parser<ExpressionType> Operator(string op, ExpressionType opType)
         {
-            return Parse.String(op).Token().Return(opType);
+            return Parse.MatchString(op).Token().Return(opType);
         }
 
         private static readonly Parser<ExpressionType> Add      = Operator("+", ExpressionType.AddChecked);
