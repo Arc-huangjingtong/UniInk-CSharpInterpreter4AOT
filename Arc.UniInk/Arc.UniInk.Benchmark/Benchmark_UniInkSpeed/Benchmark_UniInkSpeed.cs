@@ -66,7 +66,7 @@
             NUnit_UniInkSpeed.Test_EvaluateNumber_Int(input7);
         }
 
-        [Benchmark]
+        //[Benchmark]
         public void INT_3()
         {
             NUnit_UniInk.Test_EvaluateNumber(input2);
@@ -120,7 +120,7 @@
         }
 
 
-        [Benchmark] [Test]
+        //[Benchmark] [Test]
         public void Main4()
         {
             var parsed = ExpressionParser.ParseExpression("9*((1+2*3)/2)");

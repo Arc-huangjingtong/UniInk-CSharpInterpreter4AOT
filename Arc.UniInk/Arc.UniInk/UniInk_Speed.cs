@@ -61,9 +61,12 @@
         public static readonly List<object> WordStack = new();
 
 
-        private static object ProcessQueue(List<object> keys)
+        private static object ProcessQueue2(List<object> keys)
         {
-            if (keys.Count == 0) throw new InkSyntaxException("Empty expression and Empty stack !");
+            if (keys.Count == 0)
+            {
+                throw new InkSyntaxException("Empty expression and Empty stack !");
+            }
 
             keys.Reverse();
 
@@ -93,6 +96,33 @@
                 _queue.RemoveAt(_queue.Count - 1);
                 return pop;
             }
+        }
+
+        private static object ProcessQueue(List<object> keys)
+        {
+            if (keys.Count == 0) throw new InkSyntaxException("Empty expression and Empty stack !");
+            
+            object cache = null;
+
+            for (var i = 0 ; i < keys.Count ; i++)
+            {
+                var pop = keys[i];
+
+                if (pop is InkOperator @operator)
+                {
+                    var left  = cache;
+                    var right = keys[i + 1];
+
+                    cache = dic_OperatorsFunc[@operator](left, right);
+                    i++;
+                }
+                else
+                {
+                    cache = pop;
+                }
+            }
+
+            return cache;
         }
 
 
@@ -214,7 +244,6 @@
 
             public static void Release(InkValue value)
             {
-                value.Value_String.Clear();
                 value.Value_Meta.Clear();
                 value.isCalculate = false;
                 pool.Push(value);
@@ -233,12 +262,11 @@
             }
 
 
-            public int           Value_int    { get; set; }
-            public bool          Value_bool   { get; set; }
-            public char          Value_char   { get; set; }
-            public float         Value_float  { get; set; }
-            public double        Value_double { get; set; }
-            public StringBuilder Value_String { get; set; } = new();
+            public int    Value_int    { get; set; }
+            public bool   Value_bool   { get; set; }
+            public char   Value_char   { get; set; }
+            public float  Value_float  { get; set; }
+            public double Value_double { get; set; }
 
             public InkValueType ValueType { get; set; }
 
@@ -370,8 +398,6 @@
 
                 throw new Exception("left.ValueType != InkValueType.Int || right.ValueType != InkValueType.Int");
             }
-            
-            
         }
 
 
@@ -729,7 +755,6 @@
                 i++;
                 value           = InkValue.Get();
                 value.ValueType = InkValue.InkValueType.String;
-                var stringBuilder = value.Value_String;
 
 
                 while (i < input.Length)
@@ -740,7 +765,7 @@
 
                         if (dic_EscapedChar.TryGetValue(input[i], out var EscapedChar))
                         {
-                            stringBuilder.Append(EscapedChar);
+                            value.Value_Meta.Push(EscapedChar);
                             i++;
                         }
                         else
@@ -756,7 +781,7 @@
                     }
                     else
                     {
-                        stringBuilder.Append(input[i]);
+                        value.Value_Meta.Push(input[i]);
                         i++;
                     }
                 }
@@ -792,7 +817,7 @@
         private static readonly List<ParsingMethodDelegate> ParsingMethods = new()
         {
             EvaluateOperators, EvaluateNumber, EvaluateChar
-          , EvaluateParenthis, EvaluateString,
+          , EvaluateString,
         };
 
         /// <summary>Evaluate Operators in <see cref="InkOperator"/></summary>
@@ -843,27 +868,6 @@
             if (StartsWithCharFormIndex(expression, i, out var value, out var len))
             {
                 stack.Add(value);
-                i += len;
-                return true;
-            }
-
-            return false;
-        }
-
-        /// <summary>Evaluate Parenthis _eg: (xxx)</summary>
-        /// <remarks>the match will recursive execute <see cref="Evaluate"/> </remarks>
-        /// <param name="expression"> the expression to Evaluate     </param>
-        /// <param name="stack"> the object stack to push or pop     </param>
-        /// <param name="i">the <see cref="expression"/> start index </param>
-        /// <returns> the evaluate is success or not </returns> 
-        private static bool EvaluateParenthis(string expression, List<object> stack, ref int i)
-        {
-            if (StartsWithParenthisFromIndex(expression, i, out var len))
-            {
-                var temp   = new List<object>();
-                var _stack = LexerAndFill(expression, i + 1, i + len - 1, temp);
-                var result = ProcessQueue(_stack);
-                stack.Add(result);
                 i += len;
                 return true;
             }
