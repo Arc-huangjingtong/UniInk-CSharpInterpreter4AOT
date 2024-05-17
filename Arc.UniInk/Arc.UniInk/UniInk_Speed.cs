@@ -2,19 +2,17 @@
 {
 
     /*******************************************************************************************************************
-     *  📰 Title    : UniInk_Speed (https://github.com/Arc-huangjingtong/UniInk-CSharpInterpreter4Unity)              |*
-     *  🔖 Version  : 1.0.0                                                                                           |*
-     *  😀 Author   : Arc (https://github.com/Arc-huangjingtong)                                                      |*
-     *  🔑 Licence  : MIT (https://github.com/Arc-huangjingtong/UniInk-CSharpInterpreter4Unity/blob/main/LICENSE)     |*
-     *  🤝 Support  : [.NET Framework 4+] [C# 9.0+] [IL2CPP Support]                                                  |*
-     *  📝 Desc     : [High performance] [zero box & unbox] [zero reflection runtime] [Easy-use] ⚠but                 |*
+    *📰 Title    : UniInk_Speed (https://github.com/Arc-huangjingtong/UniInk-CSharpInterpreter4Unity)                  *
+    *🔖 Version  : 1.0.0                                                                                               *
+    *😀 Author   : Arc (https://github.com/Arc-huangjingtong)                                                          *
+    *🔑 Licence  : MIT (https://github.com/Arc-huangjingtong/UniInk-CSharpInterpreter4Unity/blob/main/LICENSE)         *
+    *🤝 Support  : [.NET Framework 4+] [C# 9.0+] [IL2CPP Support]                                                      *
+    *📝 Desc     : [High performance] [zero box & unbox] [zero reflection runtime] [Easy-use]                          *
     /*******************************************************************************************************************/
 
     using System;
     using System.Collections.Generic;
     using System.Linq;
-    using System.Linq.Expressions;
-    using System.Text;
 
 
     public partial class UniInk_Speed
@@ -24,6 +22,8 @@
         /// <param name="variables"> Set variables can replace a key string with value object            </param>
         public UniInk_Speed(object context = null, Dictionary<string, object> variables = null) { }
 
+        /// <summary> Evaluate a expression       </summary>
+        /// <returns> return the result object    </returns>
         public static object Evaluate(string expression) => Evaluate(expression, 0, expression.Length);
 
         /// <summary> Evaluate a expression       </summary>
@@ -40,14 +40,14 @@
 
 
 
-        private delegate bool ParsingMethodDelegate(string expression, List<object> stack, ref int i);
+        protected delegate bool ParsingMethodDelegate(string expression, List<object> stack, ref int i);
 
 
-        /// <summary>用于解释方法的委托</summary>
+        /// <summary>Translate Method Delegate</summary>
         protected delegate object InternalDelegate(params object[] args);
 
 
-        /// <summary> Some Escaped Char mapping  </summary>
+        /// <summary> Some Escaped Char mapping     </summary>
         protected static readonly Dictionary<char, char> dic_EscapedChar = new()
         {
             { '\\', '\\' }, { '\'', '\'' }, { '0', '\0' }
@@ -56,52 +56,21 @@
           , { 'v', '\v' }
         };
 
-
-
+        /// <summary> The default stack in Process  </summary>
         public static readonly List<object> WordStack = new();
 
 
-        private static object ProcessQueue2(List<object> keys)
+        // 9 * ( ( 1 + 2 * 3 ) / 2 )
+        public static object ProcessQueue(IList<object> keys)
         {
-            if (keys.Count == 0)
-            {
-                throw new InkSyntaxException("Empty expression and Empty stack !");
-            }
+            InkSyntaxException.ThrowIfTrue(keys.Count == 0, "Empty expression and Empty stack !");
 
-            keys.Reverse();
-
-            object cache = null;
-            while (keys.Count > 0)
-            {
-                var pop = Dequeue(keys);
-
-                if (pop is InkOperator @operator)
-                {
-                    var left  = cache;
-                    var right = Dequeue(keys);
-
-                    cache = dic_OperatorsFunc[@operator](left, right);
-                }
-                else
-                {
-                    cache = pop;
-                }
-            }
-
+            var cache = ProcessQueue_Internal(keys);
             return cache;
-
-            object Dequeue(List<object> _queue)
-            {
-                var pop = _queue[_queue.Count - 1];
-                _queue.RemoveAt(_queue.Count - 1);
-                return pop;
-            }
         }
 
-        private static object ProcessQueue(List<object> keys)
+        private static object ProcessQueue_Internal(IList<object> keys)
         {
-            if (keys.Count == 0) throw new InkSyntaxException("Empty expression and Empty stack !");
-            
             object cache = null;
 
             for (var i = 0 ; i < keys.Count ; i++)
@@ -126,6 +95,7 @@
         }
 
 
+
         private static List<object> LexerAndFill(string expression, int startIndex, int endIndex, List<object> keys)
         {
             for (var i = startIndex ; i <= endIndex && i < expression.Length ; i++)
@@ -143,93 +113,10 @@
                 if (any) continue;
                 if (char.IsWhiteSpace(expression[i])) continue;
 
-                throw new InkSyntaxException($"Invalid character : [{(int)expression[i]}:{expression[i]}] at [{i}  {expression}] ");
+                InkSyntaxException.Throw($"Invalid character : [{(int)expression[i]}:{expression[i]}] at [{i}  {expression}] ");
             }
 
             return keys;
-        }
-
-        /// <summary>Evaluate String _eg:"string" </summary>
-        /// <param name="expression"> the expression to Evaluate     </param>
-        /// <param name="stack"> the object stack to push or pop     </param>
-        /// <param name="i">the <see cref="expression"/> start index </param>
-        /// <returns> the evaluate is success or not </returns> 
-        private static bool EvaluateString(string expression, List<object> stack, ref int i)
-        {
-            if (StartsWithStringFormIndex(expression, i, out var value, out var len))
-            {
-                stack.Add(value);
-                i += len;
-                return true;
-            }
-
-            return false;
-        }
-
-        private readonly StringBuilder stringBuilderCache = new();
-
-        /// <summary>Get a expression list between [startChar] and [endChar]</summary>
-        /// <remarks>⚠️The startChar , endChar and separator must be different</remarks>
-        private List<string> GetExpressionsParenthesized(string expression, ref int i, bool checkSeparator, char separator = ',', char startChar = '(', char endChar = ')')
-        {
-            stringBuilderCache.Clear();
-
-            var expressionsList = new List<string>();
-
-            var bracketCount = 1;
-
-            for (; i < expression.Length ; i++)
-            {
-                var s = expression[i];
-
-                if (s is '\'' or '\"')
-                {
-                    // var internalStringMatch = regex_String.Match(expression, i, expression.Length - i);
-                    // if (internalStringMatch.Success)
-                    // {
-                    //     stringBuilderCache.Append(internalStringMatch.Value);
-                    //     i += internalStringMatch.Length - 1;
-                    //     continue;
-                    // }
-                    //
-                    // var internalCharMatch = regex_Char.Match(expression, i, expression.Length - i);
-                    // if (internalCharMatch.Success)
-                    // {
-                    //     stringBuilderCache.Append(internalCharMatch.Value);
-                    //     i += internalCharMatch.Length - 1;
-                    //     continue;
-                    // }
-                }
-
-
-                if (s.Equals(startChar)) bracketCount++;
-                if (s.Equals(endChar)) bracketCount--;
-
-                if (bracketCount == 0)
-                {
-                    var currentExpressionStr = stringBuilderCache.ToString().Trim();
-                    if (!string.IsNullOrWhiteSpace(currentExpressionStr)) expressionsList.Add(currentExpressionStr);
-                    break;
-                }
-
-                if (bracketCount == 1 && checkSeparator && s.Equals(separator))
-                {
-                    var currentExpressionStr = stringBuilderCache.ToString().Trim();
-                    expressionsList.Add(currentExpressionStr);
-                    stringBuilderCache.Clear();
-                }
-                else
-                {
-                    stringBuilderCache.Append(s);
-                }
-            }
-
-            if (bracketCount > 0)
-            {
-                throw new InkSyntaxException($"[{expression}] is missing characters ['{endChar}'] ");
-            }
-
-            return expressionsList;
         }
 
 
@@ -403,7 +290,7 @@
 
 
         /// <summary>UniInk Operator : Custom your own Operator!</summary>
-        protected internal partial class InkOperator
+        protected partial class InkOperator
         {
             public static readonly Dictionary<string, InkOperator> Dic_Values = new();
 
@@ -567,17 +454,120 @@
 
 
 
-        /// <summary>Find <see cref="input"/> is whether start with [(] from <see cref="startIndex"/></summary>
+        /// <summary>Some UnaryPostfix Operators mark</summary>
+        protected static readonly Dictionary<InkOperator, Func<object, object, object>> dic_OperatorsFunc = new()
+        {
+            { InkOperator.Plus, InkOperator.InkOperator_Plus }         //
+          , { InkOperator.Minus, InkOperator.InkOperator_Minus }       //
+          , { InkOperator.Multiply, InkOperator.InkOperator_Multiply } //
+          , { InkOperator.Divide, InkOperator.InkOperator_Divide }     //
+          , { InkOperator.Modulo, (_,         _) => null }             //
+          , { InkOperator.Lower, (_,          _) => null }             //
+          , { InkOperator.Greater, (_,        _) => null }             //
+          , { InkOperator.Equal, (_,          _) => null }             //
+          , { InkOperator.LowerOrEqual, (_,   _) => null }             //
+          , { InkOperator.GreaterOrEqual, (_, _) => null }             //
+          , { InkOperator.NotEqual, (_,       _) => null }             //
+          , { InkOperator.LogicalNOT, (_,     _) => null }             //
+          , { InkOperator.ConditionalAnd, (_, _) => null }             //
+          , { InkOperator.ConditionalOr, (_,  _) => null }             //
+        };
+
+
+
+        /////////////////////////////////////////////// Parsing Methods ////////////////////////////////////////////////
+
+
+        /// <summary>The Parsing Methods for <see cref="Evaluate"/></summary>
+        protected static readonly List<ParsingMethodDelegate> ParsingMethods = new()
+        {
+            EvaluateOperators, EvaluateNumber, EvaluateChar
+          , EvaluateString,
+        };
+
+        /// <summary>Evaluate Operators in<see cref="InkOperator"/></summary>
+        /// <param name="expression"> the expression to Evaluate     </param>
+        /// <param name="keys"> the object stack to push or pop      </param>
+        /// <param name="i">the <see cref="expression"/> start index </param>
+        /// <returns> the evaluate is success or not </returns> 
+        protected static bool EvaluateOperators(string expression, List<object> keys, ref int i)
+        {
+            foreach (var operatorStr in InkOperator.Dic_Values)
+            {
+                if (StartsWithInputStrFromIndex(expression, operatorStr.Key, i))
+                {
+                    keys.Add(operatorStr.Value);
+                    i += operatorStr.Key.Length - 1;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>Evaluate Number _eg: -3.64f                   </summary>
+        /// <param name="expression"> the expression to Evaluate     </param>
+        /// <param name="keys"> the object stack to push or pop      </param>
+        /// <param name="i">the <see cref="expression"/> start index </param>
+        /// <returns>Evaluate is successful?                       </returns>
+        protected static bool EvaluateNumber(string expression, List<object> keys, ref int i)
+        {
+            if (StartsWithNumbersFromIndex(expression, i, out var numberMatch, out var len))
+            {
+                keys.Add(numberMatch);
+                i += len - 1;
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>Evaluate Char or Escaped Char  _eg: 'a' '\d'  </summary>
+        /// <param name="expression"> the expression to Evaluate     </param>
+        /// <param name="keys"> the object stack to push or pop      </param>
+        /// <param name="i">the <see cref="expression"/> start index </param>
+        /// <returns> the evaluate is success or not               </returns>
+        protected static bool EvaluateChar(string expression, List<object> keys, ref int i)
+        {
+            if (StartsWithCharFormIndex(expression, i, out var value, out var len))
+            {
+                keys.Add(value);
+                i += len;
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>Evaluate String _eg:"string"                  </summary>
+        /// <param name="expression"> the expression to Evaluate     </param>
+        /// <param name="keys"> the object stack to push or pop      </param>
+        /// <param name="i">the <see cref="expression"/> start index </param>
+        /// <returns> the evaluate is success or not               </returns> 
+        protected static bool EvaluateString(string expression, List<object> keys, ref int i)
+        {
+            if (StartsWithStringFormIndex(expression, i, out var value, out var len))
+            {
+                keys.Add(value);
+                i += len;
+                return true;
+            }
+
+            return false;
+        }
+
+
+
+        /////////////////////////////////////////////// Helping Methods ////////////////////////////////////////////////
+
+        /// <summary>Find <see cref="input"/> is whether start with [(] from <see cref="startIndex"/>         </summary>
         protected static bool StartsWithParenthisFromIndex(string input, int startIndex, out int len)
         {
-            if (input.Length < startIndex)
-            {
-                throw new Exception("input.Length < startIndex");
-            }
+            InkSyntaxException.ThrowIfTrue(input.Length < startIndex,     "input.Length < startIndex");
+            InkSyntaxException.ThrowIfTrue(input[startIndex].Equals(')'), "missing match [(]");
 
             len = 0;
 
-            if (input[startIndex].Equals(')')) throw new InkSyntaxException("missing match [)]");
 
             if (input[startIndex].Equals('('))
             {
@@ -626,7 +616,7 @@
             return true;
         }
 
-        /// <summary>Find <see cref="input"/> is whether start with numbers from <see cref="startIndex"/></summary>
+        /// <summary>Find <see cref="input"/> is whether start with numbers from <see cref="startIndex"/>     </summary>
         protected static bool StartsWithNumbersFromIndex(string input, int startIndex, out InkValue value, out int len)
         {
             if (input.Length < startIndex)
@@ -689,7 +679,7 @@
             return true;
         }
 
-        /// <summary>Find <see cref="input"/> is whether start with char from <see cref="startIndex"/></summary>
+        /// <summary>Find <see cref="input"/> is whether start with char from <see cref="startIndex"/>        </summary>
         protected static bool StartsWithCharFormIndex(string input, int startIndex, out InkValue value, out int len)
         {
             var i = startIndex;
@@ -731,7 +721,7 @@
                 }
 
 
-                throw new InkSyntaxException($"Illegal character[{i}] : too many characters in a character literal");
+                InkSyntaxException.Throw($"Illegal character[{i}] : too many characters in a character literal");
             }
 
             len   = 0;
@@ -739,7 +729,7 @@
             return false;
         }
 
-        /// <summary>Find <see cref="input"/> is whether start with string from <see cref="startIndex"/></summary>
+        /// <summary>Find <see cref="input"/> is whether start with string from <see cref="startIndex"/>      </summary>
         protected static bool StartsWithStringFormIndex(string input, int startIndex, out InkValue value, out int len)
         {
             var i = startIndex;
@@ -770,7 +760,7 @@
                         }
                         else
                         {
-                            throw new InkSyntaxException($"Unknown escape character[{input[i]}] : You can customize them in [dic_EscapedChar]");
+                            InkSyntaxException.Throw($"Unknown escape character[{input[i]}] : You can customize them in [dic_EscapedChar]");
                         }
                     }
                     else if (input[i].Equals('\"'))
@@ -786,7 +776,7 @@
                     }
                 }
 
-                throw new InkSyntaxException($"Illegal character[{i}] : too many characters in a character literal");
+                InkSyntaxException.Throw($"Illegal character[{i}] : too many characters in a character literal");
             }
 
             len   = 0;
@@ -795,85 +785,35 @@
         }
 
 
-        /// <summary> Some UnaryPostfix Operators mark</summary>
-        protected internal static readonly Dictionary<InkOperator, Func<object, object, object>> dic_OperatorsFunc = new()
+        /// <summary>Find the section between <see cref="sct_start"/> and <see cref="sct_end"/>               </summary>
+        /// <param name="keys"     > the keys to find section in                                                </param>
+        /// <param name="sct_start"> the start section key : the last  find before <see cref="sct_end"/>        </param>
+        /// <param name="sct_end"  > the end   section key : the first find after  <see cref="sct_start"/>      </param>
+        /// <returns> the result is success or not , the start index and end index of the section             </returns>
+        private static (bool result, int startIndex, int endIndex) FindSection(IList<object> keys, InkOperator sct_start, InkOperator sct_end)
         {
-            { InkOperator.Plus, InkOperator.InkOperator_Plus }         //
-          , { InkOperator.Minus, InkOperator.InkOperator_Minus }       //
-          , { InkOperator.Multiply, InkOperator.InkOperator_Multiply } //
-          , { InkOperator.Divide, InkOperator.InkOperator_Divide }     //
-          , { InkOperator.Modulo, (_,         _) => null }             //
-          , { InkOperator.Lower, (_,          _) => null }             //
-          , { InkOperator.Greater, (_,        _) => null }             //
-          , { InkOperator.Equal, (_,          _) => null }             //
-          , { InkOperator.LowerOrEqual, (_,   _) => null }             //
-          , { InkOperator.GreaterOrEqual, (_, _) => null }             //
-          , { InkOperator.NotEqual, (_,       _) => null }             //
-          , { InkOperator.LogicalNOT, (_,     _) => null }             //
-          , { InkOperator.ConditionalAnd, (_, _) => null }             //
-          , { InkOperator.ConditionalOr, (_,  _) => null }             //
-        };
+            var startIndex = -1;
+            var endIndex   = -1;
 
-        private static readonly List<ParsingMethodDelegate> ParsingMethods = new()
-        {
-            EvaluateOperators, EvaluateNumber, EvaluateChar
-          , EvaluateString,
-        };
-
-        /// <summary>Evaluate Operators in <see cref="InkOperator"/></summary>
-        /// <param name="expression"> the expression to Evaluate     </param>
-        /// <param name="stack"> the object stack to push or pop     </param>
-        /// <param name="i">the <see cref="expression"/> start index </param>
-        /// <returns> the evaluate is success or not </returns> 
-        private static bool EvaluateOperators(string expression, List<object> stack, ref int i)
-        {
-            foreach (var operatorStr in InkOperator.Dic_Values)
+            for (var i = 0 ; i < keys.Count ; i++)
             {
-                if (StartsWithInputStrFromIndex(expression, operatorStr.Key, i))
+                if (Equals(keys[i], sct_start))
                 {
-                    stack.Add(operatorStr.Value);
-                    i += operatorStr.Key.Length - 1;
-                    return true;
+                    startIndex = i;
+                }
+
+                if (Equals(keys[i], sct_end))
+                {
+                    endIndex = i;
+                    break;
                 }
             }
 
-            return false;
+            InkSyntaxException.ThrowIfTrue(startIndex < endIndex, $"Missing match {sct_start}");
+
+            return (startIndex != -1 && endIndex != -1, startIndex, endIndex);
         }
-
-        /// <summary>Evaluate Number _eg: -3.64f </summary>
-        /// <param name="expression"> the expression to Evaluate     </param>
-        /// <param name="stack"> the object stack to push or pop     </param>
-        /// <param name="i">the <see cref="expression"/> start index </param>
-        /// <returns>Evaluate is successful?</returns>
-        private static bool EvaluateNumber(string expression, List<object> stack, ref int i)
-        {
-            if (StartsWithNumbersFromIndex(expression, i, out var numberMatch, out var len))
-            {
-                stack.Add(numberMatch);
-                i += len - 1;
-                return true;
-            }
-
-            return false;
-        }
-
-        /// <summary>Evaluate Char or Escaped Char  _eg: 'a' '\d'</summary>
-        /// <param name="expression"> the expression to Evaluate     </param>
-        /// <param name="stack"> the object stack to push or pop     </param>
-        /// <param name="i">the <see cref="expression"/> start index </param>
-        /// <returns> the evaluate is success or not </returns>
-        /// <exception cref="InkSyntaxException">Illegal character or Unknown escape character </exception>
-        private static bool EvaluateChar(string expression, List<object> stack, ref int i)
-        {
-            if (StartsWithCharFormIndex(expression, i, out var value, out var len))
-            {
-                stack.Add(value);
-                i += len;
-                return true;
-            }
-
-            return false;
-        }
+        
     }
 
 
@@ -883,14 +823,20 @@
         public InkSyntaxException(string message) : base(message) { }
 
         public static void Throw(string message) => throw new InkSyntaxException(message);
+
+        public static void ThrowIfTrue(bool condition, string message)
+        {
+            if (condition) throw new InkSyntaxException(message);
+        }
     }
 
 }
+//859 lines of code
 
 
 // TODO_LIST:
 // 1. 基本的数学运算(加减乘除, 乘方, 余数, 逻辑运算, 位运算) 二元运算符
-// 2. 非成员方法调用(单参数,多参数,默认参数,可变参数,泛型方法?)
+// 2. 非成员方法调用(单参数,多参数,默认参数,可变参数,泛型方法?) 所用使用的函数必须全部是注册的方法，不应该支持调用未注册的方法，成员方法等
 // 3. 赋值运算符 =
 // 4. 声明变量 var
 // 5. 基本的逻辑语句 if else
@@ -904,3 +850,14 @@
 // 1. Lexer : 词法分析器,把字符串转换成Token
 // 2. Parser: 语法分析器,把Token转换成AST
 // 3. Interpreter: 解释器,执行AST
+
+//心态有点蹦
+//Walon花好多年时间写HybirdCLR,才赚了几百万
+//刚刚在知乎看到一个人卖AI课程,几个月已经赚了几百万了
+
+// 我特指AI卖课的，不是AI本身
+// 那你觉得AI卖课为什么那么多人讨厌,甚至是讨厌卖课
+// 关键在于,可能所有人都需要AI,但不是所有人都需要买那个课
+// 课程质量不好,价格太高,课程内容不实用,课程内容不符合实际需求
+// 这些都是通病
+// 他们提供的帮助也绝对不值那么多钱
