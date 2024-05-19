@@ -34,7 +34,7 @@
     {
         public Benchmark_UniInkSpeed() { }
 
-        private const string input1 = "+2222+(333-3+3-3)";
+        private const string input1 = "2222+(333-3+3-3)";
         private const string input2 = "333-3";
         private const string input3 = "333*3";
         private const string input4 = "333/3";
@@ -42,7 +42,7 @@
         private const string input6 = "1111111+1111111";
         private const string input7 = "9999999+9999999";
 
-        [Benchmark]
+        [Benchmark] [Test]
         public void INT_Limit()
         {
             var res1 = 333 - 3;
@@ -55,54 +55,31 @@
         }
 
 
-        [Benchmark]
-        public void INT_2()
+        [Benchmark] [Test]
+        public void INT_UniInk()
         {
-            NUnit_UniInkSpeed.Test_EvaluateNumber_Int(input2);
-            NUnit_UniInkSpeed.Test_EvaluateNumber_Int(input3);
-            NUnit_UniInkSpeed.Test_EvaluateNumber_Int(input4);
-            NUnit_UniInkSpeed.Test_EvaluateNumber_Int(input5);
-            NUnit_UniInkSpeed.Test_EvaluateNumber_Int(input6);
-            NUnit_UniInkSpeed.Test_EvaluateNumber_Int(input7);
+            NUnit_UniInkSpeed.Test_Arithmetic_Int(input1);
+            NUnit_UniInkSpeed.Test_Arithmetic_Int(input2);
+            NUnit_UniInkSpeed.Test_Arithmetic_Int(input3);
+            NUnit_UniInkSpeed.Test_Arithmetic_Int(input4);
+            NUnit_UniInkSpeed.Test_Arithmetic_Int(input5);
+            NUnit_UniInkSpeed.Test_Arithmetic_Int(input6);
+            NUnit_UniInkSpeed.Test_Arithmetic_Int(input7);
         }
 
-        //[Benchmark]
-        public void INT_3()
+        [Benchmark] [Test]
+        public void INT_Sprache()
         {
-            NUnit_UniInk.Test_EvaluateNumber(input2);
-            NUnit_UniInk.Test_EvaluateNumber(input3);
-            NUnit_UniInk.Test_EvaluateNumber(input4);
-            NUnit_UniInk.Test_EvaluateNumber(input5);
-            NUnit_UniInk.Test_EvaluateNumber(input6);
-            NUnit_UniInk.Test_EvaluateNumber(input7);
+            var parsed1 = ExpressionParser.ParseExpression(input1).Compile().Invoke();
+            var parsed2 = ExpressionParser.ParseExpression(input2).Compile().Invoke();
+            var parsed3 = ExpressionParser.ParseExpression(input3).Compile().Invoke();
+            var parsed4 = ExpressionParser.ParseExpression(input4).Compile().Invoke();
+            var parsed5 = ExpressionParser.ParseExpression(input5).Compile().Invoke();
+            var parsed6 = ExpressionParser.ParseExpression(input6).Compile().Invoke();
+            var parsed7 = ExpressionParser.ParseExpression(input7).Compile().Invoke();
         }
-        //
-        // [Benchmark]
-        // public void INT_4() => Main3();
 
-        public static void Main2()
-        {
-            // 创建参数表达式
-            var paramA = Expression.Parameter(typeof(int), "a");
-            var paramB = Expression.Parameter(typeof(int), "b");
-            var paramC = Expression.Parameter(typeof(int), "c");
 
-            // 构建 b + c 的表达式
-            var bPlusC = Expression.Add(paramB, paramC);
-
-            // 构建 a * (b + c) 的表达式
-            var aTimesBPlusC = Expression.Multiply(paramA, bPlusC);
-
-            // 创建一个表示该表达式的 lambda 表达式
-            var lambda = Expression.Lambda<Func<int, int, int, int>>(aTimesBPlusC, new ParameterExpression[] { paramA, paramB, paramC });
-
-            // 将 lambda 表达式编译成委托（delegate）
-            var compiledLambda = lambda.Compile();
-
-            // 执行委托，并输出结果
-            var result = compiledLambda(2, 3, 4); // 这里的2, 3, 4 分别是参数a, b, c的值
-            Console.WriteLine(result);            // 输出结果为 2 * (3 + 4) = 14
-        }
 
         public static void Main3()
         {
@@ -117,15 +94,6 @@
 
             // 生成一个从 0 到 100 的整数序列，过滤出偶数，然后将其转换为 byte 类型
             var result = Enumerable.Range(0, 100).Where(compiledLambda).Select(i => (byte)i).ToArray();
-        }
-
-
-        //[Benchmark] [Test]
-        public void Main4()
-        {
-            var parsed = ExpressionParser.ParseExpression("9*((1+2*3)/2)");
-            var result = parsed.Compile().Invoke();// 
-            Console.WriteLine(result);
         }
     }
 

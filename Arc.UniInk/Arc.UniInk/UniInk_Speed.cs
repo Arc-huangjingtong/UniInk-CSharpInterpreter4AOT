@@ -10,11 +10,13 @@
     *📝 Desc     : [High performance] [zero box & unbox] [zero reflection runtime] [Easy-use]                          *
     /*******************************************************************************************************************/
 
+    // ReSharper disable PartialTypeWithSinglePart
     using System;
-    using System.Collections.Generic;
     using System.Linq;
+    using System.Collections.Generic;
 
 
+    /// <summary> the C# Evaluator easy to use </summary>
     public partial class UniInk_Speed
     {
         /// <summary> Constructor </summary>
@@ -30,77 +32,29 @@
         /// <returns> return the result object    </returns>
         public static object Evaluate(string expression, int startIndex, int endIndex)
         {
-            WordStack.Clear();
+            var syntaxList = LexerAndFill(expression, startIndex, endIndex);
+            var evalAnswer = ProcessQueue(syntaxList);
 
-            var stack  = LexerAndFill(expression, startIndex, endIndex, WordStack);
-            var result = ProcessQueue(stack);
+            InkSyntaxList.Release(syntaxList);
 
-            return result;
+            return evalAnswer;
         }
 
-
-
-        protected delegate bool ParsingMethodDelegate(string expression, List<object> stack, ref int i);
-
-
-        /// <summary>Translate Method Delegate</summary>
-        protected delegate object InternalDelegate(params object[] args);
-
-
-        /// <summary> Some Escaped Char mapping     </summary>
-        protected static readonly Dictionary<char, char> dic_EscapedChar = new()
+        /// <summary> Clear the cache in UniInk   </summary>
+        public static void ClearCache()
         {
-            { '\\', '\\' }, { '\'', '\'' }, { '0', '\0' }
-          , { 'a', '\a' }, { 'b', '\b' }, { 'f', '\f' }
-          , { 'n', '\n' }, { 'r', '\r' }, { 't', '\t' }
-          , { 'v', '\v' }
-        };
-
-        /// <summary> The default stack in Process  </summary>
-        public static readonly List<object> WordStack = new();
-
-
-        // 9 * ( ( 1 + 2 * 3 ) / 2 )
-        public static object ProcessQueue(IList<object> keys)
-        {
-            InkSyntaxException.ThrowIfTrue(keys.Count == 0, "Empty expression and Empty stack !");
-
-            var cache = ProcessQueue_Internal(keys);
-            return cache;
+            InkValue.ReleasePool();
+            InkSyntaxList.ReleasePool();
         }
 
-        private static object ProcessQueue_Internal(IList<object> keys)
+        private static InkSyntaxList LexerAndFill(string expression, int startIndex, int endIndex)
         {
-            object cache = null;
+            var keys = InkSyntaxList.Get();
 
-            for (var i = 0 ; i < keys.Count ; i++)
-            {
-                var pop = keys[i];
-
-                if (pop is InkOperator @operator)
-                {
-                    var left  = cache;
-                    var right = keys[i + 1];
-
-                    cache = dic_OperatorsFunc[@operator](left, right);
-                    i++;
-                }
-                else
-                {
-                    cache = pop;
-                }
-            }
-
-            return cache;
-        }
-
-
-
-        private static List<object> LexerAndFill(string expression, int startIndex, int endIndex, List<object> keys)
-        {
             for (var i = startIndex ; i <= endIndex && i < expression.Length ; i++)
             {
                 var any = false;
+
                 foreach (var parsingMethod in ParsingMethods)
                 {
                     if (parsingMethod(expression, keys, ref i))
@@ -120,14 +74,127 @@
         }
 
 
-        /// <summary>In UniInk , every valueType is Object , No Boxing!</summary>
-        public class InkValue
+        public static object ProcessQueue(InkSyntaxList keys)
         {
-            public static readonly InkValue        Empty = null;
+            InkSyntaxException.ThrowIfTrue(keys.Count == 0, "Empty expression and Empty stack !");
+
+            ProcessQueue_Parenthis(keys);
+            ProcessQueue_Operators(keys, 0, keys.Count - 1);
+
+            var cache = keys.CastOther[0];
+
+            return cache;
+        }
+
+        private static void ProcessQueue_Parenthis(InkSyntaxList keys)
+        {
+            var hasParenthis = true;
+
+            while (hasParenthis)
+            {
+                int startIndex, endIndex;
+
+                (hasParenthis, startIndex, endIndex) = FindSection(keys, InkOperator.ParenthisLeft, InkOperator.ParenthisRight);
+
+                if (!hasParenthis) continue;
+
+                ProcessQueue_Operators(keys, startIndex + 1, endIndex - 1);
+
+                keys.SetDirty(startIndex);
+                keys.SetDirty(endIndex);
+
+                // var cache = ProcessQueue_Internal(keys, startIndex + 1, endIndex);
+                //
+                // keys.SetDirty(cache, startIndex, endIndex);
+            }
+        }
+
+        private static void ProcessQueue_Operators(InkSyntaxList keys, int _startIndex, int _endIndex)
+        {
+            var hasOperators = true;
+
+            while (hasOperators)
+            {
+                var (curOperator, index) = GetHighestPriorityOperator(keys, _startIndex, _endIndex);
+
+                if (Equals(curOperator, InkOperator.Empty))
+                {
+                    hasOperators = false;
+                    continue;
+                }
+
+                object left  = null;
+                object right = null;
+
+                var startIndex = index;
+                var endIndex   = index;
+
+
+                for (var i = index - 1 ; i >= 0 ; i--) // Left
+                {
+                    if (keys.IndexDirty[i])
+                    {
+                        if (keys.CastOther[i] == null) continue;
+
+                        left              = keys.CastOther[i];
+                        keys.CastOther[i] = null;
+
+                        startIndex = i;
+
+                        break;
+                    }
+
+                    left = keys[i];
+
+                    startIndex = i;
+
+                    break;
+                }
+
+                for (var i = index + 1 ; i < keys.Count ; i++) // Right
+                {
+                    if (keys.IndexDirty[i])
+                    {
+                        if (keys.CastOther[i] == null) continue;
+
+                        right             = keys.CastOther[i];
+                        keys.CastOther[i] = null;
+
+                        endIndex = i;
+
+                        break;
+                    }
+
+                    right = keys[i];
+
+                    endIndex = i;
+
+                    break;
+                }
+
+                if (dic_OperatorsFunc.TryGetValue(curOperator, out var func))
+                {
+                    var result = func(left, right);
+
+                    keys.SetDirty(result, startIndex, endIndex);
+                }
+                else
+                {
+                    InkSyntaxException.Throw($"Unknown Operator : {curOperator}");
+                }
+            }
+        }
+
+
+
+        /// <summary>In UniInk , every valueType is Object , No Boxing!</summary>
+        public partial class InkValue
+        {
+            public static readonly InkValue        Empty = new();
             public static readonly Stack<InkValue> pool  = new();
 
-            public static InkValue Get()     => pool.Count > 0 ? pool.Pop() : new InkValue();
-            public static void     Release() => pool.Clear();
+            public static InkValue Get()         => pool.Count > 0 ? pool.Pop() : new InkValue();
+            public static void     ReleasePool() => pool.Clear();
 
             public static void Release(InkValue value)
             {
@@ -157,9 +224,9 @@
 
             public InkValueType ValueType { get; set; }
 
-            public Stack<char> Value_Meta { get; set; } = new();
+            public Stack<char> Value_Meta { get; } = new();
 
-            public bool isCalculate = false;
+            public bool isCalculate;
 
             /// <summary>Calculate the value</summary>
             public void Calculate(InkValueType type)
@@ -288,6 +355,61 @@
         }
 
 
+        public partial class InkSyntaxList
+        {
+            public static readonly InkSyntaxList        Empty = new();
+            public static readonly Stack<InkSyntaxList> pool  = new();
+
+            public static InkSyntaxList Get()         => pool.Count > 0 ? pool.Pop() : new InkSyntaxList();
+            public static void          ReleasePool() => pool.Clear();
+
+            public static void Release(InkSyntaxList value)
+            {
+                value.ObjectList.Clear();
+                value.IndexDirty.Clear();
+                value.CastOther.Clear();
+                pool.Push(value);
+            }
+
+            private readonly List<object> ObjectList = new(10);
+            public readonly  List<bool>   IndexDirty = new(10);
+            public readonly  List<object> CastOther  = new(10);
+
+
+            public void Add(object value)
+            {
+                ObjectList.Add(value);
+                CastOther.Add(null);
+                IndexDirty.Add(false);
+            }
+
+            public void RemoveAt(int index)
+            {
+                ObjectList.RemoveAt(index);
+                IndexDirty.RemoveAt(index);
+                CastOther.RemoveAt(index);
+            }
+
+
+
+            public int Count => ObjectList.Count;
+
+            public object this[int index] => ObjectList[index];
+
+            public void SetDirty(object other, int start, int end)
+            {
+                for (var i = start ; i <= end ; i++)
+                {
+                    IndexDirty[i] = true;
+                }
+
+                CastOther[start] = other;
+            }
+
+            public void SetDirty(int index) => IndexDirty[index] = true;
+        }
+
+
 
         /// <summary>UniInk Operator : Custom your own Operator!</summary>
         protected partial class InkOperator
@@ -295,6 +417,7 @@
             public static readonly Dictionary<string, InkOperator> Dic_Values = new();
 
             //priority refer to : https://learn.microsoft.com/zh-cn/dotnet/csharp/language-reference/operators/
+            //keyword  refer to : https://learn.microsoft.com/zh-cn/dotnet/csharp/language-reference/keywords/
             public static readonly InkOperator ParenthisLeft  = new("(", 1);   //1.圆括号 (  - 用于改变默认的优先级。
             public static readonly InkOperator ParenthisRight = new(")", 1);   //1.圆括号 )  - 用于改变默认的优先级。
             public static readonly InkOperator Dot            = new(".", 2);   //2.成员访问 .
@@ -336,7 +459,7 @@
             public static readonly InkOperator Hash           = new("#", -1);
             public static readonly InkOperator Dollar         = new("$", -1);
 
-            //keyword refer to :  https://learn.microsoft.com/zh-cn/dotnet/csharp/language-reference/keywords/
+
             public static readonly InkOperator KeyIf       = new("if", 20);
             public static readonly InkOperator KeyElse     = new("else", 20);
             public static readonly InkOperator KeySwitch   = new("switch", 20);
@@ -348,15 +471,18 @@
             public static readonly InkOperator KeyBreak    = new("break", 20);
             public static readonly InkOperator KeyContinue = new("continue", 20);
             public static readonly InkOperator KeyVar      = new("var", 20);
+            public static readonly InkOperator Empty       = new("😊", short.MaxValue);
 
+            /// <summary>the lower the value, the higher the priority</summary>
+            public readonly short PriorityIndex;
+
+            /// <summary>the indexer of the operator   </summary>
             protected static short indexer;
-
 
             /// <summary>the only value of the operator</summary>
             protected readonly short OperatorValue = indexer++;
 
-            /// <summary>the lower the value, the higher the priority</summary>
-            protected readonly short PriorityIndex;
+
 
             protected InkOperator(string name, short priorityIndex)
             {
@@ -380,6 +506,7 @@
                     {
                         return leftValue + rightValue;
                     }
+                    
                     default : throw new InkSyntaxException($"unknown type{left}--{right}");
                 }
             }
@@ -425,33 +552,11 @@
         }
 
 
-        /// <summary>UniInk Syntax Tree : Custom your own AST , you can create your own Language</summary>
-        protected internal class SyntaxTree
-        {
-            public static readonly SyntaxTree        Empty = null;
-            public static readonly Stack<SyntaxTree> Pool  = new();
-
-            public static SyntaxTree Get()     => Pool.Count > 0 ? Pool.Pop() : new SyntaxTree();
-            public static void       Release() => Pool.Clear();
-
-            public static void Release(SyntaxTree tree)
-            {
-                tree.Parent = null;
-                tree.Children.Clear();
-                tree.Value = null;
-                Pool.Push(tree);
-            }
-
-            public SyntaxTree(SyntaxTree parent = null) => Parent = parent;
+        /// <summary> Translate Method Delegate   </summary>
+        protected delegate object InternalDelegate(params object[] args);
 
 
-            public SyntaxTree Parent;
-
-            public List<SyntaxTree> Children = new(4);
-
-            public object Value;
-        }
-
+        /////////////////////////////////////////////// Mapping  Data   ////////////////////////////////////////////////
 
 
         /// <summary>Some UnaryPostfix Operators mark</summary>
@@ -473,26 +578,35 @@
           , { InkOperator.ConditionalOr, (_,  _) => null }             //
         };
 
+        /// <summary> Some Escaped Char mapping   </summary>
+        protected static readonly Dictionary<char, char> dic_EscapedChar = new()
+        {
+            { '\\', '\\' }, { '\'', '\'' }, { '0', '\0' }
+          , { 'a', '\a' }, { 'b', '\b' }, { 'f', '\f' }
+          , { 'n', '\n' }, { 'r', '\r' }, { 't', '\t' }
+          , { 'v', '\v' }
+        };
 
 
         /////////////////////////////////////////////// Parsing Methods ////////////////////////////////////////////////
 
+        protected delegate bool ParsingMethodDelegate(string expression, InkSyntaxList stack, ref int i);
 
-        /// <summary>The Parsing Methods for <see cref="Evaluate"/></summary>
+        /// <summary> The Parsing Methods for <see cref="Evaluate"/> </summary>
         protected static readonly List<ParsingMethodDelegate> ParsingMethods = new()
         {
             EvaluateOperators, EvaluateNumber, EvaluateChar
           , EvaluateString,
         };
 
-        /// <summary>Evaluate Operators in<see cref="InkOperator"/></summary>
-        /// <param name="expression"> the expression to Evaluate     </param>
-        /// <param name="keys"> the object stack to push or pop      </param>
-        /// <param name="i">the <see cref="expression"/> start index </param>
-        /// <returns> the evaluate is success or not </returns> 
-        protected static bool EvaluateOperators(string expression, List<object> keys, ref int i)
+        /// <summary> Evaluate Operators in<see cref="InkOperator"/> </summary>
+        /// <param name="expression"> the expression to Evaluate       </param>
+        /// <param name="keys"> the object stack to push or pop        </param>
+        /// <param name="i"> the <see cref="expression"/> start index  </param>
+        /// <returns> the evaluate is success or not                 </returns> 
+        protected static bool EvaluateOperators(string expression, InkSyntaxList keys, ref int i)
         {
-            foreach (var operatorStr in InkOperator.Dic_Values)
+            foreach (var operatorStr in InkOperator.Dic_Values) 
             {
                 if (StartsWithInputStrFromIndex(expression, operatorStr.Key, i))
                 {
@@ -505,12 +619,12 @@
             return false;
         }
 
-        /// <summary>Evaluate Number _eg: -3.64f                   </summary>
-        /// <param name="expression"> the expression to Evaluate     </param>
-        /// <param name="keys"> the object stack to push or pop      </param>
-        /// <param name="i">the <see cref="expression"/> start index </param>
-        /// <returns>Evaluate is successful?                       </returns>
-        protected static bool EvaluateNumber(string expression, List<object> keys, ref int i)
+        /// <summary> Evaluate Number _eg: -3.64f                    </summary>
+        /// <param name="expression"> the expression to Evaluate       </param>
+        /// <param name="keys"> the object stack to push or pop        </param>
+        /// <param name="i"> the <see cref="expression"/> start index  </param>
+        /// <returns> the evaluate is success or not                 </returns>
+        protected static bool EvaluateNumber(string expression, InkSyntaxList keys, ref int i)
         {
             if (StartsWithNumbersFromIndex(expression, i, out var numberMatch, out var len))
             {
@@ -522,12 +636,12 @@
             return false;
         }
 
-        /// <summary>Evaluate Char or Escaped Char  _eg: 'a' '\d'  </summary>
-        /// <param name="expression"> the expression to Evaluate     </param>
-        /// <param name="keys"> the object stack to push or pop      </param>
-        /// <param name="i">the <see cref="expression"/> start index </param>
-        /// <returns> the evaluate is success or not               </returns>
-        protected static bool EvaluateChar(string expression, List<object> keys, ref int i)
+        /// <summary> Evaluate Char or Escaped Char  _eg: 'a' '\d'   </summary>
+        /// <param name="expression"> the expression to Evaluate       </param>
+        /// <param name="keys"> the object stack to push or pop        </param>
+        /// <param name="i">the <see cref="expression"/> start index   </param>
+        /// <returns> the evaluate is success or not                 </returns>
+        protected static bool EvaluateChar(string expression, InkSyntaxList keys, ref int i)
         {
             if (StartsWithCharFormIndex(expression, i, out var value, out var len))
             {
@@ -539,12 +653,12 @@
             return false;
         }
 
-        /// <summary>Evaluate String _eg:"string"                  </summary>
-        /// <param name="expression"> the expression to Evaluate     </param>
-        /// <param name="keys"> the object stack to push or pop      </param>
-        /// <param name="i">the <see cref="expression"/> start index </param>
-        /// <returns> the evaluate is success or not               </returns> 
-        protected static bool EvaluateString(string expression, List<object> keys, ref int i)
+        /// <summary> Evaluate String _eg:"string"                   </summary>
+        /// <param name="expression"> the expression to Evaluate       </param>
+        /// <param name="keys"> the object stack to push or pop        </param>
+        /// <param name="i"> the <see cref="expression"/> start index  </param>
+        /// <returns> the evaluate is success or not                 </returns> 
+        protected static bool EvaluateString(string expression, InkSyntaxList keys, ref int i)
         {
             if (StartsWithStringFormIndex(expression, i, out var value, out var len))
             {
@@ -560,44 +674,10 @@
 
         /////////////////////////////////////////////// Helping Methods ////////////////////////////////////////////////
 
-        /// <summary>Find <see cref="input"/> is whether start with [(] from <see cref="startIndex"/>         </summary>
-        protected static bool StartsWithParenthisFromIndex(string input, int startIndex, out int len)
-        {
-            InkSyntaxException.ThrowIfTrue(input.Length < startIndex,     "input.Length < startIndex");
-            InkSyntaxException.ThrowIfTrue(input[startIndex].Equals(')'), "missing match [(]");
-
-            len = 0;
-
-
-            if (input[startIndex].Equals('('))
-            {
-                var bracketCount = 0;
-
-                for (var i = startIndex ; i < input.Length ; i++)
-                {
-                    var s = input[i];
-
-                    if (s.Equals(')')) bracketCount--;
-                    if (s.Equals('(')) bracketCount++;
-
-                    if (bracketCount == 0)
-                    {
-                        len = i - startIndex;
-                        return true;
-                    }
-                }
-            }
-
-            return false;
-        }
-
         /// <summary>Find <see cref="input"/> is whether start with <see cref="value"/> from <see cref="startIndex"/></summary>
         protected static bool StartsWithInputStrFromIndex(string input, string value, int startIndex)
         {
-            if (input.Length < startIndex)
-            {
-                throw new Exception("input.Length < startIndex");
-            }
+            InkSyntaxException.ThrowIfTrue(input.Length < startIndex, "input.Length < startIndex");
 
             if (input.Length - startIndex < value.Length)
             {
@@ -619,10 +699,7 @@
         /// <summary>Find <see cref="input"/> is whether start with numbers from <see cref="startIndex"/>     </summary>
         protected static bool StartsWithNumbersFromIndex(string input, int startIndex, out InkValue value, out int len)
         {
-            if (input.Length < startIndex)
-            {
-                throw new Exception("input.Length < startIndex");
-            }
+            InkSyntaxException.ThrowIfTrue(input.Length < startIndex, "input.Length < startIndex");
 
             value           = InkValue.Get();
             value.ValueType = InkValue.InkValueType.Int;
@@ -664,9 +741,11 @@
                             case 'f' or 'F' :
                                 value.ValueType = InkValue.InkValueType.Float;
                                 len++;
+                                len++;
                                 break;
                             case 'd' or 'D' :
                                 value.ValueType = InkValue.InkValueType.Double;
+                                len++;
                                 len++;
                                 break;
                         }
@@ -790,30 +869,61 @@
         /// <param name="sct_start"> the start section key : the last  find before <see cref="sct_end"/>        </param>
         /// <param name="sct_end"  > the end   section key : the first find after  <see cref="sct_start"/>      </param>
         /// <returns> the result is success or not , the start index and end index of the section             </returns>
-        private static (bool result, int startIndex, int endIndex) FindSection(IList<object> keys, InkOperator sct_start, InkOperator sct_end)
+        private static (bool result, int startIndex, int endIndex) FindSection(InkSyntaxList keys, InkOperator sct_start, InkOperator sct_end)
         {
             var startIndex = -1;
             var endIndex   = -1;
+            var length     = keys.Count;
 
-            for (var i = 0 ; i < keys.Count ; i++)
+            for (var i = 0 ; i < length ; i++)
             {
+                if (keys.IndexDirty[i])
+                {
+                    continue;
+                }
+
                 if (Equals(keys[i], sct_start))
                 {
                     startIndex = i;
                 }
-
-                if (Equals(keys[i], sct_end))
+                else if (Equals(keys[i], sct_end))
                 {
                     endIndex = i;
                     break;
                 }
             }
 
-            InkSyntaxException.ThrowIfTrue(startIndex < endIndex, $"Missing match {sct_start}");
+            InkSyntaxException.ThrowIfTrue(startIndex > endIndex, $"Missing match {sct_start}");
 
             return (startIndex != -1 && endIndex != -1, startIndex, endIndex);
         }
-        
+
+        /// <summary>Get the highest priority operator in the <see cref="keys"/>              </summary>
+        /// <param name="keys"> the keys to find the highest priority operator in               </param>
+        private static (InkOperator @operator, int index) GetHighestPriorityOperator(InkSyntaxList keys, int startIndex, int endIndex)
+        {
+            var index            = -1;
+            var priorityOperator = InkOperator.Empty;
+
+            for (var i = startIndex ; i <= endIndex ; i++)
+            {
+                if (keys.IndexDirty[i])
+                {
+                    continue;
+                }
+
+                if (keys[i] is InkOperator @operator)
+                {
+                    if (@operator.PriorityIndex < priorityOperator.PriorityIndex)
+                    {
+                        index            = i;
+                        priorityOperator = @operator;
+                    }
+                }
+            }
+
+            return (priorityOperator, index);
+        }
     }
 
 
@@ -835,7 +945,7 @@
 
 
 // TODO_LIST:
-// 1. 基本的数学运算(加减乘除, 乘方, 余数, 逻辑运算, 位运算) 二元运算符
+//😊 基本的数学运算(加减乘除, 乘方, 余数, 逻辑运算, 位运算) 二元运算符 ,且支持自动优先级 
 // 2. 非成员方法调用(单参数,多参数,默认参数,可变参数,泛型方法?) 所用使用的函数必须全部是注册的方法，不应该支持调用未注册的方法，成员方法等
 // 3. 赋值运算符 =
 // 4. 声明变量 var
@@ -850,14 +960,3 @@
 // 1. Lexer : 词法分析器,把字符串转换成Token
 // 2. Parser: 语法分析器,把Token转换成AST
 // 3. Interpreter: 解释器,执行AST
-
-//心态有点蹦
-//Walon花好多年时间写HybirdCLR,才赚了几百万
-//刚刚在知乎看到一个人卖AI课程,几个月已经赚了几百万了
-
-// 我特指AI卖课的，不是AI本身
-// 那你觉得AI卖课为什么那么多人讨厌,甚至是讨厌卖课
-// 关键在于,可能所有人都需要AI,但不是所有人都需要买那个课
-// 课程质量不好,价格太高,课程内容不实用,课程内容不符合实际需求
-// 这些都是通病
-// 他们提供的帮助也绝对不值那么多钱
