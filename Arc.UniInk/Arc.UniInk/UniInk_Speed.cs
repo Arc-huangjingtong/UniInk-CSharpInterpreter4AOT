@@ -455,9 +455,9 @@
             public static readonly InkOperator Semicolon      = new(";", 20);
             public static readonly InkOperator Colon          = new(":", -1);
             public static readonly InkOperator QuestionMark   = new("?", -1);
-            public static readonly InkOperator At             = new("@", -1);
+            public static readonly InkOperator At             = new("@\"", -1);
+            public static readonly InkOperator Dollar         = new("$\"", -1);
             public static readonly InkOperator Hash           = new("#", -1);
-            public static readonly InkOperator Dollar         = new("$", -1);
 
 
             public static readonly InkOperator KeyIf       = new("if", 20);
@@ -506,7 +506,7 @@
                     {
                         return leftValue + rightValue;
                     }
-                    
+
                     default : throw new InkSyntaxException($"unknown type{left}--{right}");
                 }
             }
@@ -606,7 +606,7 @@
         /// <returns> the evaluate is success or not                 </returns> 
         protected static bool EvaluateOperators(string expression, InkSyntaxList keys, ref int i)
         {
-            foreach (var operatorStr in InkOperator.Dic_Values) 
+            foreach (var operatorStr in InkOperator.Dic_Values)
             {
                 if (StartsWithInputStrFromIndex(expression, operatorStr.Key, i))
                 {
@@ -813,11 +813,6 @@
         {
             var i = startIndex;
 
-            if (i < input.Length - 1 && (input[i].Equals('@') || (input[i].Equals('$') && input[i + 1].Equals('\"'))))
-            {
-                throw new Exception("don't support [@] [$]");
-            }
-
 
             if (input[i].Equals('\"'))
             {
@@ -951,9 +946,6 @@
 // 4. 声明变量 var
 // 5. 基本的逻辑语句 if else
 // 6. 支持类型的隐式转换
-
-// 9 * ( ( 1 + 2 * 3 ) / 2 ) 
-// * { 9 {/ {+ {1 , {* 2 3 }, 2 } 
 
 
 // Architecture Design
