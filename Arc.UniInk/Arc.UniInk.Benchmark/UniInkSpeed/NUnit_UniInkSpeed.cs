@@ -10,13 +10,14 @@
     public sealed partial class NUnit_UniInkSpeed
     {
         [Repeat(10000)]
-        [TestCase("+123456789+987654321   ", ExpectedResult = 1111111110)]
-        [TestCase("111 * 111 * 3 /3*3/3   ", ExpectedResult = 12321)]
-        [TestCase("3333333-3+3+  3 - 3    ", ExpectedResult = 3333333)]
-        [TestCase("   999999 + 999999     ", ExpectedResult = 1999998)]
-        [TestCase("9*((1+(1+1)+(1+1))+1+1)", ExpectedResult = 63)]
-        [TestCase("9*(1+1 + 1 + 1 + 1+1+1)", ExpectedResult = 63)]
-        [TestCase("9 * ( ( 1 + 2 * 3 ) /2)", ExpectedResult = 27)]
+        [TestCase("+123456789             ", ExpectedResult = +123456789)]
+        [TestCase("+123456789+987654321   ", ExpectedResult = +123456789 + 987654321)]
+        [TestCase("111 * 111 * 3 /3*3/3   ", ExpectedResult = 111 * 111 * 3 / 3 * 3 / 3)]
+        [TestCase("3333333-3+3+  3 - 3    ", ExpectedResult = 3333333 - 3 + 3 + 3 - 3)]
+        [TestCase("   999999 + 999999     ", ExpectedResult = 999999              + 999999)]
+        [TestCase("9*((1+(1+1)+(1+1))+1+1)", ExpectedResult = 9 * ((1 + (1 + 1) + (1 + 1)) + 1 + 1))]
+        [TestCase("9*(1+1 + 1 + 1 + 1+1+1)", ExpectedResult = 9 * (1                       + 1 + 1 + 1 + 1 + 1 + 1))]
+        [TestCase("9 * ( ( 1 + 2 * 3 ) /2)", ExpectedResult = 9 * ((1 + 2 * 3) / 2))]
         public static int Test_Arithmetic_Int(string input)
         {
             var res    = (UniInk_Speed.InkValue)UniInk_Speed.Evaluate(input);
@@ -26,8 +27,13 @@
             return result;
         }
 
-        [Repeat(100000)]
-        [TestCase("+123456789.987654321f  ", ExpectedResult = 123456789.987654321f)]
+        [Repeat(10000)]
+        [TestCase("+123456789.987654321f  ",                         ExpectedResult = 123456789.987654321f)]
+        [TestCase("+123456789.987654321f + 987654321.123456789f",    ExpectedResult = 123456789.987654321f + 987654321.123456789f)]
+        [TestCase("111.111f * 111.111f * 3.3f /3.3f*3.3f/3.3f",      ExpectedResult = 111.111f * 111.111f * 3.3f / 3.3f * 3.3f / 3.3f)]
+        [TestCase("3333333.3333333f-3.3f+3.3f+  3.3f - 3.3f",        ExpectedResult = 3333333.3333333f                               - 3.3f + 3.3f + 3.3f - 3.3f)]
+        [TestCase("9.9f*((1.1f+(1.1f+1.1f)+(1.1f+1.1f))+1.1f+1.1f)", ExpectedResult = 9.9f * ((1.1f + (1.1f + 1.1f) + (1.1f + 1.1f)) + 1.1f + 1.1f))]
+        [TestCase("   999999.9999999f + 999999.9999999f     ",       ExpectedResult = 999999.9999999f + 999999.9999999f)]
         public static float Test_Arithmetic_Float(string input)
         {
             var res    = (UniInk_Speed.InkValue)UniInk_Speed.Evaluate(input);

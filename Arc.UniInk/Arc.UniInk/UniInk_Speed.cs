@@ -102,10 +102,6 @@
 
                 keys.SetDirty(startIndex);
                 keys.SetDirty(endIndex);
-
-                // var cache = ProcessQueue_Internal(keys, startIndex + 1, endIndex);
-                //
-                // keys.SetDirty(cache, startIndex, endIndex);
             }
         }
 
@@ -190,7 +186,7 @@
         /// <summary>In UniInk , every valueType is Object , No Boxing!</summary>
         public partial class InkValue
         {
-            public static readonly InkValue        Empty = new();
+            public static readonly InkValue        Empty = new() { isCalculate = true };
             public static readonly Stack<InkValue> pool  = new();
 
             public static InkValue Get()         => pool.Count > 0 ? pool.Pop() : new InkValue();
@@ -231,17 +227,48 @@
             /// <summary>Calculate the value</summary>
             public void Calculate(InkValueType type)
             {
-                if (isCalculate)
-                {
-                    return;
-                }
+                if (isCalculate) return;
 
-                if (type == InkValueType.Int)
+                switch (type)
                 {
-                    Value_int = 0;
-                    while (Value_Meta.Count != 0)
+                    case InkValueType.Int :
                     {
-                        Value_int = Value_int * 10 + (Value_Meta.Pop() - '0');
+                        var length = 0;
+
+                        Value_int = 0;
+                        while (Value_Meta.Count != 0)
+                        {
+                            var current = Value_Meta.Pop() - '0';
+                            Value_int += current * (int)Math.Pow(10, length++);
+                        }
+
+                        break;
+                    }
+                    case InkValueType.Float :
+                    {
+                        Value_float = 0;
+                        while (Value_Meta.Count != 0)
+                        {
+                            var current = Value_Meta.Pop();
+
+                            if (current == '.')
+                            {
+                                var point = 0.1f;
+                                while (Value_Meta.Count != 0)
+                                {
+                                    current     =  Value_Meta.Pop();
+                                    Value_float += (current - '0') * point;
+                                    point       /= 10;
+                                }
+
+                                break;
+                            }
+
+
+                            Value_float = Value_float * 10 + (current - '0');
+                        }
+
+                        break;
                     }
                 }
 
@@ -251,19 +278,16 @@
 
             public static InkValue operator +(InkValue left, InkValue right)
             {
-                if (left is null || right is null)
-                {
-                    throw new Exception("left is null || right is null");
-                }
+                InkSyntaxException.ThrowIfTrue(left is null || right is null, "left is null || right is null");
 
 
-                if (left.ValueType == InkValueType.Int || right.ValueType == InkValueType.Int)
+                if (left!.ValueType == InkValueType.Int || right!.ValueType == InkValueType.Int)
                 {
                     var answer = Get();
                     answer.ValueType = InkValueType.Int;
 
                     left.Calculate(InkValueType.Int);
-                    right.Calculate(InkValueType.Int);
+                    right!.Calculate(InkValueType.Int);
 
                     answer.Value_int   = left.Value_int + right.Value_int;
                     answer.isCalculate = true;
@@ -273,26 +297,56 @@
                     return answer;
                 }
 
-                throw new Exception("left.ValueType == InkValueType.Int || right.ValueType == InkValueType.Int");
+                if (left!.ValueType == InkValueType.Float || right!.ValueType == InkValueType.Float)
+                {
+                    var answer = Get();
+                    answer.ValueType = InkValueType.Float;
+
+                    left.Calculate(InkValueType.Float);
+                    right!.Calculate(InkValueType.Float);
+
+                    answer.Value_float = left.Value_float + right.Value_float;
+                    answer.isCalculate = true;
+
+                    Release(left);
+                    Release(right);
+                    return answer;
+                }
+
+
+                throw new InkSyntaxException("left.ValueType == InkValueType.Int || right.ValueType == InkValueType.Int");
             }
 
             public static InkValue operator -(InkValue left, InkValue right)
             {
-                if (left is null || right is null)
-                {
-                    throw new Exception("left is null || right is null");
-                }
+                InkSyntaxException.ThrowIfTrue(left is null || right is null, "left is null || right is null");
 
-                if (left.ValueType == InkValueType.Int || right.ValueType == InkValueType.Int)
+                if (left!.ValueType == InkValueType.Int || right!.ValueType == InkValueType.Int)
                 {
                     var answer = Get();
                     answer.ValueType = InkValueType.Int;
 
                     left.Calculate(InkValueType.Int);
-                    right.Calculate(InkValueType.Int);
+                    right!.Calculate(InkValueType.Int);
 
                     answer.Value_int   = left.Value_int - right.Value_int;
                     answer.isCalculate = true;
+                    Release(left);
+                    Release(right);
+                    return answer;
+                }
+                
+                if (left!.ValueType == InkValueType.Float || right!.ValueType == InkValueType.Float)
+                {
+                    var answer = Get();
+                    answer.ValueType = InkValueType.Float;
+
+                    left.Calculate(InkValueType.Float);
+                    right!.Calculate(InkValueType.Float);
+
+                    answer.Value_float = left.Value_float - right.Value_float;
+                    answer.isCalculate = true;
+
                     Release(left);
                     Release(right);
                     return answer;
@@ -303,20 +357,33 @@
 
             public static InkValue operator *(InkValue left, InkValue right)
             {
-                if (left is null || right is null)
-                {
-                    throw new Exception("left is null || right is null");
-                }
+                InkSyntaxException.ThrowIfTrue(left is null || right is null, "left is null || right is null");
 
-                if (left.ValueType == InkValueType.Int || right.ValueType == InkValueType.Int)
+                if (left!.ValueType == InkValueType.Int || right!.ValueType == InkValueType.Int)
                 {
                     var answer = Get();
                     answer.ValueType = InkValueType.Int;
 
                     left.Calculate(InkValueType.Int);
-                    right.Calculate(InkValueType.Int);
+                    right!.Calculate(InkValueType.Int);
 
                     answer.Value_int   = left.Value_int * right.Value_int;
+                    answer.isCalculate = true;
+
+                    Release(left);
+                    Release(right);
+                    return answer;
+                }
+
+                if (left!.ValueType == InkValueType.Float || right!.ValueType == InkValueType.Float)
+                {
+                    var answer = Get();
+                    answer.ValueType = InkValueType.Float;
+
+                    left.Calculate(InkValueType.Float);
+                    right!.Calculate(InkValueType.Float);
+
+                    answer.Value_float = left.Value_float * right.Value_float;
                     answer.isCalculate = true;
 
                     Release(left);
@@ -329,20 +396,33 @@
 
             public static InkValue operator /(InkValue left, InkValue right)
             {
-                if (left is null || right is null)
-                {
-                    throw new Exception("left is null || right is null");
-                }
+                InkSyntaxException.ThrowIfTrue(left is null || right is null, "left is null || right is null");
 
-                if (left.ValueType == InkValueType.Int || right.ValueType == InkValueType.Int)
+                if (left!.ValueType == InkValueType.Int || right!.ValueType == InkValueType.Int)
                 {
                     var answer = Get();
                     answer.ValueType = InkValueType.Int;
 
                     left.Calculate(InkValueType.Int);
-                    right.Calculate(InkValueType.Int);
+                    right!.Calculate(InkValueType.Int);
 
                     answer.Value_int   = left.Value_int / right.Value_int;
+                    answer.isCalculate = true;
+
+                    Release(left);
+                    Release(right);
+                    return answer;
+                }
+                
+                if (left!.ValueType == InkValueType.Float || right!.ValueType == InkValueType.Float)
+                {
+                    var answer = Get();
+                    answer.ValueType = InkValueType.Float;
+
+                    left.Calculate(InkValueType.Float);
+                    right!.Calculate(InkValueType.Float);
+
+                    answer.Value_float = left.Value_float / right.Value_float;
                     answer.isCalculate = true;
 
                     Release(left);
@@ -501,11 +581,16 @@
             {
                 switch (left)
                 {
-                    case null : return right;
+                    case null when right is InkValue rightValue :
+                    {
+                        rightValue.Calculate(rightValue.ValueType);
+                        return rightValue;
+                    }
                     case InkValue leftValue when right is InkValue rightValue :
                     {
                         return leftValue + rightValue;
                     }
+
 
                     default : throw new InkSyntaxException($"unknown type{left}--{right}");
                 }
@@ -559,7 +644,7 @@
         /////////////////////////////////////////////// Mapping  Data   ////////////////////////////////////////////////
 
 
-        /// <summary>Some UnaryPostfix Operators mark</summary>
+        /// <summary> Some UnaryPostfix operators func mapping </summary>
         protected static readonly Dictionary<InkOperator, Func<object, object, object>> dic_OperatorsFunc = new()
         {
             { InkOperator.Plus, InkOperator.InkOperator_Plus }         //
@@ -578,13 +663,14 @@
           , { InkOperator.ConditionalOr, (_,  _) => null }             //
         };
 
-        /// <summary> Some Escaped Char mapping   </summary>
+        /// <summary> Some Escaped Char mapping                </summary>
         protected static readonly Dictionary<char, char> dic_EscapedChar = new()
         {
-            { '\\', '\\' }, { '\'', '\'' }, { '0', '\0' }
-          , { 'a', '\a' }, { 'b', '\b' }, { 'f', '\f' }
-          , { 'n', '\n' }, { 'r', '\r' }, { 't', '\t' }
-          , { 'v', '\v' }
+            { '\\', '\\' }, { '\'', '\'' } //
+          , { '0', '\0' }, { 'a', '\a' }   //
+          , { 'b', '\b' }, { 'f', '\f' }   //
+          , { 'n', '\n' }, { 'r', '\r' }   //
+          , { 't', '\t' }, { 'v', '\v' }   //
         };
 
 
@@ -595,8 +681,10 @@
         /// <summary> The Parsing Methods for <see cref="Evaluate"/> </summary>
         protected static readonly List<ParsingMethodDelegate> ParsingMethods = new()
         {
-            EvaluateOperators, EvaluateNumber, EvaluateChar
-          , EvaluateString,
+            EvaluateOperators //
+          , EvaluateNumber    //
+          , EvaluateChar      //
+          , EvaluateString
         };
 
         /// <summary> Evaluate Operators in<see cref="InkOperator"/> </summary>
@@ -671,7 +759,6 @@
         }
 
 
-
         /////////////////////////////////////////////// Helping Methods ////////////////////////////////////////////////
 
         /// <summary>Find <see cref="input"/> is whether start with <see cref="value"/> from <see cref="startIndex"/></summary>
@@ -734,7 +821,7 @@
                         return false;
                     }
 
-                    if (i < input.Length - 1)
+                    if (i < input.Length)
                     {
                         switch (input[i])
                         {

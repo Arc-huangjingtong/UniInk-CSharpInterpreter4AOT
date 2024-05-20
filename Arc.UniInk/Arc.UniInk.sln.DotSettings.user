@@ -13,19 +13,15 @@
   &lt;PhysicalFolder Path="D:\Project\UniInk\Arc.UniInk\packages\AWSSDK.S3.3.7.307.30" Loaded="True" /&gt;&#xD;
 &lt;/AssemblyExplorer&gt;</s:String>
 	<s:Boolean x:Key="/Default/Environment/Hierarchy/Build/SolBuilderDuo/RunBuildOnSolutionLoaded/@EntryValue">True</s:Boolean>
-	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=8920b129_002D5565_002D4e92_002Da55e_002D344d50e8858d/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" Name="Test_EvaluateNumber_Int(&amp;quot;9*(1+2*2)&amp;quot;)" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;&#xD;
+	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=4cd36d6b_002D1e91_002D4c6f_002Da19d_002Dda2985801756/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="Test_Arithmetic_Float(&amp;quot;+123456789.987654321f + 987654321.123456789f&amp;quot;)" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;&#xD;
   &lt;TestAncestor&gt;&#xD;
-    &lt;TestId&gt;NUnit3x::1BA70864-1706-44D0-9D58-669FD5703A14::.NETFramework,Version=v4.8::Arc.UniInk.NUnitTest.NUnit_UniInkSpeed.Test_Arithmetic_Float&lt;/TestId&gt;&#xD;
-    &lt;TestId&gt;NUnit3x::1BA70864-1706-44D0-9D58-669FD5703A14::.NETFramework,Version=v4.8::Arc.UniInk.NUnitTest.NUnit_UniInkSpeed.Test_Arithmetic_Int("9*((1+(1+1)+(1+1))+1+1)")&lt;/TestId&gt;&#xD;
-    &lt;TestId&gt;NUnit3x::1BA70864-1706-44D0-9D58-669FD5703A14::.NETFramework,Version=v4.8::Arc.UniInk.NUnitTest.NUnit_UniInkSpeed.Test_Arithmetic_Int&lt;/TestId&gt;&#xD;
+    &lt;TestId&gt;NUnit3x::1BA70864-1706-44D0-9D58-669FD5703A14::.NETFramework,Version=v4.8::Arc.UniInk.NUnitTest.NUnit_UniInkSpeed&lt;/TestId&gt;&#xD;
   &lt;/TestAncestor&gt;&#xD;
 &lt;/SessionState&gt;</s:String>
-	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=c9098299_002D3758_002D4a1f_002Db8c1_002D9a797b08446f/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="Test_Arithmetic_Int" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;&#xD;
-  &lt;TestAncestor&gt;&#xD;
-    &lt;TestId&gt;NUnit3x::1BA70864-1706-44D0-9D58-669FD5703A14::.NETFramework,Version=v4.8::Arc.UniInk.NUnitTest.NUnit_UniInkSpeed.Test_Arithmetic_Int&lt;/TestId&gt;&#xD;
-    &lt;TestId&gt;NUnit3x::1BA70864-1706-44D0-9D58-669FD5703A14::.NETFramework,Version=v4.8::Arc.UniInk.NUnitTest.NUnit_UniInkSpeed.Test_Arithmetic_Float&lt;/TestId&gt;&#xD;
-  &lt;/TestAncestor&gt;&#xD;
-&lt;/SessionState&gt;</s:String>
+	
+	
+	
+	
 	
 	
 	
