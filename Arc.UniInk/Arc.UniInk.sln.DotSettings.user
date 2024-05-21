@@ -13,11 +13,23 @@
   &lt;PhysicalFolder Path="D:\Project\UniInk\Arc.UniInk\packages\AWSSDK.S3.3.7.307.30" Loaded="True" /&gt;&#xD;
 &lt;/AssemblyExplorer&gt;</s:String>
 	<s:Boolean x:Key="/Default/Environment/Hierarchy/Build/SolBuilderDuo/RunBuildOnSolutionLoaded/@EntryValue">True</s:Boolean>
-	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=4cd36d6b_002D1e91_002D4c6f_002Da19d_002Dda2985801756/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="Test_Arithmetic_Float(&amp;quot;+123456789.987654321f + 987654321.123456789f&amp;quot;)" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;&#xD;
+	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=333e365f_002Daa8d_002D48c9_002Db460_002D87304e92208b/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="Test_Arithmetic_Float" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;&#xD;
   &lt;TestAncestor&gt;&#xD;
     &lt;TestId&gt;NUnit3x::1BA70864-1706-44D0-9D58-669FD5703A14::.NETFramework,Version=v4.8::Arc.UniInk.NUnitTest.NUnit_UniInkSpeed&lt;/TestId&gt;&#xD;
+    &lt;TestId&gt;NUnit3x::1BA70864-1706-44D0-9D58-669FD5703A14::.NETFramework,Version=v4.8::Arc.UniInk.NUnitTest.Benchmark_UniInkSpeed.INT_UniInkNoSpeed&lt;/TestId&gt;&#xD;
+    &lt;TestId&gt;NUnit3x::1BA70864-1706-44D0-9D58-669FD5703A14::.NETFramework,Version=v4.8::Arc.UniInk.NUnitTest.Benchmark_UniInkSpeed.INT_Limit&lt;/TestId&gt;&#xD;
+    &lt;TestId&gt;NUnit3x::1BA70864-1706-44D0-9D58-669FD5703A14::.NETFramework,Version=v4.8::Arc.UniInk.NUnitTest.Benchmark_UniInkSpeed.INT_UniInk&lt;/TestId&gt;&#xD;
+    &lt;TestId&gt;NUnit3x::1BA70864-1706-44D0-9D58-669FD5703A14::.NETFramework,Version=v4.8::Arc.UniInk.NUnitTest.Benchmark_UniInkSpeed.INT_Sprache&lt;/TestId&gt;&#xD;
+    &lt;TestId&gt;NUnit3x::1BA70864-1706-44D0-9D58-669FD5703A14::.NETFramework,Version=v4.8::Arc.UniInk.NUnitTest.Benchmark_UniInkSpeed.INT_Linqy&lt;/TestId&gt;&#xD;
+    &lt;TestId&gt;NUnit3x::1BA70864-1706-44D0-9D58-669FD5703A14::.NETFramework,Version=v4.8::Arc.UniInk.NUnitTest.Benchmark_UniInkSpeed.Temp&lt;/TestId&gt;&#xD;
   &lt;/TestAncestor&gt;&#xD;
 &lt;/SessionState&gt;</s:String>
+	
+	
+	
+	
+	
+	
 	
 	
 	

@@ -42,7 +42,9 @@
         private const string input6 = "1111111+1111111";
         private const string input7 = "9999999+9999999";
 
-        [Benchmark] [Test]
+        private UniInk _uniInk = new UniInk();
+
+        //[Benchmark] [Test]
         public void INT_Limit()
         {
             var res1 = 333 - 3;
@@ -53,6 +55,19 @@
             var res6 = 9999999 + 9999999;
             var sum  = res1    + res2 + res3 + res4 + res5 + res6;
         }
+
+        //[Benchmark] [Test]
+        public void INT_UniInkNoSpeed()
+        {
+            _uniInk.ScriptEvaluate(input1 + ";");
+            _uniInk.ScriptEvaluate(input2 + ";");
+            _uniInk.ScriptEvaluate(input3 + ";");
+            _uniInk.ScriptEvaluate(input4 + ";");
+            _uniInk.ScriptEvaluate(input5 + ";");
+            _uniInk.ScriptEvaluate(input6 + ";");
+            _uniInk.ScriptEvaluate(input7 + ";");
+        }
+
 
 
         [Benchmark] [Test]
@@ -67,7 +82,17 @@
             NUnit_UniInkSpeed.Test_Arithmetic_Int(input7);
         }
 
+        private const string inputEmpty = "  ";
+
         [Benchmark] [Test]
+        public void Temp()
+        {
+            var temp = UniInk_Speed.LexerAndFill(inputEmpty, 0, inputEmpty.Length);
+
+            UniInk_Speed.InkSyntaxList.Release(temp);
+        }
+
+        // [Benchmark] [Test]
         public void INT_Sprache()
         {
             var parsed1 = ExpressionParser.ParseExpression(input1).Compile().Invoke();
@@ -79,6 +104,17 @@
             var parsed7 = ExpressionParser.ParseExpression(input7).Compile().Invoke();
         }
 
+        // [Benchmark] [Test]
+        public void INT_Linqy()
+        {
+            var num_1 = int.Parse("2222");
+            var num_2 = float.Parse("0.5");
+            var num_3 = double.Parse("0.6");
+        }
+
+        private const string num1 = "2222";
+        private const string num2 = "0.5";
+        private const string num3 = "0.6";
 
 
         public static void Main3()

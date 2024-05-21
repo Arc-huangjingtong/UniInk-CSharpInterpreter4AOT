@@ -10,3 +10,12 @@ F:\UniInk-CSharpInterpreter4AOT\Arc.UniInk\Arc.UniInk\obj\Debug\Arc.UniInk.cspro
 F:\UniInk-CSharpInterpreter4AOT\Arc.UniInk\Arc.UniInk\obj\Debug\Arc.UniInk.csproj.CoreCompileInputs.cache
 F:\UniInk-CSharpInterpreter4AOT\Arc.UniInk\Arc.UniInk\obj\Debug\Arc.UniInk.dll
 F:\UniInk-CSharpInterpreter4AOT\Arc.UniInk\Arc.UniInk\obj\Debug\Arc.UniInk.pdb
+D:\Project\UniInk\Arc.UniInk\Arc.UniInk\bin\Debug\System.Buffers.dll
+D:\Project\UniInk\Arc.UniInk\Arc.UniInk\bin\Debug\System.Memory.dll
+D:\Project\UniInk\Arc.UniInk\Arc.UniInk\bin\Debug\System.Numerics.Vectors.dll
+D:\Project\UniInk\Arc.UniInk\Arc.UniInk\bin\Debug\System.Runtime.CompilerServices.Unsafe.dll
+D:\Project\UniInk\Arc.UniInk\Arc.UniInk\bin\Debug\System.Buffers.xml
+D:\Project\UniInk\Arc.UniInk\Arc.UniInk\bin\Debug\System.Memory.xml
+D:\Project\UniInk\Arc.UniInk\Arc.UniInk\bin\Debug\System.Numerics.Vectors.xml
+D:\Project\UniInk\Arc.UniInk\Arc.UniInk\bin\Debug\System.Runtime.CompilerServices.Unsafe.xml
+D:\Project\UniInk\Arc.UniInk\Arc.UniInk\obj\Debug\Arc.UniInk.csproj.CopyComplete
