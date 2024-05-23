@@ -76,7 +76,10 @@
 
         public static object ProcessQueue(InkSyntaxList syntaxList)
         {
-            InkSyntaxException.ThrowIfTrue(syntaxList.Count == 0, "Empty expression and Empty stack !");
+            if (syntaxList.Count == 0)
+            {
+                InkSyntaxException.Throw("Empty expression and Empty stack !");
+            }
 
             ProcessQueue_Parenthis(syntaxList);
             ProcessQueue_Operators(syntaxList, 0, syntaxList.Count - 1);
@@ -88,7 +91,7 @@
             return cache;
         }
 
-        private static void ProcessQueue_Parenthis(InkSyntaxList keys)
+        public static void ProcessQueue_Parenthis(InkSyntaxList keys)
         {
             var hasParenthis = true;
 
@@ -107,7 +110,7 @@
             }
         }
 
-        private static void ProcessQueue_Operators(InkSyntaxList keys, int _startIndex, int _endIndex)
+        public static void ProcessQueue_Operators(InkSyntaxList keys, int _startIndex, int _endIndex)
         {
             var hasOperators = true;
 
@@ -343,7 +346,10 @@
 
             public static InkValue operator +(InkValue left, InkValue right)
             {
-                InkSyntaxException.ThrowIfTrue(left is null || right is null, "left is null || right is null");
+                if (left is null && right is null)
+                {
+                    InkSyntaxException.Throw("left is null && right is null");
+                }
 
                 var answer = Get();
 
@@ -376,7 +382,10 @@
 
             public static InkValue operator -(InkValue left, InkValue right)
             {
-                InkSyntaxException.ThrowIfTrue(left is null || right is null, "left is null || right is null");
+                if (left is null || right is null)
+                {
+                    InkSyntaxException.Throw("left is null || right is null");
+                }
 
                 var answer = Get();
 
@@ -409,7 +418,10 @@
 
             public static InkValue operator *(InkValue left, InkValue right)
             {
-                InkSyntaxException.ThrowIfTrue(left is null || right is null, "left is null || right is null");
+                if (left is null || right is null)
+                {
+                    InkSyntaxException.Throw("left is null || right is null");
+                }
 
                 var answer = Get();
 
@@ -442,7 +454,10 @@
 
             public static InkValue operator /(InkValue left, InkValue right)
             {
-                InkSyntaxException.ThrowIfTrue(left is null || right is null, "left is null || right is null");
+                if (left is null || right is null)
+                {
+                    InkSyntaxException.Throw("left is null || right is null");
+                }
 
                 var answer = Get();
 
@@ -485,14 +500,16 @@
             public static void Release(InkSyntaxList value)
             {
                 value.ObjectList.Clear();
-                value.IndexDirty.Clear();
                 value.CastOther.Clear();
+                value.IndexDirty.Clear();
+
                 pool.Push(value);
             }
 
-            private readonly List<object> ObjectList = new(10);
-            public readonly  List<bool>   IndexDirty = new(10);
-            public readonly  List<object> CastOther  = new(10);
+            public readonly List<object> ObjectList = new(30);
+            public readonly List<object> CastOther  = new(30);
+            public readonly List<bool>   IndexDirty = new(30);
+
 
 
             public void Add(object value)
@@ -522,7 +539,7 @@
 
 
         /// <summary>UniInk Operator : Custom your own Operator!</summary>
-        protected partial class InkOperator
+        public partial class InkOperator
         {
             public static readonly Dictionary<string, InkOperator> Dic_Values = new();
 
@@ -667,8 +684,28 @@
         }
 
 
+        public partial class InkFunction
+        {
+            public InkFunction(string funcName)
+            {
+                FuncName = funcName;
+            }
+
+            public string FuncName;
+
+            public Type[] ParamTypes;
+
+            public Type ReturnType;
+
+            public Delegate FuncDelegate;
+        }
+
+
+       
+
+
         /// <summary> Translate Method Delegate   </summary>
-        protected delegate object InternalDelegate(params object[] args);
+        public delegate object InternalDelegate(params object[] args);
 
 
         /////////////////////////////////////////////// Mapping  Data   ////////////////////////////////////////////////
@@ -701,6 +738,12 @@
           , { 'b', '\b' }, { 'f', '\f' }   //
           , { 'n', '\n' }, { 'r', '\r' }   //
           , { 't', '\t' }, { 'v', '\v' }   //
+        };
+
+
+        protected static readonly Dictionary<string, InkFunction> dic_Functions = new()
+        {
+            { "LOG", new InkFunction("LOG") { ParamTypes = new[] { typeof(string) }, ReturnType = null } } //
         };
 
 
@@ -832,7 +875,10 @@
                     len++;
                     pointNum++;
 
-                    InkSyntaxException.ThrowIfTrue(pointNum > 1, "[NotSupport]:Too many decimal points, can't calling method with float or double number.");
+                    if (pointNum > 1)
+                    {
+                        InkSyntaxException.Throw("[NotSupport]:Too many decimal points, can't calling method with float or double number.");
+                    }
 
                     value.ValueType = InkValue.InkValueType.Double;
                     value.Value_Meta.Push(input[i]);
@@ -971,7 +1017,7 @@
         /// <param name="sct_start"> the start section key : the last  find before <see cref="sct_end"/>        </param>
         /// <param name="sct_end"  > the end   section key : the first find after  <see cref="sct_start"/>      </param>
         /// <returns> the result is success or not , the start index and end index of the section             </returns>
-        private static (bool result, int startIndex, int endIndex) FindSection(InkSyntaxList keys, InkOperator sct_start, InkOperator sct_end)
+        protected static (bool result, int startIndex, int endIndex) FindSection(InkSyntaxList keys, InkOperator sct_start, InkOperator sct_end)
         {
             var startIndex = -1;
             var endIndex   = -1;
@@ -995,14 +1041,17 @@
                 }
             }
 
-            InkSyntaxException.ThrowIfTrue(startIndex > endIndex, $"Missing match {sct_start}");
+            if (startIndex > endIndex)
+            {
+                InkSyntaxException.Throw($"Missing match {sct_end}");
+            }
 
             return (startIndex != -1 && endIndex != -1, startIndex, endIndex);
         }
 
         /// <summary>Get the highest priority operator in the <see cref="keys"/>              </summary>
         /// <param name="keys"> the keys to find the highest priority operator in               </param>
-        private static (InkOperator @operator, int index) GetHighestPriorityOperator(InkSyntaxList keys, int startIndex, int endIndex)
+        protected static (InkOperator @operator, int index) GetHighestPriorityOperator(InkSyntaxList keys, int startIndex, int endIndex)
         {
             var index            = -1;
             var priorityOperator = InkOperator.Empty;
@@ -1035,11 +1084,6 @@
         public InkSyntaxException(string message) : base(message) { }
 
         public static void Throw(string message) => throw new InkSyntaxException(message);
-
-        public static void ThrowIfTrue(bool condition, string message)
-        {
-            if (condition) throw new InkSyntaxException(message);
-        }
     }
 
 }

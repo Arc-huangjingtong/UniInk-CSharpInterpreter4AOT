@@ -2,6 +2,7 @@
 {
 
     // ReSharper disable PartialTypeWithSinglePart
+    using System;
     using Arc.UniInk;
     using NUnit.Framework;
 
@@ -23,8 +24,7 @@
             var res    = (UniInk_Speed.InkValue)UniInk_Speed.Evaluate(input);
             var result = res!.Value_int;
             UniInk_Speed.InkValue.Release(res);
-            
-            
+
 
             return result;
         }
@@ -60,6 +60,22 @@
             UniInk_Speed.InkValue.Release(res);
 
             return result;
+        }
+
+
+        [Test]
+        public void Test()
+        {
+            var fuc = new UniInk_Speed.InkFunction("LOG");
+
+            fuc.FuncDelegate = new UniInk_Speed.InternalDelegate(args =>
+            {
+                Console.WriteLine(args[0] as string);
+                return null;
+            });
+
+
+            fuc.FuncDelegate.DynamicInvoke(new object[] { "Hello World" });
         }
     }
 

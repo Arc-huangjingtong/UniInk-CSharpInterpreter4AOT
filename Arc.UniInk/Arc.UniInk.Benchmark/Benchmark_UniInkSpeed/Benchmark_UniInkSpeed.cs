@@ -2,6 +2,7 @@
 {
 
     using System;
+    using System.Collections.Generic;
     using System.Linq;
     using System.Linq.Expressions;
     using Arc.UniInk.NunitTest;
@@ -32,8 +33,6 @@
     [MemoryDiagnoser]
     public class Benchmark_UniInkSpeed
     {
-        public Benchmark_UniInkSpeed() { }
-
         private const string input1 = "2222+(333-3+3-3)";
         private const string input2 = "333-3";
         private const string input3 = "333*3";
@@ -44,7 +43,9 @@
 
         private UniInk _uniInk = new UniInk();
 
-        //[Benchmark] [Test]
+
+
+        [Benchmark] [Test]
         public void INT_Limit()
         {
             var res1 = 333 - 3;
@@ -56,7 +57,7 @@
             var sum  = res1    + res2 + res3 + res4 + res5 + res6;
         }
 
-        //[Benchmark] [Test]
+        [Benchmark] [Test]
         public void INT_UniInkNoSpeed()
         {
             _uniInk.ScriptEvaluate(input1 + ";");
@@ -70,7 +71,7 @@
 
 
 
-        [Benchmark] [Test]
+         [Benchmark] [Test]
         public void INT_UniInk()
         {
             NUnit_UniInkSpeed.Test_Arithmetic_Int(input1);
@@ -84,13 +85,20 @@
 
         private const string inputEmpty = "  ";
 
-        [Benchmark] [Test]
+        public const string input9 = "9*((1+(1+1)+(1+1))+1+1)";
+
+        public const string input10 = "+123456789";
+
+        //[Benchmark] [Test]
         public void Temp()
         {
-            var temp = UniInk_Speed.LexerAndFill(inputEmpty, 0, inputEmpty.Length);
-
-            UniInk_Speed.InkSyntaxList.Release(temp);
+           // UniInk_Speed.FindSection(_list2, UniInk_Speed.InkOperator.ParenthisLeft, UniInk_Speed.InkOperator.ParenthisRight);
         }
+
+        public List<object> _list = new List<object>();
+
+        public UniInk_Speed.InkSyntaxList _list2 = UniInk_Speed.LexerAndFill(input9, 0, input9.Length);
+
 
         // [Benchmark] [Test]
         public void INT_Sprache()
