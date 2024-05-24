@@ -19,3 +19,12 @@ D:\Project\UniInk\Arc.UniInk\Arc.UniInk\bin\Debug\System.Memory.xml
 D:\Project\UniInk\Arc.UniInk\Arc.UniInk\bin\Debug\System.Numerics.Vectors.xml
 D:\Project\UniInk\Arc.UniInk\Arc.UniInk\bin\Debug\System.Runtime.CompilerServices.Unsafe.xml
 D:\Project\UniInk\Arc.UniInk\Arc.UniInk\obj\Debug\Arc.UniInk.csproj.CopyComplete
+F:\UniInk-CSharpInterpreter4AOT\Arc.UniInk\Arc.UniInk\bin\Debug\System.Buffers.dll
+F:\UniInk-CSharpInterpreter4AOT\Arc.UniInk\Arc.UniInk\bin\Debug\System.Memory.dll
+F:\UniInk-CSharpInterpreter4AOT\Arc.UniInk\Arc.UniInk\bin\Debug\System.Numerics.Vectors.dll
+F:\UniInk-CSharpInterpreter4AOT\Arc.UniInk\Arc.UniInk\bin\Debug\System.Runtime.CompilerServices.Unsafe.dll
+F:\UniInk-CSharpInterpreter4AOT\Arc.UniInk\Arc.UniInk\bin\Debug\System.Buffers.xml
+F:\UniInk-CSharpInterpreter4AOT\Arc.UniInk\Arc.UniInk\bin\Debug\System.Memory.xml
+F:\UniInk-CSharpInterpreter4AOT\Arc.UniInk\Arc.UniInk\bin\Debug\System.Numerics.Vectors.xml
+F:\UniInk-CSharpInterpreter4AOT\Arc.UniInk\Arc.UniInk\bin\Debug\System.Runtime.CompilerServices.Unsafe.xml
+F:\UniInk-CSharpInterpreter4AOT\Arc.UniInk\Arc.UniInk\obj\Debug\Arc.UniInk.csproj.CopyComplete

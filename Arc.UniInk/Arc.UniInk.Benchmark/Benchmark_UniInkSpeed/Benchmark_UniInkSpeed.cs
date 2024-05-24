@@ -69,9 +69,26 @@
             _uniInk.ScriptEvaluate(input7 + ";");
         }
 
+        [Benchmark] [Test]
+        public void Test()
+        {
+            Name = Test3[HelloWorld].Method.Name;
 
+            Action<string> Test4 = Console.WriteLine;
+            
+        }
 
-         [Benchmark] [Test]
+        public string Name;
+
+        public static Action<string> Test2 = LOG;
+
+        public const string HelloWorld = "Hello World";
+
+        public static readonly Dictionary<string, Delegate> Test3 = new() { { HelloWorld, Test2 } };
+
+        public static void LOG(string str) { }
+
+        [Benchmark] [Test]
         public void INT_UniInk()
         {
             NUnit_UniInkSpeed.Test_Arithmetic_Int(input1);
@@ -92,7 +109,7 @@
         //[Benchmark] [Test]
         public void Temp()
         {
-           // UniInk_Speed.FindSection(_list2, UniInk_Speed.InkOperator.ParenthisLeft, UniInk_Speed.InkOperator.ParenthisRight);
+            // UniInk_Speed.FindSection(_list2, UniInk_Speed.InkOperator.ParenthisLeft, UniInk_Speed.InkOperator.ParenthisRight);
         }
 
         public List<object> _list = new List<object>();

@@ -2,12 +2,12 @@
 {
 
     /*******************************************************************************************************************
-    *📰 Title    : UniInk_Speed (https://github.com/Arc-huangjingtong/UniInk-CSharpInterpreter4Unity)                  *
-    *🔖 Version  : 1.0.0                                                                                               *
-    *😀 Author   : Arc (https://github.com/Arc-huangjingtong)                                                          *
-    *🔑 Licence  : MIT (https://github.com/Arc-huangjingtong/UniInk-CSharpInterpreter4Unity/blob/main/LICENSE)         *
-    *🤝 Support  : [.NET Framework 4+] [C# 9.0+] [IL2CPP Support]                                                      *
-    *📝 Desc     : [High performance] [zero box & unbox] [zero reflection runtime] [Easy-use]                          *
+    *📰 Title    :  UniInk_Speed (https://github.com/Arc-huangjingtong/UniInk-CSharpInterpreter4Unity)                 *
+    *🔖 Version  :  1.0.0                                                                                              *
+    *😀 Author   :  Arc (https://github.com/Arc-huangjingtong)                                                         *
+    *🔑 Licence  :  MIT (https://github.com/Arc-huangjingtong/UniInk-CSharpInterpreter4Unity/blob/main/LICENSE)        *
+    *🤝 Support  :  [.NET Framework 4+] [C# 9.0+] [IL2CPP Support]                                                     *
+    *📝 Desc     :  [High performance] [zero box & unbox] [zero reflection runtime] [Easy-use]                         *
     /*******************************************************************************************************************/
 
     // ReSharper disable PartialTypeWithSinglePart
@@ -47,6 +47,7 @@
         }
 
 
+        /// <summary> UniInk Lexer :   Fill the SyntaxList       </summary>
         public static InkSyntaxList LexerAndFill(string expression, int startIndex, int endIndex)
         {
             var keys = InkSyntaxList.Get();
@@ -74,6 +75,7 @@
             return keys;
         }
 
+        /// <summary> UniInk SyntaxList : Process the SyntaxList </summary>
         public static object ProcessQueue(InkSyntaxList syntaxList)
         {
             if (syntaxList.Count == 0)
@@ -103,7 +105,15 @@
 
                 if (!hasParenthis) continue;
 
-                ProcessQueue_Operators(keys, startIndex + 1, endIndex - 1);
+                if (startIndex > 0 && keys[startIndex - 1] is InkFunction)
+                {
+                    ProcessQueue_Functions(keys, startIndex, endIndex);
+                }
+                else
+                {
+                    ProcessQueue_Operators(keys, startIndex + 1, endIndex - 1);
+                }
+
 
                 keys.SetDirty(startIndex);
                 keys.SetDirty(endIndex);
@@ -186,6 +196,44 @@
             }
         }
 
+        public static void ProcessQueue_Functions(InkSyntaxList keys, int paramStart, int paramEnd)
+        {
+            //找到指定范围内的函数，并且执行它
+            InkFunction  func = keys[paramStart - 1] as InkFunction;
+            List<object> prms = new();
+
+            for (var i = paramStart + 1 ; i <= paramEnd - 1 ; i++)
+            {
+                object current;
+
+                if (keys.IndexDirty[i])
+                {
+                    if (keys.CastOther[i] == null) continue;
+
+                    current = keys.CastOther[i];
+                }
+                else
+                {
+                    current = keys[i];
+                }
+
+                if (current == null || Equals(current, InkOperator.Dot)) continue;
+
+                if (current is InkValue inkValue)
+                {
+                    var array = inkValue.Value_Meta.ToList();
+                    array.Reverse();
+                    current = new string(array.ToArray());
+                }
+
+
+                prms.Add(current);
+            }
+
+            var result = func.FuncDelegate.Method.Invoke(null, prms.ToArray());
+
+            keys.SetDirty(result, paramStart - 1, paramEnd);
+        }
 
 
         /// <summary>In UniInk , every valueType is Object , No Boxing!</summary>
@@ -541,7 +589,7 @@
         /// <summary>UniInk Operator : Custom your own Operator!</summary>
         public partial class InkOperator
         {
-            public static readonly Dictionary<string, InkOperator> Dic_Values = new();
+            public static readonly Dictionary<int, InkOperator> Dic_Values = new();
 
             //priority refer to : https://learn.microsoft.com/zh-cn/dotnet/csharp/language-reference/operators/
             //keyword  refer to : https://learn.microsoft.com/zh-cn/dotnet/csharp/language-reference/keywords/
@@ -598,10 +646,14 @@
             public static readonly InkOperator KeyBreak    = new("break", 20);
             public static readonly InkOperator KeyContinue = new("continue", 20);
             public static readonly InkOperator KeyVar      = new("var", 20);
+            public static readonly InkOperator KeyTrue     = new("true", 20);
+            public static readonly InkOperator KeyFalse    = new("false", 20);
             public static readonly InkOperator Empty       = new("😊", short.MaxValue);
 
             /// <summary>the lower the value, the higher the priority</summary>
             public readonly short PriorityIndex;
+
+            public readonly string Name;
 
             /// <summary>the indexer of the operator   </summary>
             protected static short indexer;
@@ -614,13 +666,15 @@
             protected InkOperator(string name, short priorityIndex)
             {
                 PriorityIndex = priorityIndex;
-                Dic_Values.Add(name, this);
+                Name          = name;
+                var hash = GetStringSliceHashCode(name, 0, name.Length - 1);
+                Dic_Values.Add(hash, this);
             }
 
             public override bool Equals(object otherOperator) => otherOperator is InkOperator Operator && OperatorValue == Operator.OperatorValue;
 
             public override int    GetHashCode() => OperatorValue;
-            public override string ToString()    => $"Operator : {Dic_Values.FirstOrDefault(pair => Equals(pair.Value, this)).Key}  Priority : {PriorityIndex}";
+            public override string ToString()    => $"Operator : {Name}  Priority : {PriorityIndex}";
 
 
 
@@ -684,28 +738,24 @@
         }
 
 
+
         public partial class InkFunction
         {
-            public InkFunction(string funcName)
+            public InkFunction(Delegate func)
             {
-                FuncName = funcName;
+                FuncDelegate = func;
+                ParamTypes   = func.Method.GetParameters().Select(p => p.ParameterType).ToArray();
+                ReturnType   = func.Method.ReturnType;
             }
 
-            public string FuncName;
 
-            public Type[] ParamTypes;
+            public readonly Type[] ParamTypes;
 
-            public Type ReturnType;
+            public readonly Type ReturnType;
 
-            public Delegate FuncDelegate;
+            public readonly Delegate FuncDelegate;
         }
 
-
-       
-
-
-        /// <summary> Translate Method Delegate   </summary>
-        public delegate object InternalDelegate(params object[] args);
 
 
         /////////////////////////////////////////////// Mapping  Data   ////////////////////////////////////////////////
@@ -740,12 +790,17 @@
           , { 't', '\t' }, { 'v', '\v' }   //
         };
 
+        public static readonly Action<string> LOG = Test1;
 
-        protected static readonly Dictionary<string, InkFunction> dic_Functions = new()
-        {
-            { "LOG", new InkFunction("LOG") { ParamTypes = new[] { typeof(string) }, ReturnType = null } } //
-        };
+        /// <summary> Some Global Functions mapping            </summary>
+        protected static readonly Dictionary<string, InkFunction> GlobalFunctions = new() { { "LOG", new InkFunction(LOG) } };
 
+
+        public static readonly Func<int, int, int> ADD = Test2;
+
+        public static void Test1(string str) => Console.WriteLine(str);
+
+        public static int Test2(int item1, int item2) => item1 + item2;
 
         /////////////////////////////////////////////// Parsing Methods ////////////////////////////////////////////////
 
@@ -755,9 +810,11 @@
         protected static readonly List<ParsingMethodDelegate> ParsingMethods = new()
         {
             EvaluateOperators //
+          , EvaluateFunction  //
           , EvaluateNumber    //
           , EvaluateChar      //
-          , EvaluateString
+          , EvaluateString    //
+          , EvaluateBool      //
         };
 
         /// <summary> Evaluate Operators in<see cref="InkOperator"/> </summary>
@@ -769,10 +826,10 @@
         {
             foreach (var operatorStr in InkOperator.Dic_Values)
             {
-                if (StartsWithInputStrFromIndex(expression, operatorStr.Key, i))
+                if (StartsWithInputStrFromIndex(expression, operatorStr.Value.Name, i))
                 {
                     keys.Add(operatorStr.Value);
-                    i += operatorStr.Key.Length - 1;
+                    i += operatorStr.Value.Name.Length - 1;
                     return true;
                 }
             }
@@ -791,6 +848,23 @@
             {
                 keys.Add(numberMatch);
                 i += len - 1;
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary> Evaluate Bool _eg: true false                  </summary>
+        /// <param name="expression"> the expression to Evaluate       </param>
+        /// <param name="keys"> the object stack to push or pop        </param>
+        /// <param name="i"> the <see cref="expression"/> start index  </param>
+        /// <returns> the evaluate is success or not                 </returns>
+        protected static bool EvaluateBool(string expression, InkSyntaxList keys, ref int i)
+        {
+            if (StartsWithBoolFromIndex(expression, i, out var boolMatch, out var len))
+            {
+                keys.Add(boolMatch);
+                i += len;
                 return true;
             }
 
@@ -825,6 +899,23 @@
             {
                 keys.Add(value);
                 i += len;
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary> Evaluate Function _eg: LOG("Hello World")      </summary>
+        /// <param name="expression"> the expression to Evaluate       </param>
+        /// <param name="keys"> the object stack to push or pop        </param>
+        /// <param name="i"> the <see cref="expression"/> start index  </param>
+        /// <returns> the evaluate is success or not                 </returns>
+        protected static bool EvaluateFunction(string expression, InkSyntaxList keys, ref int i)
+        {
+            if (StartsWithInputStrFromIndex(expression, "LOG", i))
+            {
+                keys.Add(GlobalFunctions["LOG"]);
+                i += 2;
                 return true;
             }
 
@@ -992,8 +1083,8 @@
                     }
                     else if (input[i].Equals('\"'))
                     {
-                        i++;
                         len = i - startIndex;
+
                         return true;
                     }
                     else
@@ -1004,6 +1095,33 @@
                 }
 
                 InkSyntaxException.Throw($"Illegal character[{i}] : too many characters in a character literal");
+            }
+
+            len   = 0;
+            value = null;
+            return false;
+        }
+
+        /// <summary>Find <see cref="input"/> is whether start with bool from <see cref="startIndex"/>        </summary>
+        protected static bool StartsWithBoolFromIndex(string input, int startIndex, out InkValue value, out int len)
+        {
+            if (input[startIndex].Equals('t') || input[startIndex].Equals('f'))
+            {
+                value           = InkValue.Get();
+                value.ValueType = InkValue.InkValueType.Boolean;
+
+                if (input[startIndex].Equals('t'))
+                {
+                    value.Value_bool = true;
+                    len              = 4;
+                }
+                else
+                {
+                    value.Value_bool = false;
+                    len              = 5;
+                }
+
+                return true;
             }
 
             len   = 0;
@@ -1075,6 +1193,18 @@
 
             return (priorityOperator, index);
         }
+
+        /// <summary> Get the hash code of the string from <see cref="startIndex"/> to <see cref="endIndex"/> </summary>
+        protected static int GetStringSliceHashCode(string str, int startIndex, int endIndex)
+        {
+            var hash = 0;
+            for (var i = startIndex ; i <= endIndex ; i++)
+            {
+                hash = hash * 31 + str[i];
+            }
+
+            return hash;
+        }
     }
 
 
@@ -1082,8 +1212,7 @@
     public class InkSyntaxException : Exception
     {
         public InkSyntaxException(string message) : base(message) { }
-
-        public static void Throw(string message) => throw new InkSyntaxException(message);
+        public static void Throw(string  message) => throw new InkSyntaxException(message);
     }
 
 }

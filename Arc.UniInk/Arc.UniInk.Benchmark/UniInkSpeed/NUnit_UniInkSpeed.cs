@@ -3,7 +3,9 @@
 
     // ReSharper disable PartialTypeWithSinglePart
     using System;
+    using System.Text;
     using Arc.UniInk;
+    using JetBrains.Util;
     using NUnit.Framework;
 
 
@@ -63,19 +65,25 @@
         }
 
 
-        [Test]
-        public void Test()
+        // [Repeat(10000)]
+        [TestCase("LOG(\"Hello World ! \" )            ")]
+        public static void Test_ExpressionScripts(string input)
         {
-            var fuc = new UniInk_Speed.InkFunction("LOG");
+            UniInk_Speed.Evaluate(input);
+        }
 
-            fuc.FuncDelegate = new UniInk_Speed.InternalDelegate(args =>
+
+        [Test]
+        public static void Test_Temp01()
+        {
+            Action action = () =>
             {
-                Console.WriteLine(args[0] as string);
-                return null;
-            });
+                Console.WriteLine("Hello World");
+            };
 
+            Delegate d = action;
 
-            fuc.FuncDelegate.DynamicInvoke(new object[] { "Hello World" });
+            Console.WriteLine(d.Method.ReturnType);
         }
     }
 
