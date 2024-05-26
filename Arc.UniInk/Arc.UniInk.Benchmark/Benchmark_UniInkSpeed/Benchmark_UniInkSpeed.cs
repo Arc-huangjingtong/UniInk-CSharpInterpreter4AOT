@@ -33,19 +33,26 @@
     [MemoryDiagnoser]
     public class Benchmark_UniInkSpeed
     {
-        private const string input1 = "2222+(333-3+3-3)";
-        private const string input2 = "333-3";
-        private const string input3 = "333*3";
-        private const string input4 = "333/3";
-        private const string input5 = "333+3";
-        private const string input6 = "1111111+1111111";
-        private const string input7 = "9999999+9999999";
+        private const string input1  = "2222+(333-3+3-3)";
+        private const string input2  = "333-3";
+        private const string input3  = "333*3";
+        private const string input4  = "333/3";
+        private const string input5  = "333+3";
+        private const string input6  = "1111111+1111111";
+        private const string input7  = "9999999+9999999";
+        public const  string input9  = "9*((1+(1+1)+(1+1))+1+1)";
+        public const  string input10 = "+123456789";
+
+        public const string HelloWorld = "Hello World";
+
+
+        public const string Scripts1 = "LOG(\"Hello World ! \" )             ";
 
         private UniInk _uniInk = new UniInk();
 
 
 
-        [Benchmark] [Test]
+        // [Benchmark] [Test]
         public void INT_Limit()
         {
             var res1 = 333 - 3;
@@ -57,7 +64,7 @@
             var sum  = res1    + res2 + res3 + res4 + res5 + res6;
         }
 
-        [Benchmark] [Test]
+        // [Benchmark] [Test]
         public void INT_UniInkNoSpeed()
         {
             _uniInk.ScriptEvaluate(input1 + ";");
@@ -69,20 +76,18 @@
             _uniInk.ScriptEvaluate(input7 + ";");
         }
 
-        [Benchmark] [Test]
+        //[Benchmark] [Test]
         public void Test()
         {
-            Name = Test3[HelloWorld].Method.Name;
-
-            Action<string> Test4 = Console.WriteLine;
-            
+            NUnit_UniInkSpeed.Test_ExpressionScripts(Scripts1);
         }
+
 
         public string Name;
 
         public static Action<string> Test2 = LOG;
 
-        public const string HelloWorld = "Hello World";
+
 
         public static readonly Dictionary<string, Delegate> Test3 = new() { { HelloWorld, Test2 } };
 
@@ -102,19 +107,6 @@
 
         private const string inputEmpty = "  ";
 
-        public const string input9 = "9*((1+(1+1)+(1+1))+1+1)";
-
-        public const string input10 = "+123456789";
-
-        //[Benchmark] [Test]
-        public void Temp()
-        {
-            // UniInk_Speed.FindSection(_list2, UniInk_Speed.InkOperator.ParenthisLeft, UniInk_Speed.InkOperator.ParenthisRight);
-        }
-
-        public List<object> _list = new List<object>();
-
-        public UniInk_Speed.InkSyntaxList _list2 = UniInk_Speed.LexerAndFill(input9, 0, input9.Length);
 
 
         // [Benchmark] [Test]
