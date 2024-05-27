@@ -2,13 +2,13 @@
 {
 
     /*******************************************************************************************************************
-    *📰 Title    :  UniInk_Speed (https://github.com/Arc-huangjingtong/UniInk-CSharpInterpreter4Unity)                 *
-    *🔖 Version  :  1.0.0                                                                                              *
-    *😀 Author   :  Arc (https://github.com/Arc-huangjingtong)                                                         *
-    *🔑 Licence  :  MIT (https://github.com/Arc-huangjingtong/UniInk-CSharpInterpreter4Unity/blob/main/LICENSE)        *
-    *🤝 Support  :  [.NET Framework 4+] [C# 9.0+] [IL2CPP Support]                                                     *
-    *📝 Desc     :  [High performance] [zero box & unbox] [zero GC!] [zero reflection runtime] [Easy-use]              *
-    *📦 State    :  [Developing] [0GC]                                                                                 *
+    *  📰 Title    :  UniInk_Speed (https://github.com/Arc-huangjingtong/UniInk-CSharpInterpreter4Unity)              *
+    *  🔖 Version  :  1.0.0                                                                                           *
+    *  😀 Author   :  Arc (https://github.com/Arc-huangjingtong)                                                      *
+    *  🔑 Licence  :  MIT (https://github.com/Arc-huangjingtong/UniInk-CSharpInterpreter4Unity/blob/main/LICENSE)     *
+    *  🤝 Support  :  [.NET Framework 4+] [C# 9.0+] [IL2CPP Support]                                                  *
+    *  📝 Desc     :  [High performance] [zero box & unbox] [zero GC!] [zero reflection runtime] [Easy-use]           *
+    *  📦 State    :  [Developing] [0GC]                                                                              *
     /*******************************************************************************************************************/
 
     // ReSharper disable RedundantLogicalConditionalExpressionOperand
@@ -23,6 +23,13 @@
     public sealed partial class NUnit_UniInkSpeed
     {
         private static readonly UniInk_Speed UniInk_Speed = new();
+
+        [OneTimeSetUp]
+        public static void Test_Initiation()
+        {
+            UniInk_Speed.RegisterFunction("CRE", new(_ => TestInk.Create(), Array.Empty<Type>(), typeof(TestInk)));
+        }
+
 
         [Repeat(10000)]
         [TestCase("+123456789             ", ExpectedResult = +123456789)]
@@ -85,12 +92,12 @@
 
         [Repeat(10000)]
         [TestCase("!true && false || true && false", ExpectedResult = (!true && false) || (true && false))]
-        [TestCase("1 > 2 || 2 > 1                ",  ExpectedResult = 1 > 2            || 2 > 1)]
-        [TestCase("1 < 2 || 2 < 1                ",  ExpectedResult = 1 < 2            || 2 < 1)]
-        [TestCase("1 >= 2 && 2 >= 1              ",  ExpectedResult = 1 >= 2 && 2           >= 1)]
-        [TestCase("1 <= 2 || 2 <= 1              ",  ExpectedResult = 1 <= 2 || 2           <= 1)]
-        [TestCase("1 == 2 && 2 == 1              ",  ExpectedResult = 1 == 2 && 2           == 1)]
-        [TestCase("1 != 2 || 2 != 1              ",  ExpectedResult = 1 != 2 || 2           != 1)]
+        [TestCase("1 > 2 || 2 > 1                 ", ExpectedResult = 1 > 2            || 2 > 1)]
+        [TestCase("1 < 2 || 2 < 1                 ", ExpectedResult = 1 < 2            || 2 < 1)]
+        [TestCase("1 >= 2 && 2 >= 1               ", ExpectedResult = 1 >= 2 && 2           >= 1)]
+        [TestCase("1 <= 2 || 2 <= 1               ", ExpectedResult = 1 <= 2 || 2           <= 1)]
+        [TestCase("1 == 2 && 2 == 1               ", ExpectedResult = 1 == 2 && 2           == 1)]
+        [TestCase("1 != 2 || 2 != 1               ", ExpectedResult = 1 != 2 || 2           != 1)]
         public static bool Test_Arithmetic_Bool(string input)
         {
             var res    = (InkValue)UniInk_Speed.Evaluate(input);
@@ -102,44 +109,47 @@
 
 
 
-        // [Repeat(10000)]
-        //[TestCase("SUM(SUM(1,2,3),SUM(SUM(1,2,3),2,3),SUM(1,2,3)) + 123456789        ")]
-        // [TestCase("LOG(\"Hello World ! \" )               ")]
-        [TestCase("var a = 123            ")]
-        public static void Test_ExpressionScripts(string input)
+        [Repeat(10000)]
+        [TestCase("SUM(SUM(1,2,3),SUM(1,2,3),1) + 123456789    ")]
+        [TestCase("LOG(\"Hello World ! \"+\"Hello World ! \" ) ")]
+        [TestCase("var a = CRE()                               ")]
+        public static void Test_Expression_Function(string input)
         {
             var res = UniInk_Speed.Evaluate(input);
 
             if (res is InkValue inkValue)
             {
-                Console.WriteLine(inkValue.Value_int);
+                //Console.WriteLine(inkValue.Value_String);
                 InkValue.Release(inkValue);
             }
-
-            // Console.WriteLine(UniInk_Speed.dic_Variables_Temp["a"].Value_int);
         }
 
-        [Repeat(10000)] [Test]
-        public static void Test_Temp()
+        [Repeat(10000)]
+        [TestCase("var a = 123 ; a + 123456789              ")]
+        public static void Test_Expression_Scripts(string input)
         {
-            var t1  = new T1();
-            var t2  = new T();
-            var tt  = new List<object>() { t1, t2 };
-            var res = FuncDelegate2.Invoke(tt);
-
-            Console.WriteLine(res);
+            UniInk_Speed.Evaluate(input);
         }
 
 
-        public static Func<List<object>, object> FuncDelegate2 => list => TestFunc(list[0] as T1, list[1] as T);
+        [Test]
+        public static void Test_Temp() { }
 
 
-        public static int TestFunc(T1 a, T b) => 2;
+        public static Func<List<object>, object> FuncDelegate2 => list => TestFunc(list[0] as T1, list[1] as TestInk);
+
+
+        public static int TestFunc(T1 a, TestInk b) => 2;
 
 
 
-        public class T { }
-        public class T1 : T { }
+        public class TestInk
+        {
+            public static TestInk Create() => new TestInk();
+        }
+
+
+        public class T1 : TestInk { }
     }
 
 }
@@ -161,7 +171,7 @@
 // 3.☑️ 支持变量的声明和赋值[var] [=],支持变量的作用域
 // 4.❎ 支持if else 语句,等基本的逻辑语句
 // 5.☑️️️ 支持类型的隐式转换
-// 6.❎ 支持沙盒环境,不允许访问外部的变量和函数
+// 6.☑️ 支持沙盒环境,不允许访问外部的变量和函数
 
 // TODO_LIST:
 //😊 [浮点型，整形，双精度] 基本的数学运算(加减乘除, 乘方, 余数, 逻辑运算, 位运算) 二元运算符 ,且支持自动优先级 
@@ -171,19 +181,12 @@
 //暂时不支持
 // || 和 && 导致得短路特性,本质上很容易实现,但是这个特性不是所有人都需要,所以暂时不支持，可以自行实现
 
-// Feature Point:
+// Feature Point: 最终目标是完善功能，用于替换DuelAction中的代码
 // ☑️:DMG(CARD(G1), GET(G1, 2004)); //函数嵌套的调用
-// var card = C1; //变量的声明，且变量是自定义类型
-// var cost = GET(card, COST);
-// var atk = GET(card, ATK);
-// var hp = GET(card, HP);
-// var id = GET(card, ID);
-// var DAMAGE = GET(card, DAMAGE);
-// var INJURY = GET(card, INJURY);
-// var type = GET(card, TYPE);
-// var POS = GET(card, POS);
+// ☑️:var card = C1;                //支持自定义变量的声明，且变量是自定义类型
+// ☑️:var cost = GET(card, COST);
 //
-// LOG(""Debug测试---C1cost :"" +cost);
+// LOG(""Debug测试---C1cost :"" +cost); //字符串运算：是否需要支持？ 字符串的拼接在解释器中，能体现出很大的优势
 // LOG(""Debug测试---C1atk :"" +atk);
 // LOG(""Debug测试---C1hp :"" +hp);
 // LOG(""Debug测试---C1id :"" +id);

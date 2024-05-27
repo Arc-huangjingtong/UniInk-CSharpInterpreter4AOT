@@ -5,51 +5,34 @@
     using System.Collections.Generic;
     using System.Linq;
     using System.Linq.Expressions;
-    using Arc.UniInk.NunitTest;
     using BenchmarkDotNet.Attributes;
     using LinqyCalculator;
     using NUnit.Framework;
 
 
-
-    [MemoryDiagnoser]                // we need to enable it in explicit way
-    [RyuJitX64Job] [LegacyJitX86Job] // let's run the benchmarks for 32 & 64 bit
-    public class Benchmarks
-    {
-        [Benchmark]
-        public byte[] EmptyArray() => Array.Empty<byte>();
-
-        [Benchmark]
-        public byte[] EightBytes() => new byte[8];
-
-        [Benchmark]
-        public byte[] SomeLinq()
-        {
-            return Enumerable.Range(0, 100).Where(i => i % 2 == 0).Select(i => (byte)i).ToArray();
-        }
-    }
-
-
     [MemoryDiagnoser]
     public class Benchmark_UniInkSpeed
     {
-        private const string input1  = "2222+(333-3+3-3)";
-        private const string input2  = "333-3";
-        private const string input3  = "333*3";
-        private const string input4  = "333/3";
-        private const string input5  = "333+3";
-        private const string input6  = "1111111+1111111";
-        private const string input7  = "9999999+9999999";
-        public const  string input9  = "9*((1+(1+1)+(1+1))+1+1)";
-        public const  string input10 = "+123456789";
+        private readonly UniInk _uniInk = new UniInk();
 
-        public const string HelloWorld = "Hello World";
+        private const string input1     = "2222+(333-3+3-3)";
+        private const string input2     = "333-3";
+        private const string input3     = "333*3";
+        private const string input4     = "333/3";
+        private const string input5     = "333+3";
+        private const string input6     = "1111111+1111111";
+        private const string input7     = "9999999+9999999";
+        private const string input9     = "9*((1+(1+1)+(1+1))+1+1)";
+        private const string input10    = "+123456789";
+        private const string HelloWorld = "Hello World";
+        private const string Scripts1   = "LOG(\"Hello World ! \" )             ";
+        private const string Scripts2   = "var a = 1; a + 12;";
+        private const string Scripts3   = "var a = 1; a + 12";
+        private const string inputEmpty = "  ";
 
+        public string Name;
 
-        public const string Scripts1 = "LOG(\"Hello World ! \" )             ";
-
-        private UniInk _uniInk = new UniInk();
-
+        public static Action<string> Test2 = LOG;
 
 
         // [Benchmark] [Test]
@@ -77,15 +60,7 @@
         }
 
         //[Benchmark] [Test]
-        public void Test()
-        {
-            NUnit_UniInkSpeed.Test_ExpressionScripts(Scripts1);
-        }
-
-
-        public string Name;
-
-        public static Action<string> Test2 = LOG;
+        public void Test() { }
 
 
 
@@ -93,7 +68,7 @@
 
         public static void LOG(string str) { }
 
-        [Benchmark] [Test]
+        //[Benchmark] [Test]
         public void INT_UniInk()
         {
             NUnit_UniInkSpeed.Test_Arithmetic_Int(input1);
@@ -105,9 +80,17 @@
             NUnit_UniInkSpeed.Test_Arithmetic_Int(input7);
         }
 
-        private const string inputEmpty = "  ";
+        [Benchmark] [Test]
+        public void TEST_SCRIPTS()
+        {
+            _uniInk.ScriptEvaluate(Scripts2);
+        }
 
-
+        [Benchmark] [Test]
+        public void TEST_SCRIPTS_SPEED()
+        {
+            NUnit_UniInkSpeed.Test_Expression_Function(Scripts3);
+        }
 
         // [Benchmark] [Test]
         public void INT_Sprache()

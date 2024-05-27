@@ -51,10 +51,44 @@
 
             if (InputIsScript(syntaxList))
             {
-                return null;
+                var success = true;
+                var index   = 0;
+                var start   = 0;
+
+                while (success)
+                {
+                    (success, index) = FindOperator(syntaxList, InkOperator.Semicolon, 0, syntaxList.Count - 1);
+
+                    if (success)
+                    {
+                        ProcessList(syntaxList, start, index - 1);
+                        syntaxList.SetDirty(index);
+                        start = index + 1;
+                        continue;
+                    }
+
+                    var res = ProcessList(syntaxList, start, index); //index is the last index
+
+                    if (res is InkValue inkValue)
+                    {
+                        var copy = InkValue.Get();
+                        inkValue.CopyTo(copy);
+                        res = copy;
+                    }
+
+                    InkSyntaxList.Release(syntaxList);
+                    ReleaseTempVariables();
+
+                    return res;
+                }
             }
 
-            var evalAnswer = ProcessQueue(syntaxList, 0, syntaxList.Count - 1);
+            var evalAnswer = ProcessList(syntaxList, 0, syntaxList.Count - 1);
+
+            InkSyntaxList.Release(syntaxList);
+            ReleaseTempVariables();
+
+
             return evalAnswer;
         }
 
@@ -65,6 +99,10 @@
             InkValue.ReleasePool();
             InkSyntaxList.ReleasePool();
         }
+
+        /// <summary> Register a local function                  </summary>
+        public void RegisterFunction(string name, InkFunction inkFunc) => dic_Functions.Add(name, inkFunc);
+
 
 
         /// <summary> UniInk Lexer :   Fill the SyntaxList       </summary>
@@ -96,12 +134,12 @@
         }
 
         /// <summary> UniInk SyntaxList : Process the SyntaxList </summary>
-        public static object ProcessQueue(InkSyntaxList syntaxList, int start, int end)
+        public object ProcessList(InkSyntaxList syntaxList, int start, int end)
         {
-            ProcessQueue_Parenthis(syntaxList, start, end);
-            ProcessQueue_Operators(syntaxList, start, end);
+            ProcessList_Parenthis(syntaxList, start, end);
+            ProcessList_Operators(syntaxList, start, end);
 
-            var cache = syntaxList.CastOther[0];
+            var cache = syntaxList.CastOther[start];
 
             if (cache is InkValue inkValue)
             {
@@ -110,12 +148,13 @@
                 cache = copy;
             }
 
-            InkSyntaxList.Release(syntaxList);
 
             return cache;
         }
 
-        public static void ProcessQueue_Parenthis(InkSyntaxList keys, int start, int end)
+
+
+        public static void ProcessList_Parenthis(InkSyntaxList keys, int start, int end)
         {
             var hasParenthis = true;
 
@@ -129,11 +168,11 @@
 
                 if (startIndex > 0 && keys[startIndex - 1] is InkFunction)
                 {
-                    ProcessQueue_Functions(keys, startIndex, endIndex);
+                    ProcessList_Functions(keys, startIndex, endIndex);
                 }
                 else
                 {
-                    ProcessQueue_Operators(keys, startIndex + 1, endIndex - 1);
+                    ProcessList_Operators(keys, startIndex + 1, endIndex - 1);
                 }
 
 
@@ -142,7 +181,7 @@
             }
         }
 
-        public static void ProcessQueue_Operators(InkSyntaxList keys, int _startIndex, int _endIndex)
+        public static void ProcessList_Operators(InkSyntaxList keys, int _startIndex, int _endIndex)
         {
             var hasOperators = true;
 
@@ -159,8 +198,8 @@
                 object left  = null;
                 object right = null;
 
-                var LNeedRelase = false;
-                var RNeedRelase = false;
+                var LNeedRelease = false;
+                var RNeedRelease = false;
 
                 var startIndex = index;
                 var endIndex   = index;
@@ -175,7 +214,7 @@
                         left              = keys.CastOther[i];
                         keys.CastOther[i] = null;
 
-                        LNeedRelase = true;
+                        LNeedRelease = true;
 
                         startIndex = i;
 
@@ -198,7 +237,7 @@
                         right             = keys.CastOther[i];
                         keys.CastOther[i] = null;
 
-                        RNeedRelase = true;
+                        RNeedRelease = true;
 
                         endIndex = i;
 
@@ -216,12 +255,12 @@
                 {
                     var result = func(left, right);
 
-                    if (LNeedRelase && left is InkValue inkValueL)
+                    if (LNeedRelease && left is InkValue inkValueL)
                     {
                         InkValue.Release(inkValueL);
                     }
 
-                    if (RNeedRelase && right is InkValue inkValueR)
+                    if (RNeedRelease && right is InkValue inkValueR)
                     {
                         InkValue.Release(inkValueR);
                     }
@@ -235,7 +274,7 @@
             }
         }
 
-        public static void ProcessQueue_Functions(InkSyntaxList keys, int paramStart, int paramEnd)
+        public static void ProcessList_Functions(InkSyntaxList keys, int paramStart, int paramEnd)
         {
             //找到指定范围内的函数，并且执行它
             var func      = keys[paramStart - 1] as InkFunction;
@@ -258,7 +297,12 @@
                     current = keys[i];
                 }
 
-                if (current == null || Equals(current, InkOperator.Comma)) continue;
+                if (current == null) continue;
+
+                if (Equals(current, InkOperator.Comma))
+                {
+                    ProcessList_Operators(paramList, 0, i - 1);
+                }
 
 
                 paramList.Add(current);
@@ -270,6 +314,16 @@
             InkSyntaxList.Release(paramList);
 
             keys.SetDirty(result, paramStart - 1, paramEnd);
+        }
+
+        public void ReleaseTempVariables()
+        {
+            foreach (var variable in dic_Variables_Temp)
+            {
+                InkValue.Release(variable.Value);
+            }
+
+            dic_Variables_Temp.Clear();
         }
 
 
@@ -344,38 +398,38 @@
 
             //priority refer to : https://learn.microsoft.com/zh-cn/dotnet/csharp/language-reference/operators/
             //keyword  refer to : https://learn.microsoft.com/zh-cn/dotnet/csharp/language-reference/keywords/
-            public static readonly InkOperator ParenthisLeft  = new("(", 1);   //1.圆括号 (  - 用于改变默认的优先级。
-            public static readonly InkOperator ParenthisRight = new(")", 1);   //1.圆括号 )  - 用于改变默认的优先级。
-            public static readonly InkOperator Dot            = new(".", 2);   //2.成员访问 .
-            public static readonly InkOperator BracketStart   = new("[", 2);   //2.数组索引 []
-            public static readonly InkOperator BracketEnd     = new("]", 2);   //2.数组索引 []
-            public static readonly InkOperator Increment      = new("++", 2);  //2.suffix ++ (prefix 3) 
-            public static readonly InkOperator Decrement      = new("--", 2);  //2.suffix -- (prefix 3)
-            public static readonly InkOperator LogicalNOT     = new("!", 3);   //3.逻辑非 !
-            public static readonly InkOperator BitNot         = new("~", 3);   //3.位 非 ~
-            public static readonly InkOperator Cast           = new("()", 4);  //4.显式类型转换
-            public static readonly InkOperator Multiply       = new("*", 5);   //5.乘 *
-            public static readonly InkOperator Divide         = new("/", 5);   //5.除 /
-            public static readonly InkOperator Modulo         = new("%", 5);   //5.取模 %
-            public static readonly InkOperator Plus           = new("+", 6);   //6.加 + (一元加号优先级3) 
-            public static readonly InkOperator Minus          = new("-", 6);   //6.减 - (一元减号优先级3)
-            public static readonly InkOperator LeftShift      = new("<<", 7);  //7.左移 <<
-            public static readonly InkOperator RightShift     = new(">>", 7);  //7.右移 >>
-            public static readonly InkOperator Lower          = new("<", 8);   //8.小于 <
-            public static readonly InkOperator Greater        = new(">", 8);   //8.大于 >
-            public static readonly InkOperator LowerOrEqual   = new("<=", 8);  //8.小于等于 <=
-            public static readonly InkOperator GreaterOrEqual = new(">=", 8);  //8.大于等于 >=
-            public static readonly InkOperator Equal          = new("==", 9);  //9.等于 ==     (等价比较运算
-            public static readonly InkOperator NotEqual       = new("!=", 9);  //9.不等于 !=   (等价比较运算
-            public static readonly InkOperator BitwiseAnd     = new("&", 10);  //8.按位与 &
-            public static readonly InkOperator BitwiseXor     = new("^", 11);  //9.按位异或 ^
-            public static readonly InkOperator BitwiseOr      = new("|", 12);  //10.按位或 |
-            public static readonly InkOperator ConditionalAnd = new("&&", 13); //11.逻辑与 &&  (短路逻辑运算
-            public static readonly InkOperator ConditionalOr  = new("||", 14); //12.逻辑或 ||  (短路逻辑运算
-            public static readonly InkOperator Conditional    = new("?:", 15); //15.条件运算 ?: - 三元条件运算符。
-            public static readonly InkOperator Assign         = new("=", 16);  //16.赋值 =、加等 +=、减等 -=、乘等 *=、除等 /=、模等 %=、左移等 <<=、右移等 >>=、按位与等 &=、按位或等 |=、按位异或等 ^= - 赋值运算。
-            public static readonly InkOperator Comma          = new(",", 16);  //17.逗号 , - 用于分隔表达式
-            public static readonly InkOperator Lambda         = new("=>", 17); //17. Lambda 表达式
+            public static readonly InkOperator ParenthisLeft  = new("(", 1);    //1.圆括号 (  - 用于改变默认的优先级。
+            public static readonly InkOperator ParenthisRight = new(")", 1);    //1.圆括号 )  - 用于改变默认的优先级。
+            public static readonly InkOperator Dot            = new(".", 2);    //2.成员访问 .
+            public static readonly InkOperator BracketStart   = new("[", 2);    //2.数组索引 []
+            public static readonly InkOperator BracketEnd     = new("]", 2);    //2.数组索引 []
+            public static readonly InkOperator Increment      = new("++", 2);   //2.suffix ++ (prefix 3) 
+            public static readonly InkOperator Decrement      = new("--", 2);   //2.suffix -- (prefix 3)
+            public static readonly InkOperator LogicalNOT     = new("!", 3);    //3.逻辑非 !
+            public static readonly InkOperator BitNot         = new("~", 3);    //3.位 非 ~
+            public static readonly InkOperator Cast           = new("😊()", 4); //4.显式类型转换
+            public static readonly InkOperator Multiply       = new("*", 5);    //5.乘 *
+            public static readonly InkOperator Divide         = new("/", 5);    //5.除 /
+            public static readonly InkOperator Modulo         = new("%", 5);    //5.取模 %
+            public static readonly InkOperator Plus           = new("+", 6);    //6.加 + (一元加号优先级3) 
+            public static readonly InkOperator Minus          = new("-", 6);    //6.减 - (一元减号优先级3)
+            public static readonly InkOperator LeftShift      = new("<<", 7);   //7.左移 <<
+            public static readonly InkOperator RightShift     = new(">>", 7);   //7.右移 >>
+            public static readonly InkOperator Lower          = new("<", 8);    //8.小于 <
+            public static readonly InkOperator Greater        = new(">", 8);    //8.大于 >
+            public static readonly InkOperator LowerOrEqual   = new("<=", 8);   //8.小于等于 <=
+            public static readonly InkOperator GreaterOrEqual = new(">=", 8);   //8.大于等于 >=
+            public static readonly InkOperator Equal          = new("==", 9);   //9.等于 ==     (等价比较运算
+            public static readonly InkOperator NotEqual       = new("!=", 9);   //9.不等于 !=   (等价比较运算
+            public static readonly InkOperator BitwiseAnd     = new("&", 10);   //8.按位与 &
+            public static readonly InkOperator BitwiseXor     = new("^", 11);   //9.按位异或 ^
+            public static readonly InkOperator BitwiseOr      = new("|", 12);   //10.按位或 |
+            public static readonly InkOperator ConditionalAnd = new("&&", 13);  //11.逻辑与 &&  (短路逻辑运算
+            public static readonly InkOperator ConditionalOr  = new("||", 14);  //12.逻辑或 ||  (短路逻辑运算
+            public static readonly InkOperator Conditional    = new("?:", 15);  //15.条件运算 ?: - 三元条件运算符。
+            public static readonly InkOperator Assign         = new("=", 16);   //16.赋值 =、加等 +=、减等 -=、乘等 *=、除等 /=、模等 %=、左移等 <<=、右移等 >>=、按位与等 &=、按位或等 |=、按位异或等 ^= - 赋值运算。
+            public static readonly InkOperator Comma          = new(",", 16);   //17.逗号 , - 用于分隔表达式
+            public static readonly InkOperator Lambda         = new("=>", 17);  //17. Lambda 表达式
             public static readonly InkOperator BraceLeft      = new("{", 20);
             public static readonly InkOperator BraceRight     = new("}", 20);
             public static readonly InkOperator Semicolon      = new(";", 20);
@@ -634,31 +688,21 @@
 
                             return leftValue;
                         }
+                        case not null :
+                        {
+                            leftValue.ValueType    = TypeCode.Object;
+                            leftValue.Value_Object = right;
+                            leftValue.isCalculate  = true;
+
+                            return leftValue;
+                        }
+
                         default : throw new InkSyntaxException($"worrying operator using!");
                     }
                 }
 
                 throw new InkSyntaxException($"the left value is not a variable!");
             }
-        }
-
-
-
-        protected partial class InkFunction
-        {
-            public InkFunction(Func<List<object>, object> func, Type[] paramTypes, Type returnType)
-            {
-                FuncDelegate2 = func;
-                ParamTypes    = paramTypes;
-                ReturnType    = returnType;
-            }
-
-            public readonly Type[] ParamTypes;
-
-            public readonly Type ReturnType;
-
-
-            public readonly Func<List<object>, object> FuncDelegate2;
         }
 
 
@@ -703,6 +747,9 @@
           , { "SUM", new InkFunction(SUM, new[] { typeof(int), typeof(int), typeof(int) }, null) } //
         };
 
+        /// <summary> Some local functions mapping             </summary>
+        public readonly Dictionary<string, InkFunction> dic_Functions = new();
+
         /// <summary> Some local variables mapping             </summary>
         public readonly Dictionary<string, InkValue> dic_Variables;
 
@@ -710,7 +757,12 @@
         public readonly Dictionary<string, InkValue> dic_Variables_Temp = new();
 
 
-        public static Func<List<object>, object> LOG => _ => null;
+        public static Func<List<object>, object> LOG =>
+            prms =>
+            {
+                Console.WriteLine(prms[0]);
+                return null;
+            };
 
         public static Func<List<object>, object> SUM
         {
@@ -828,6 +880,16 @@
         /// <returns> the evaluate is success or not                 </returns>
         protected bool EvaluateFunction(string expression, InkSyntaxList keys, ref int i)
         {
+            foreach (var inkFunc in dic_Functions)
+            {
+                if (StartsWithInputStrFromIndex(expression, inkFunc.Key, i))
+                {
+                    keys.Add(inkFunc.Value);
+                    i += inkFunc.Key.Length - 1;
+                    return true;
+                }
+            }
+
             foreach (var inkFunc in dic_GlobalFunctions)
             {
                 if (StartsWithInputStrFromIndex(expression, inkFunc.Key, i))
@@ -1144,6 +1206,24 @@
             return (startIndex != -1 && endIndex != -1, startIndex, endIndex);
         }
 
+        protected static (bool result, int index) FindOperator(InkSyntaxList keys, InkOperator @operator, int start, int end)
+        {
+            for (var i = start ; i <= end ; i++)
+            {
+                if (keys.IndexDirty[i])
+                {
+                    continue;
+                }
+
+                if (Equals(keys[i], @operator))
+                {
+                    return (true, i);
+                }
+            }
+
+            return (false, end);
+        }
+
         /// <summary>Get the highest priority operator in the <see cref="keys"/>                              </summary>
         /// <param name="keys"> the keys to find the highest priority operator in                               </param>
         protected static (InkOperator @operator, int index) GetHighestPriorityOperator(InkSyntaxList keys, int startIndex, int endIndex)
@@ -1197,7 +1277,25 @@
     }
 
 
-    /// <summary>In UniInk , every valueType is Object , No Boxing!</summary>
+    public partial class InkFunction
+    {
+        public InkFunction(Func<List<object>, object> func, Type[] paramTypes, Type returnType)
+        {
+            FuncDelegate2 = func;
+            ParamTypes    = paramTypes;
+            ReturnType    = returnType;
+        }
+
+        public readonly Type[] ParamTypes;
+
+        public readonly Type ReturnType;
+
+
+        public readonly Func<List<object>, object> FuncDelegate2;
+    }
+
+
+    /// <summary> In UniInk , every valueType is Object , No Boxing! </summary>
     public partial class InkValue
     {
         public static readonly Stack<InkValue> pool = new();
@@ -1233,19 +1331,10 @@
         }
 
 
-
         public static void Release(InkValue value)
         {
             value.Value_Meta.Clear();
-            value.isCalculate  = false;
-            value.Value_Object = null;
-            value.ValueType    = TypeCode.Empty;
-            value.Value_int    = default;
-            value.Value_bool   = default;
-            value.Value_char   = default;
-            value.Value_float  = default;
-            value.Value_double = default;
-
+            value.isCalculate = false;
 
             pool.Push(value);
         }
@@ -1351,24 +1440,25 @@
         }
 
 
-        public override string ToString() => Value_Meta.Count > 0 ? Value_String : Value_Object?.ToString() ?? "null";
-
-        public override int GetHashCode() => Value_Meta.Count > 0 ? Value_String.GetHashCode() : Value_Object?.GetHashCode() ?? 0;
-
-        public override bool Equals(object obj)
+        public override string ToString()
         {
-            if (obj is InkValue value)
+            if (!isCalculate) return Value_String;
+
+            switch (ValueType)
             {
-                if (Value_Meta.Count > 0 && value.Value_Meta.Count > 0)
-                {
-                    return Value_String == value.Value_String;
-                }
-
-                return Value_Object == value.Value_Object;
+                case TypeCode.Int32 :   return Value_int.ToString();
+                case TypeCode.Boolean : return Value_bool.ToString();
+                case TypeCode.Char :    return Value_char.ToString();
+                case TypeCode.Single :  return Value_float.ToString();
+                case TypeCode.Double :  return Value_double.ToString();
+                case TypeCode.String :  return Value_String;
+                case TypeCode.Object :  return Value_Object.ToString();
+                default :               throw new InkSyntaxException("Unknown ValueType");
             }
-
-            return false;
         }
+
+        public override int  GetHashCode()      => Value_Meta.GetHashCode();
+        public override bool Equals(object obj) => obj is InkValue value && Value_Meta == value.Value_Meta;
 
 
         public static InkValue operator +(InkValue left, InkValue right)
@@ -1380,20 +1470,25 @@
 
             var answer = Get();
 
-            answer.ValueType = left!.ValueType;
+            answer.ValueType = left.ValueType;
 
             left.Calculate();
             right.Calculate();
 
-            switch (answer.ValueType)
+            switch (answer.ValueType, right.ValueType)
             {
-                case TypeCode.Int32 :
+                case (_, TypeCode.String) :
+                case (TypeCode.String, _) :
+                    answer.Value_Meta.AddRange(left.Value_Meta);
+                    answer.Value_Meta.AddRange(right.Value_Meta);
+                    break;
+                case (TypeCode.Int32, _) :
                     answer.Value_int = left.Value_int + right.Value_int;
                     break;
-                case TypeCode.Single :
+                case (TypeCode.Single, _) :
                     answer.Value_float = left.Value_float + right.Value_float;
                     break;
-                case TypeCode.Double :
+                case (TypeCode.Double, _) :
                     answer.Value_double = left.Value_double + right.Value_double;
                     break;
                 default : throw new InkSyntaxException("worrying operator using!");
@@ -1772,12 +1867,12 @@
     }
 
 
-
-    /// <summary>UniInk Syntax Exception</summary>
-    public class InkSyntaxException : Exception
+    /// <summary> InkSyntaxException throw when the syntax is wrong  </summary>
+    public partial class InkSyntaxException : Exception
     {
         public InkSyntaxException(string message) : base(message) { }
     }
 
 }
-//1173 lines of code
+//1785 lines of code
+//3000 lines of code [MAX]
