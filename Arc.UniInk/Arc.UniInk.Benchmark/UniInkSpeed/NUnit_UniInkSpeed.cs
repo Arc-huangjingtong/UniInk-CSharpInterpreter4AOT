@@ -28,6 +28,12 @@
         public static void Test_Initiation()
         {
             UniInk_Speed.RegisterFunction("CRE", new(_ => TestInk.Create(), Array.Empty<Type>(), typeof(TestInk)));
+            UniInk_Speed.RegisterFunction("SUM", new(list => InkValue.GetIntValue((int)((InkValue)list[0] + (InkValue)list[1] + (InkValue)list[2])), new[] { typeof(int), typeof(int), typeof(int) }, typeof(int)));
+            UniInk_Speed.RegisterFunction("LOG", new(prms =>
+            {
+                Console.WriteLine(prms[0]);
+                return null;
+            }, new[] { typeof(string) }, typeof(void)));
         }
 
 
@@ -91,13 +97,13 @@
 
 
         [Repeat(10000)]
-        [TestCase("!true && false || true && false", ExpectedResult = (!true && false) || (true && false))]
-        [TestCase("1 > 2 || 2 > 1                 ", ExpectedResult = 1 > 2            || 2 > 1)]
-        [TestCase("1 < 2 || 2 < 1                 ", ExpectedResult = 1 < 2            || 2 < 1)]
-        [TestCase("1 >= 2 && 2 >= 1               ", ExpectedResult = 1 >= 2 && 2           >= 1)]
-        [TestCase("1 <= 2 || 2 <= 1               ", ExpectedResult = 1 <= 2 || 2           <= 1)]
-        [TestCase("1 == 2 && 2 == 1               ", ExpectedResult = 1 == 2 && 2           == 1)]
-        [TestCase("1 != 2 || 2 != 1               ", ExpectedResult = 1 != 2 || 2           != 1)]
+        [TestCase("!true && false || true && false",  ExpectedResult = (!true && false) || (true && false))]
+        [TestCase("1 > 2 || 2 > 1 || 2==1         ",  ExpectedResult = 1 > 2            || 2 > 1  || 2 == 1)]
+        [TestCase("1 < 2 || 2 ==1 || 2 < 1         ", ExpectedResult = 1 < 2            || 2 == 1 || 2 < 1)]
+        [TestCase("1 >= 2 && 2 >= 1               ",  ExpectedResult = 1 >= 2 && 2           >= 1)]
+        [TestCase("1 <= 2 || 2 <= 1               ",  ExpectedResult = 1 <= 2 || 2           <= 1)]
+        [TestCase("1 == 2 && 2 == 1               ",  ExpectedResult = 1 == 2 && 2           == 1)]
+        [TestCase("1 != 2 || 2 != 1               ",  ExpectedResult = 1 != 2 || 2           != 1)]
         public static bool Test_Arithmetic_Bool(string input)
         {
             var res    = (InkValue)UniInk_Speed.Evaluate(input);
@@ -110,7 +116,7 @@
 
 
         [Repeat(10000)]
-        [TestCase("SUM(SUM(1,2,3),SUM(1,2,3),1) + 123456789    ")]
+        [TestCase("SUM(SUM(1,2,3),SUM(1,2,3),1) + 123456789")]
         [TestCase("LOG(\"Hello World ! \"+\"Hello World ! \" ) ")]
         [TestCase("var a = CRE()                               ")]
         public static void Test_Expression_Function(string input)
@@ -150,6 +156,8 @@
 
 
         public class T1 : TestInk { }
+
+        public Action<int> Test22 => c => Console.WriteLine(c);
     }
 
 }
@@ -163,7 +171,8 @@
 
 // 词法分析器目前支持:常用基本类型(int,float,double,string,char,bool)的识别 , 函数名的识别 , 运算符的识别 , 空格的忽略
 
-
+//GC消耗:
+// 声明变量的时候,会使用一个字符串
 
 //Feature:
 // 1.☑️️️ 支持运算符的优先级,支持括号改变优先级
@@ -172,6 +181,8 @@
 // 4.❎ 支持if else 语句,等基本的逻辑语句
 // 5.☑️️️ 支持类型的隐式转换
 // 6.☑️ 支持沙盒环境,不允许访问外部的变量和函数
+// 7.☑️ 支持自定义的运算符
+// 8.☑️ 字符串的运算优化,在解释器中拼接字符串,或者进行字符串的操作时,可以减少很多的GC
 
 // TODO_LIST:
 //😊 [浮点型，整形，双精度] 基本的数学运算(加减乘除, 乘方, 余数, 逻辑运算, 位运算) 二元运算符 ,且支持自动优先级 
@@ -185,38 +196,10 @@
 // ☑️:DMG(CARD(G1), GET(G1, 2004)); //函数嵌套的调用
 // ☑️:var card = C1;                //支持自定义变量的声明，且变量是自定义类型
 // ☑️:var cost = GET(card, COST);
-//
-// LOG(""Debug测试---C1cost :"" +cost); //字符串运算：是否需要支持？ 字符串的拼接在解释器中，能体现出很大的优势
-// LOG(""Debug测试---C1atk :"" +atk);
-// LOG(""Debug测试---C1hp :"" +hp);
-// LOG(""Debug测试---C1id :"" +id);
-// LOG(""Debug测试---C1DAMAGE :"" +DAMAGE);
-// LOG(""Debug测试---C1INJURY:"" +INJURY);
-// LOG(""Debug测试---C1type :"" +type);
-// LOG(""Debug测试---C1POS :"" +POS);
-// "
-// "var card != C1;
-// var cost != GET(card, COST);
-// var atk != GET(card, ATK);
-// var hp != GET(card, HP);
-// var id != GET(card, ID);
-// var DAMAGE != GET(card, DAMAGE);
-// var INJURY != GET(card, INJURY);
-// var type != GET(card, TYPE);
-// var POS != GET(card, POS);
-//
-// LOG(""Debug测试---C1cost :"" +cost);
-// LOG(""Debug测试---C1atk :"" +atk);
-// LOG(""Debug测试---C1hp :"" +hp);
-// LOG(""Debug测试---C1id :"" +id);
-// LOG(""Debug测试---C1DAMAGE :"" +DAMAGE);
-// LOG(""Debug测试---C1INJURY:"" +INJURY);
-// LOG(""Debug测试---C1type :"" +type);
-// LOG(""Debug测试---C1POS :"" +POS);"
-// DRW(P1ID, 10);
-// DRWONE(P1ID);
-// "
-// var _cards != FLT(DECK(P1ID), x!=>GET(x, TYPE) !=!= 1&&GET(x, ATK) >!= 2);
+// ☑️:LOG(""Debug测试---C1cost :"" +cost); //字符串运算：是否需要支持(现已支持)？ 字符串的拼接在解释器中，能体现出很大的优势
+// var a1 = PICK(FLT(CardConfig,c => GET(c,TYPE)==1));
+// 标识符是【=>】左边是变量，右边是表达式，表达式中的变量是左边变量,左边变量是传入的参数
+// var _cards != FLT(DECK(P1ID), x!=>GET(x, TYPE) !=!= 1&&GET(x, ATK) >!= 2); 最难的，FLT，自定义解析流程或者自定义的lambda表达式
 // LOG(""一共在卡组中检索到"" + NUM(_cards) + ""张符合条件的卡牌"");
 // var _card != PICK(_cards);
 // LOG(""随机抽取了一张卡牌,它的ID是"" + GET(_card, ID));

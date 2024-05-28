@@ -190,41 +190,41 @@ namespace Arc.UniInk
         };
 
         /// <summary> Some Operators string mapping   </summary>
-        public static readonly Dictionary<string, InkOperator> dic_Operators = new(StringComparer.Ordinal)
+        public static readonly Dictionary<string, UniInkOperator> dic_Operators = new(StringComparer.Ordinal)
         {
-            { "+", InkOperator.Plus }, { "-", InkOperator.Minus }, { "*", InkOperator.Multiply }
-          , { "/", InkOperator.Divide }, { "%", InkOperator.Modulo }, { "<", InkOperator.Lower }
-          , { ">", InkOperator.Greater }, { "<=", InkOperator.LowerOrEqual }, { ">=", InkOperator.GreaterOrEqual }
-          , { "is", InkOperator.Is }, { "==", InkOperator.Equal }, { "!=", InkOperator.NotEqual }
-          , { "&&", InkOperator.ConditionalAnd }, { "||", InkOperator.ConditionalOr }, { "!", InkOperator.LogicalNegation }
-          , { "~", InkOperator.BitwiseComplement }, { "&", InkOperator.LogicalAnd }, { "|", InkOperator.LogicalOr }
-          , { "^", InkOperator.LogicalXor }, { "<<", InkOperator.ShiftBitsLeft }, { ">>", InkOperator.ShiftBitsRight }
-          , { "??", InkOperator.NullCoalescing }
+            { "+", UniInkOperator.Plus }, { "-", UniInkOperator.Minus }, { "*", UniInkOperator.Multiply }
+          , { "/", UniInkOperator.Divide }, { "%", UniInkOperator.Modulo }, { "<", UniInkOperator.Lower }
+          , { ">", UniInkOperator.Greater }, { "<=", UniInkOperator.LowerOrEqual }, { ">=", UniInkOperator.GreaterOrEqual }
+          , { "is", UniInkOperator.Is }, { "==", UniInkOperator.Equal }, { "!=", UniInkOperator.NotEqual }
+          , { "&&", UniInkOperator.ConditionalAnd }, { "||", UniInkOperator.ConditionalOr }, { "!", UniInkOperator.LogicalNegation }
+          , { "~", UniInkOperator.BitwiseComplement }, { "&", UniInkOperator.LogicalAnd }, { "|", UniInkOperator.LogicalOr }
+          , { "^", UniInkOperator.LogicalXor }, { "<<", UniInkOperator.ShiftBitsLeft }, { ">>", UniInkOperator.ShiftBitsRight }
+          , { "??", UniInkOperator.NullCoalescing }
         };
 
         /// <summary> Some UnaryPostfix Operators mark</summary>
-        protected static readonly List<InkOperator> operators_UnaryPostfix = new()
+        protected static readonly List<UniInkOperator> operators_UnaryPostfix = new()
         {
-            InkOperator.LogicalNegation, // !a 逻辑取反
-            InkOperator.BitwiseComplement
+            UniInkOperator.LogicalNegation, // !a 逻辑取反
+            UniInkOperator.BitwiseComplement
             // ~a 位运算取反
             // ExpressionOperator.UnaryPlus, // +a 一元加号,表示正数符号
             // ExpressionOperator.UnaryMinus // -a 一元减号,表示负数符号
         };
 
         /// <summary> Some UnaryPostfix Operators mark</summary>
-        protected static readonly Dictionary<InkOperator, Func<object, object, object>> dic_OperatorsFunc = new()
+        protected static readonly Dictionary<UniInkOperator, Func<object, object, object>> dic_OperatorsFunc = new()
         {
-            { InkOperator.LogicalNegation, (_,   right) => !(bool)right }                  // 逻辑取反
-          , { InkOperator.BitwiseComplement, (_, right) => ~(int)right }                   // 位运算取反
-          , { InkOperator.Cast, (left,           right) => ChangeType(right, (Type)left) } // 强制类型转换
-          , { InkOperator.Multiply, (left,       right) => (int)left * (int)right }        // 乘法
-          , { InkOperator.Divide, (left,         right) => (int)left / (int)right }        // 除法 
-          , { InkOperator.Modulo, (left,         right) => (int)left % (int)right }        // 取余
+            { UniInkOperator.LogicalNegation, (_,   right) => !(bool)right }                  // 逻辑取反
+          , { UniInkOperator.BitwiseComplement, (_, right) => ~(int)right }                   // 位运算取反
+          , { UniInkOperator.Cast, (left,           right) => ChangeType(right, (Type)left) } // 强制类型转换
+          , { UniInkOperator.Multiply, (left,       right) => (int)left * (int)right }        // 乘法
+          , { UniInkOperator.Divide, (left,         right) => (int)left / (int)right }        // 除法 
+          , { UniInkOperator.Modulo, (left,         right) => (int)left % (int)right }        // 取余
            ,
             {
                 // 加法
-                InkOperator.Plus, (left, right) =>
+                UniInkOperator.Plus, (left, right) =>
                 {
                     if (left is null)
                     {
@@ -255,7 +255,7 @@ namespace Arc.UniInk
            ,
             {
                 // 减法
-                InkOperator.Minus, (left, right) =>
+                UniInkOperator.Minus, (left, right) =>
                 {
                     if (left is null)
                     {
@@ -277,21 +277,21 @@ namespace Arc.UniInk
                     return (int)left - (int)right;
                 }
             }
-          , { InkOperator.ShiftBitsLeft, (left,  right) => (int)left << (int)right }                              // 左移 
-          , { InkOperator.ShiftBitsRight, (left, right) => (int)left >> (int)right }                              // 右移
-          , { InkOperator.Lower, (left,          right) => (int)left < (int)right }                               // 小于
-          , { InkOperator.Greater, (left,        right) => (int)left > (int)right }                               // 大于
-          , { InkOperator.LowerOrEqual, (left,   right) => (int)left <= (int)right }                              // 小于等于
-          , { InkOperator.GreaterOrEqual, (left, right) => (int)left >= (int)right }                              // 大于等于
-          , { InkOperator.Is, (left,             right) => left != null && ((Type)right).IsInstanceOfType(left) } // 类型判断
-          , { InkOperator.Equal, (left,          right) => left == right }                                        // 等于
-          , { InkOperator.NotEqual, (left,       right) => left != right }                                        // 不等于
-          , { InkOperator.LogicalAnd, (left,     right) => (int)left & (int)right }                               // 逻辑与
-          , { InkOperator.LogicalXor, (left,     right) => (int)left ^ (int)right }                               // 逻辑异或
-          , { InkOperator.LogicalOr, (left,      right) => (int)left | (int)right }                               // 逻辑或
+          , { UniInkOperator.ShiftBitsLeft, (left,  right) => (int)left << (int)right }                              // 左移 
+          , { UniInkOperator.ShiftBitsRight, (left, right) => (int)left >> (int)right }                              // 右移
+          , { UniInkOperator.Lower, (left,          right) => (int)left < (int)right }                               // 小于
+          , { UniInkOperator.Greater, (left,        right) => (int)left > (int)right }                               // 大于
+          , { UniInkOperator.LowerOrEqual, (left,   right) => (int)left <= (int)right }                              // 小于等于
+          , { UniInkOperator.GreaterOrEqual, (left, right) => (int)left >= (int)right }                              // 大于等于
+          , { UniInkOperator.Is, (left,             right) => left != null && ((Type)right).IsInstanceOfType(left) } // 类型判断
+          , { UniInkOperator.Equal, (left,          right) => left == right }                                        // 等于
+          , { UniInkOperator.NotEqual, (left,       right) => left != right }                                        // 不等于
+          , { UniInkOperator.LogicalAnd, (left,     right) => (int)left & (int)right }                               // 逻辑与
+          , { UniInkOperator.LogicalXor, (left,     right) => (int)left ^ (int)right }                               // 逻辑异或
+          , { UniInkOperator.LogicalOr, (left,      right) => (int)left | (int)right }                               // 逻辑或
            ,
             {
-                InkOperator.ConditionalAnd, (left, right) =>
+                UniInkOperator.ConditionalAnd, (left, right) =>
                 {
                     if (!(bool)left) return false;
 
@@ -300,14 +300,14 @@ namespace Arc.UniInk
             }
            ,
             {
-                InkOperator.ConditionalOr, (left, right) =>
+                UniInkOperator.ConditionalOr, (left, right) =>
                 {
                     if ((bool)left) return true;
 
                     return (bool)left || (bool)right; // 条件或
                 }
             }
-          , { InkOperator.NullCoalescing, (left, right) => left ?? right } // 空合并
+          , { UniInkOperator.NullCoalescing, (left, right) => left ?? right } // 空合并
         };
 
         /// <summary> Some simple Double MathFunc </summary>
@@ -837,7 +837,7 @@ namespace Arc.UniInk
                 {
                     i += castMatch.Length - 1;
                     stack.Push(type);
-                    stack.Push(InkOperator.Cast);
+                    stack.Push(UniInkOperator.Cast);
                     return true;
                 }
             }
@@ -854,7 +854,7 @@ namespace Arc.UniInk
         {
             var numberMatch = regex_Number.Match(expression, i, expression.Length - i);
             //make sure match number sign is not a operator
-            if (numberMatch.Success && (!numberMatch.Groups["sign"].Success || stack.Count == 0 || stack.Peek() is InkOperator))
+            if (numberMatch.Success && (!numberMatch.Groups["sign"].Success || stack.Count == 0 || stack.Peek() is UniInkOperator))
             {
                 i += numberMatch.Length - 1;
 
@@ -1150,7 +1150,7 @@ namespace Arc.UniInk
 
         private bool HandleInObjectMember(bool isInObject, bool hasNullConditional, Stack<object> stack, Match varFuncMatch, out object obj)
         {
-            if (isInObject && (stack.Count == 0 || stack.Peek() is InkOperator))
+            if (isInObject && (stack.Count == 0 || stack.Peek() is UniInkOperator))
             {
                 throw new SyntaxException($"[{varFuncMatch.Value})] must follow a object");
             }
@@ -1470,12 +1470,12 @@ namespace Arc.UniInk
             {
                 var pop = stack.Pop();
 
-                if (pop is not InkOperator)
+                if (pop is not UniInkOperator)
                 {
                     stackCache = pop;
                 }
 
-                else if (pop is InkOperator @operator)
+                else if (pop is UniInkOperator @operator)
                 {
                     if (operators_UnaryPostfix.Contains(@operator))
                     {
@@ -1661,7 +1661,7 @@ namespace Arc.UniInk
 
                 var parameterInfos = m.GetParameters();
                 if (parameterInfos.Length == args.Count) return true;
-                if (parameterInfos.Length    > 0          && parameterInfos.Last().IsDefined(typeof(ParamArrayAttribute), false)) return true;
+                if (parameterInfos.Length > 0 && parameterInfos.Last().IsDefined(typeof(ParamArrayAttribute), false)) return true;
 
                 return parameterInfos.Length > args.Count && parameterInfos.Take(args.Count).All(p => args[p.Position] == null || p.ParameterType.IsInstanceOfType(args[p.Position])) && parameterInfos.Skip(args.Count).All(p => p.HasDefaultValue);
             }
@@ -2297,42 +2297,42 @@ namespace Arc.UniInk
 
 
     /// <summary>用于解释的操作符</summary>
-    public class InkOperator
+    public class UniInkOperator
     {
-        public static readonly InkOperator Plus              = new();
-        public static readonly InkOperator Minus             = new();
-        public static readonly InkOperator Multiply          = new();
-        public static readonly InkOperator Divide            = new();
-        public static readonly InkOperator Modulo            = new();
-        public static readonly InkOperator Lower             = new();
-        public static readonly InkOperator Greater           = new();
-        public static readonly InkOperator Equal             = new();
-        public static readonly InkOperator LowerOrEqual      = new();
-        public static readonly InkOperator GreaterOrEqual    = new();
-        public static readonly InkOperator Is                = new();
-        public static readonly InkOperator NotEqual          = new();
-        public static readonly InkOperator LogicalNegation   = new();
-        public static readonly InkOperator BitwiseComplement = new();
-        public static readonly InkOperator ConditionalAnd    = new();
-        public static readonly InkOperator ConditionalOr     = new();
-        public static readonly InkOperator LogicalAnd        = new();
-        public static readonly InkOperator LogicalOr         = new();
-        public static readonly InkOperator LogicalXor        = new();
-        public static readonly InkOperator ShiftBitsLeft     = new();
-        public static readonly InkOperator ShiftBitsRight    = new();
-        public static readonly InkOperator NullCoalescing    = new();
-        public static readonly InkOperator Cast              = new();
+        public static readonly UniInkOperator Plus              = new();
+        public static readonly UniInkOperator Minus             = new();
+        public static readonly UniInkOperator Multiply          = new();
+        public static readonly UniInkOperator Divide            = new();
+        public static readonly UniInkOperator Modulo            = new();
+        public static readonly UniInkOperator Lower             = new();
+        public static readonly UniInkOperator Greater           = new();
+        public static readonly UniInkOperator Equal             = new();
+        public static readonly UniInkOperator LowerOrEqual      = new();
+        public static readonly UniInkOperator GreaterOrEqual    = new();
+        public static readonly UniInkOperator Is                = new();
+        public static readonly UniInkOperator NotEqual          = new();
+        public static readonly UniInkOperator LogicalNegation   = new();
+        public static readonly UniInkOperator BitwiseComplement = new();
+        public static readonly UniInkOperator ConditionalAnd    = new();
+        public static readonly UniInkOperator ConditionalOr     = new();
+        public static readonly UniInkOperator LogicalAnd        = new();
+        public static readonly UniInkOperator LogicalOr         = new();
+        public static readonly UniInkOperator LogicalXor        = new();
+        public static readonly UniInkOperator ShiftBitsLeft     = new();
+        public static readonly UniInkOperator ShiftBitsRight    = new();
+        public static readonly UniInkOperator NullCoalescing    = new();
+        public static readonly UniInkOperator Cast              = new();
 
         protected static ushort indexer;
         protected        ushort OperatorValue { get; }
 
-        protected InkOperator()
+        protected UniInkOperator()
         {
             indexer++;
             OperatorValue = indexer;
         }
 
-        public override bool Equals(object otherOperator) => otherOperator is InkOperator Operator && OperatorValue == Operator.OperatorValue;
+        public override bool Equals(object otherOperator) => otherOperator is UniInkOperator Operator && OperatorValue == Operator.OperatorValue;
 
         public override int GetHashCode() => OperatorValue;
     }
