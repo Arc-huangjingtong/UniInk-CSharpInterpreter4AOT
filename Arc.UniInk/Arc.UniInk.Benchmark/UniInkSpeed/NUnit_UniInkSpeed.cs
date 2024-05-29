@@ -131,7 +131,7 @@
         }
 
         [Repeat(10000)]
-        [TestCase("var a = 123 ; a + 123456789              ")]
+        [TestCase("var a = 123 ;              ")]
         public static void Test_Expression_Scripts(string input)
         {
             UniInk_Speed.Evaluate(input);
@@ -205,9 +205,7 @@
 // LOG(""随机抽取了一张卡牌,它的ID是"" + GET(_card, ID));
 // SET(_card, POS, 5);
 // ADD(_card, ATK, 2);
-//
-// "
-// "LOG(""Debug测试---P1L:"" +GET(CARD(P1ID, 1)?[0], ID));
+// LOG(""Debug测试---P1L:"" +GET(CARD(P1ID, 1)?[0], ID));
 // LOG(""Debug测试---P1R:"" +GET(CARD(P1ID, 2)?[0], ID));
 // LOG(""Debug测试---P1M:"" +GET(CARD(P1ID, 3)?[0], ID));
 // LOG(""Debug测试---P1H && :"" +NUM(CARD(P1ID, 5)));

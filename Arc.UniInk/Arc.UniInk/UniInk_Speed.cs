@@ -65,15 +65,7 @@
         /// <summary> Register a local function </summary>
         public void RegisterFunction(string fucName, InkFunction inkFunc) => dic_Functions.Add(fucName, inkFunc);
 
-        /// <summary> Register a local function </summary>
-        public static void RegisterGlobalFunction(string fucName, InkFunction inkFunc) => dic_GlobalFunctions.Add(fucName, inkFunc);
 
-        /// <summary> Clear the cache in UniInk anytime , Internal cache pool will be clear      </summary>
-        public static void ClearCache()
-        {
-            InkValue.ReleasePool();
-            InkSyntaxList.ReleasePool();
-        }
 
         /// <summary> UniInk Lexer :   Fill the SyntaxList       </summary>
         public InkSyntaxList CompileLexerAndFill(string expression, int startIndex, int endIndex)
@@ -121,6 +113,22 @@
             return res;
         }
 
+
+        /// <summary> Register a local function </summary>
+        public static void RegisterGlobalFunction(string fucName, InkFunction inkFunc)
+        {
+            dic_GlobalFunctions.Add(fucName, inkFunc);
+        }
+
+        /// <summary> Clear the cache in UniInk anytime , Internal cache pool will be clear      </summary>
+        public static void ClearCache()
+        {
+            InkValue.ReleasePool();
+            InkSyntaxList.ReleasePool();
+        }
+
+        /////////////////////////////////////////////// Process Methods ////////////////////////////////////////////////
+
         /// <summary> UniInk SyntaxList : Process the SyntaxList </summary>
         protected object ProcessList(InkSyntaxList syntaxList, int start, int end)
         {
@@ -139,6 +147,47 @@
             return cache;
         }
 
+        protected void ProcessList_Scripts(InkSyntaxList keys, out object res)
+        {
+            var start = 0;
+
+            while (true)
+            {
+                var (success, index) = FindOperator(keys, InkOperator.Semicolon, 0, keys.Count - 1);
+
+                if (success)
+                {
+                    ProcessList(keys, start, index - 1);
+                    keys.SetDirty(index);
+                    start = index + 1;
+                    continue;
+                }
+
+                res = ProcessList(keys, start, index); //index is the last index
+
+                if (res is InkValue inkValue)
+                {
+                    var copy = InkValue.Get();
+                    inkValue.CopyTo(copy);
+                    res = copy;
+                }
+
+                InkSyntaxList.Release(keys);
+                ReleaseTempVariables();
+
+                break;
+            }
+        }
+
+        protected void ReleaseTempVariables()
+        {
+            foreach (var variable in dic_Variables_Temp)
+            {
+                InkValue.Release(variable.Value);
+            }
+
+            dic_Variables_Temp.Clear();
+        }
 
         protected static void ProcessList_Parenthis(InkSyntaxList keys, int start, int end)
         {
@@ -320,48 +369,6 @@
             InkSyntaxList.Release(paramList);
 
             keys.SetDirty(result, paramStart - 1, paramEnd);
-        }
-
-        protected void ProcessList_Scripts(InkSyntaxList keys, out object res)
-        {
-            var start = 0;
-
-            while (true)
-            {
-                var (success, index) = FindOperator(keys, InkOperator.Semicolon, 0, keys.Count - 1);
-
-                if (success)
-                {
-                    ProcessList(keys, start, index - 1);
-                    keys.SetDirty(index);
-                    start = index + 1;
-                    continue;
-                }
-
-                res = ProcessList(keys, start, index); //index is the last index
-
-                if (res is InkValue inkValue)
-                {
-                    var copy = InkValue.Get();
-                    inkValue.CopyTo(copy);
-                    res = copy;
-                }
-
-                InkSyntaxList.Release(keys);
-                ReleaseTempVariables();
-
-                break;
-            }
-        }
-
-        protected void ReleaseTempVariables()
-        {
-            foreach (var variable in dic_Variables_Temp)
-            {
-                InkValue.Release(variable.Value);
-            }
-
-            dic_Variables_Temp.Clear();
         }
 
 
@@ -605,7 +612,8 @@
 
         /////////////////////////////////////////////// Helping Methods ////////////////////////////////////////////////
 
-        /// <summary>Find <see cref="input"/> is whether start with <see cref="value"/> from <see cref="startIndex"/></summary>
+
+        /// <summary> Match <see cref="value"/> from <see cref="input"/> 's  <see cref="startIndex"/>         </summary>
         protected static bool StartsWithInputStrFromIndex(string input, string value, int startIndex)
         {
             if (input.Length - startIndex < value.Length)
@@ -625,7 +633,7 @@
             return true;
         }
 
-        /// <summary>Find <see cref="input"/> is whether start with numbers from <see cref="startIndex"/>     </summary>
+        /// <summary> Find <see cref="input"/> is whether start with numbers from <see cref="startIndex"/>    </summary>
         protected static bool StartsWithNumbersFromIndex(string input, int startIndex, out InkValue value, out int len)
         {
             if (!char.IsDigit(input[startIndex]))
@@ -689,7 +697,7 @@
             return true;
         }
 
-        /// <summary>Find <see cref="input"/> is whether start with char from <see cref="startIndex"/>        </summary>
+        /// <summary> Find <see cref="input"/> is whether start with char from <see cref="startIndex"/>       </summary>
         protected static bool StartsWithCharFormIndex(string input, int startIndex, out InkValue value, out int len)
         {
             var i = startIndex;
@@ -735,7 +743,7 @@
             return false;
         }
 
-        /// <summary>Find <see cref="input"/> is whether start with string from <see cref="startIndex"/>      </summary>
+        /// <summary> Find <see cref="input"/> is whether start with string from <see cref="startIndex"/>     </summary>
         protected static bool StartsWithStringFormIndex(string input, int startIndex, out InkValue value, out int len)
         {
             var i = startIndex;
@@ -785,7 +793,7 @@
             return false;
         }
 
-        /// <summary>Find <see cref="input"/> is whether start with bool from <see cref="startIndex"/>        </summary>
+        /// <summary> Find <see cref="input"/> is whether start with bool from <see cref="startIndex"/>       </summary>
         protected static bool StartsWithBoolFromIndex(string input, int startIndex, out InkValue value, out int len)
         {
             const string trueStr  = "true";
@@ -925,7 +933,7 @@
     }
 
 
-    ///////////////////////////////////////////////  Helping  Class ////////////////////////////////////////////////
+    ////////////////////////////////////////////////// Helping Class ///////////////////////////////////////////////////
 
 
     /// <summary>UniInk Operator : Custom your own Operator!</summary>
