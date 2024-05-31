@@ -15,26 +15,18 @@
     // ReSharper disable PartialTypeWithSinglePart
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using NUnit.Framework;
     using Arc.UniInk;
+    using JetBrains.ProjectModel.ProjectsHost;
 
 
     [TestFixture]
     public sealed partial class NUnit_UniInkSpeed
     {
-        private static readonly UniInk_Speed UniInk_Speed = new();
+        public static readonly UniInk_Speed UniInk_Speed = new();
 
-        [OneTimeSetUp]
-        public static void Test_Initiation()
-        {
-            UniInk_Speed.RegisterFunction("CRE", new(_ => TestInk.Create(), Array.Empty<Type>(), typeof(TestInk)));
-            UniInk_Speed.RegisterFunction("SUM", new(list => InkValue.GetIntValue((int)((InkValue)list[0] + (InkValue)list[1] + (InkValue)list[2])), new[] { typeof(int), typeof(int), typeof(int) }, typeof(int)));
-            UniInk_Speed.RegisterFunction("LOG", new(prms =>
-            {
-                Console.WriteLine(prms[0]);
-                return null;
-            }, new[] { typeof(string) }, typeof(void)));
-        }
+        #region 1.Basic: Arithmetic Test , return result InkValue and Release it
 
 
         [Repeat(10000)]
@@ -51,7 +43,6 @@
             var res    = (InkValue)UniInk_Speed.Evaluate(input);
             var result = res!.Value_int;
             InkValue.Release(res);
-
 
             return result;
         }
@@ -82,11 +73,6 @@
         [TestCase("3333333.3333333-3.3+3.3+  3.3 - 3.3",          ExpectedResult = 3333333.3333333 - 3.3 + 3.3 + 3.3 - 3.3)]
         public static double Test_Arithmetic_Double(string input)
         {
-            if (input == "9.9*((1.1+(1.1+1.1)+(1.1+1.1))+1.1+1.1)")
-            {
-                Console.WriteLine(input);
-            }
-
             var res    = (InkValue)UniInk_Speed.Evaluate(input);
             var result = res!.Value_double;
             InkValue.Release(res);
@@ -97,44 +83,75 @@
 
 
         [Repeat(10000)]
-        [TestCase("!true && false || true && false",  ExpectedResult = (!true && false) || (true && false))]
-        [TestCase("1 > 2 || 2 > 1 || 2==1         ",  ExpectedResult = 1 > 2            || 2 > 1  || 2 == 1)]
+        [TestCase("!true && false || true && false ", ExpectedResult = (!true && false) || (true && false))]
+        [TestCase("1 > 2 || 2 > 1 || 2==1          ", ExpectedResult = 1 > 2            || 2 > 1  || 2 == 1)]
         [TestCase("1 < 2 || 2 ==1 || 2 < 1         ", ExpectedResult = 1 < 2            || 2 == 1 || 2 < 1)]
-        [TestCase("1 >= 2 && 2 >= 1               ",  ExpectedResult = 1 >= 2 && 2           >= 1)]
-        [TestCase("1 <= 2 || 2 <= 1               ",  ExpectedResult = 1 <= 2 || 2           <= 1)]
-        [TestCase("1 == 2 && 2 == 1               ",  ExpectedResult = 1 == 2 && 2           == 1)]
-        [TestCase("1 != 2 || 2 != 1               ",  ExpectedResult = 1 != 2 || 2           != 1)]
+        [TestCase("1 >= 2 && 2 >= 1                ", ExpectedResult = 1 >= 2 && 2           >= 1)]
+        [TestCase("1 <= 2 || 2 <= 1                ", ExpectedResult = 1 <= 2 || 2           <= 1)]
+        [TestCase("1 == 2 && 2 == 1                ", ExpectedResult = 1 == 2 && 2           == 1)]
+        [TestCase("1 != 2 || 2 != 1                ", ExpectedResult = 1 != 2 || 2           != 1)]
         public static bool Test_Arithmetic_Bool(string input)
         {
             var res    = (InkValue)UniInk_Speed.Evaluate(input);
             var result = res!.Value_bool;
             InkValue.Release(res);
-
             return result;
         }
 
 
+        #endregion
 
-        [Repeat(10000)]
-        [TestCase("SUM(SUM(1,2,3),SUM(1,2,3),1) + 123456789")]
-        [TestCase("LOG(\"Hello World ! \"+\"Hello World ! \" ) ")]
-        [TestCase("var a = CRE()                               ")]
-        public static void Test_Expression_Function(string input)
+
+
+        //  [Repeat(10000)]
+        //[TestCase("SUM(SUM(1,2,3),SUM(1,2,3),1) + 123456789", ExpectedResult = 1 + 2 + 3 + 1 + 2 + 3 + 1 + 123456789)]
+        //[TestCase("LOG(\"Hello World ! \"+\"Hello World ! \" ) ")]
+        public static int Test_Expression_Function(string input)
+        {
+            var res = UniInk_Speed.Evaluate(input);
+
+            int result = 0;
+
+            if (res is InkValue inkValue)
+            {
+                result = inkValue.Value_int;
+                //Console.WriteLine(inkValue.Value_String);
+                InkValue.Release(inkValue);
+            }
+
+            Console.WriteLine(InkValue.GetTime);
+            Console.WriteLine(InkValue.ReleaseTime);
+
+
+            return result;
+        }
+
+        //[Repeat(10000)]
+        [TestCase("var a = 123 ;    a = a + 1                  ")]
+        // [TestCase("LOG(\"Hello World ! \"+\"Hello World ! \" ) ")]
+        public static void Test_Expression_Scripts(string input)
         {
             var res = UniInk_Speed.Evaluate(input);
 
             if (res is InkValue inkValue)
             {
-                //Console.WriteLine(inkValue.Value_String);
                 InkValue.Release(inkValue);
             }
+
+            Console.WriteLine(InkValue.GetTime);
+            Console.WriteLine(InkValue.ReleaseTime);
         }
 
-        [Repeat(10000)]
-        [TestCase("var a = 123 ;              ")]
-        public static void Test_Expression_Scripts(string input)
+        // [Repeat(10000)]
+        [TestCase("PAY(Food,100)")]
+        public static void Test_Expression_Lambda(string input)
         {
-            UniInk_Speed.Evaluate(input);
+            var res = UniInk_Speed.Evaluate(input);
+
+            if (res is InkValue inkValue)
+            {
+                InkValue.Release(inkValue);
+            }
         }
 
 
@@ -142,26 +159,97 @@
         public static void Test_Temp() { }
 
 
-        public static Func<List<object>, object> FuncDelegate2 => list => TestFunc(list[0] as T1, list[1] as TestInk);
-
-
-        public static int TestFunc(T1 a, TestInk b) => 2;
-
-
-
-        public class TestInk
+        [TestCase("Food")]
+        [TestCase("SUM")]
+        [TestCase("LOG")]
+        [TestCase("PAY")]
+        public static void Temp_GetStringCode(string str)
         {
-            public static TestInk Create() => new TestInk();
+            var code = UniInk_Speed.GetStringSliceHashCode(str);
+
+            Console.WriteLine(code);
+        }
+
+        public enum MyEnum { Food }
+
+        public int FoodNum;
+
+        public const int Food = (int)MyEnum.Food;
+
+        public static void PAY(MyEnum @enum, int num)
+        {
+            if (@enum != MyEnum.Food)
+            {
+                return;
+            }
+            else
+            {
+                num = num > 0 ? num : 0;
+                //  @this.FoodNum -= num;
+                //Console.WriteLine(" 支付成功 支付了" + num + "元");
+            }
+
+            //  @this.FoodNum -= num;
+            //Console.WriteLine(" 支付成功 支付了" + num + "元");
         }
 
 
-        public class T1 : TestInk { }
+        public bool isInit;
 
-        public Action<int> Test22 => c => Console.WriteLine(c);
+        [OneTimeSetUp]
+        public void Test_Initiation()
+        {
+            if (isInit)
+            {
+                return;
+            }
+
+            isInit = true;
+            UniInk_Speed.RegisterFunction(82475, new(list => InkValue.GetIntValue((int)((InkValue)list[0] + (InkValue)list[1] + (InkValue)list[2])), new[] { typeof(int), typeof(int), typeof(int) }, typeof(int)));
+            UniInk_Speed.RegisterFunction(75556, new(prms =>
+            {
+                Console.WriteLine(prms[0]);
+                return null;
+            }, new[] { typeof(string) }, typeof(void)));
+
+            UniInk_Speed.RegisterFunction(78984, new(prms =>
+            {
+                var param1 = (MyEnum)((int)(InkValue)prms[0]);
+
+                var param2 = (int)((InkValue)(prms[1]));
+
+                PAY(param1, param2);
+                return null;
+            }, new[] { typeof(string) }, typeof(void)));
+
+            const int code = 2195582;
+            if (!UniInk_Speed.dic_Variables.ContainsKey(code))
+            {
+                var value = InkValue.GetIntValue(0);
+                InkValue.GetTime--;
+                value.dontRelease = true;
+
+                UniInk_Speed.dic_Variables.Add(code, value);
+            }
+        }
     }
 
 }
+//不优雅的地方：(头顶的乌云QAQ
+//如何处理枚举值？
+//在函数中，将参数先转成InkValue，再转成int，再转成enum，实现0GC
+//没有办法，为了避免枚举类型装箱,只能这样做，InkValue会在函数结束后自动释放
+//如果用泛型处理,则不可避免的反射出Type类型，或者是运行时创建动态类型，这不符合设计理念，其实上述已经是最优解，如果有人能自动化这个步骤
+//那么这个解决方案就是最优解了
 
+
+
+// ☑️ PAY(Food, 150);
+// ☑️ var cards = FLT(Config,c => GET(c, Rarity) == 2);
+// var scard = FLT(cards ,c => GET(c, TYPE)   == 1);
+// var card  = PICK(scard);
+// GAIN(C,card);
+// REFRESH(1000205);
 
 
 // Architecture Design
@@ -171,8 +259,7 @@
 
 // 词法分析器目前支持:常用基本类型(int,float,double,string,char,bool)的识别 , 函数名的识别 , 运算符的识别 , 空格的忽略
 
-//GC消耗:
-// 声明变量的时候,会使用一个字符串
+//GC消耗: 近乎完美的实现了0GC
 
 //Feature:
 // 1.☑️️️ 支持运算符的优先级,支持括号改变优先级

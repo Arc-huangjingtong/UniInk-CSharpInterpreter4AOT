@@ -7,6 +7,6 @@ Intel Core i7-10700F CPU 2.90GHz, 1 CPU, 16 logical and 8 physical cores
 
 
 ```
-| Method             | Mean     | Error     | StdDev    | Gen0   | Allocated |
-|------------------- |---------:|----------:|----------:|-------:|----------:|
-| TEST_SCRIPTS_SPEED | 6.902 μs | 0.0158 μs | 0.0148 μs | 0.0076 |      48 B |
+| Method                        | Mean     | Error     | StdDev    | Allocated |
+|------------------------------ |---------:|----------:|----------:|----------:|
+| TEST_SCRIPTS_SPEED_COMPILEING | 1.059 μs | 0.0010 μs | 0.0008 μs |         - |

@@ -58,13 +58,29 @@
             var keys   = CompileLexerAndFill(expression, startIndex, endIndex);
             var result = ExecuteProcess(keys);
 
+            RecoverResources(keys);
+
             return result;
         }
 
 
         /// <summary> Register a local function </summary>
-        public void RegisterFunction(string fucName, InkFunction inkFunc) => dic_Functions.Add(fucName, inkFunc);
+        public void RegisterFunction(string fucName, InkFunction inkFunc)
+        {
+            var hash = GetStringSliceHashCode(fucName, 0, fucName.Length - 1);
+            if (!dic_Functions.ContainsKey(hash))
+            {
+                dic_Functions.Add(hash, inkFunc);
+            }
+        }
 
+        public void RegisterFunction(int hash, InkFunction inkFunc)
+        {
+            if (!dic_Functions.ContainsKey(hash))
+            {
+                dic_Functions.Add(hash, inkFunc);
+            }
+        }
 
 
         /// <summary> UniInk Lexer :   Fill the SyntaxList       </summary>
@@ -97,27 +113,24 @@
 
         public object ExecuteProcess(InkSyntaxList keys)
         {
-            object res;
-            if (InputIsScript(keys))
-            {
-                ProcessList_Scripts(keys, out res);
-            }
-            else
-            {
-                res = ProcessList(keys, 0, keys.Count - 1);
-            }
+            var res = InputIsScript(keys) ? ProcessList_Scripts(keys) : ProcessList(keys, 0, keys.Count - 1);
 
-            InkSyntaxList.Release(keys);
-            ReleaseTempVariables();
 
             return res;
+        }
+
+        public void RecoverResources(InkSyntaxList keys)
+        {
+            InkSyntaxList.ReleaseAll(keys);
+            ReleaseTempVariables();
         }
 
 
         /// <summary> Register a local function </summary>
         public static void RegisterGlobalFunction(string fucName, InkFunction inkFunc)
         {
-            dic_GlobalFunctions.Add(fucName, inkFunc);
+            var hash = GetStringSliceHashCode(fucName, 0, fucName.Length - 1);
+            dic_GlobalFunctions.Add(hash, inkFunc);
         }
 
         /// <summary> Clear the cache in UniInk anytime , Internal cache pool will be clear      </summary>
@@ -147,9 +160,10 @@
             return cache;
         }
 
-        protected void ProcessList_Scripts(InkSyntaxList keys, out object res)
+        protected object ProcessList_Scripts(InkSyntaxList keys)
         {
-            var start = 0;
+            var    start = 0;
+            object res;
 
             while (true)
             {
@@ -163,7 +177,7 @@
                     continue;
                 }
 
-                res = ProcessList(keys, start, index); //index is the last index
+                res = ProcessList(keys, 0, index); //index is the last index
 
                 if (res is InkValue inkValue)
                 {
@@ -172,11 +186,13 @@
                     res = copy;
                 }
 
-                InkSyntaxList.Release(keys);
-                ReleaseTempVariables();
+                // InkSyntaxList.ReleaseAll(keys);
+                // ReleaseTempVariables();
 
                 break;
             }
+
+            return res;
         }
 
         protected void ReleaseTempVariables()
@@ -328,9 +344,8 @@
 
         protected static void ProcessList_Functions(InkSyntaxList keys, int paramStart, int paramEnd)
         {
-            //找到指定范围内的函数，并且执行它
-            var func      = keys[paramStart - 1] as InkFunction;
-            var paramList = InkSyntaxList.Get();
+            var func      = keys[paramStart - 1] as InkFunction; //😊
+            var paramList = InkSyntaxList.Get();                 //😊
 
             for (var i = paramStart + 1 ; i <= paramEnd - 1 ; i++)
             {
@@ -346,7 +361,7 @@
                 }
                 else
                 {
-                    current = keys[i];
+                    current = keys[i] is InkValue inkValue ? inkValue.Clone() : keys[i];
                 }
 
                 if (current == null) continue;
@@ -366,7 +381,7 @@
 
             var result = func?.FuncDelegate2.Invoke(paramList.CastOther);
 
-            InkSyntaxList.Release(paramList);
+            InkSyntaxList.ReleaseAll(paramList); //😊
 
             keys.SetDirty(result, paramStart - 1, paramEnd);
         }
@@ -407,10 +422,14 @@
         };
 
         /// <summary> Some Global Functions mapping            </summary>
-        public static readonly Dictionary<string, InkFunction> dic_GlobalFunctions = new();
+        public static readonly Dictionary<int, InkFunction> dic_GlobalFunctions = new();
 
         /// <summary> Some local functions mapping             </summary>
-        public readonly Dictionary<string, InkFunction> dic_Functions = new();
+        public readonly Dictionary<int, InkFunction> dic_Functions = new()
+        {
+            //
+            { 82475, new(list => InkValue.GetIntValue((int)((InkValue)list[0] + (InkValue)list[1] + (InkValue)list[2])), new[] { typeof(int), typeof(int), typeof(int) }, typeof(int)) }
+        };
 
         /// <summary> Some local variables mapping             </summary>
         public readonly Dictionary<int, InkValue> dic_Variables = new();
@@ -458,6 +477,7 @@
         {
             if (StartsWithNumbersFromIndex(expression, i, out var numberMatch, out var len))
             {
+                numberMatch.Calculate();
                 keys.Add(numberMatch);
                 i += len - 1;
                 return true;
@@ -524,22 +544,24 @@
         /// <returns> the evaluate is success or not                 </returns>
         protected bool EvaluateFunction(string expression, InkSyntaxList keys, ref int i)
         {
-            foreach (var inkFunc in dic_Functions)
+            const int variableMaxLen = 5;
+
+            for (var len = variableMaxLen ; len >= 0 ; len--)
             {
-                if (StartsWithInputStrFromIndex(expression, inkFunc.Key, i))
+                if (i + len >= expression.Length) continue; // long=>short, || first than |, so we need to check the length
+
+                var varHash = GetStringSliceHashCode(expression, i, i + len);
+                if (dic_Functions.TryGetValue(varHash, out var variable))
                 {
-                    keys.Add(inkFunc.Value);
-                    i += inkFunc.Key.Length - 1;
+                    keys.Add(variable);
+                    i += len;
                     return true;
                 }
-            }
 
-            foreach (var inkFunc in dic_GlobalFunctions)
-            {
-                if (StartsWithInputStrFromIndex(expression, inkFunc.Key, i))
+                if (dic_GlobalFunctions.TryGetValue(varHash, out var variable2))
                 {
-                    keys.Add(inkFunc.Value);
-                    i += inkFunc.Key.Length - 1;
+                    keys.Add(variable2);
+                    i += len;
                     return true;
                 }
             }
@@ -584,9 +606,9 @@
                 return true;
             }
 
-            const int variableMaxLen = 3;
+            const int variableMaxLen = 5;
 
-            for (var len = variableMaxLen - 1 ; len >= 0 ; len--)
+            for (var len = variableMaxLen ; len >= 0 ; len--)
             {
                 if (i + len >= expression.Length) continue; // long=>short, || first than |, so we need to check the length
 
@@ -910,12 +932,15 @@
             return hash;
         }
 
+        public static int GetStringSliceHashCode(string str) => GetStringSliceHashCode(str, 0, str.Length - 1);
+
+
         /// <summary> Judge the input String is a Script or not (depend on the operator:[;])</summary>
         protected static bool InputIsScript(InkSyntaxList keys)
         {
             foreach (var obj in keys.ObjectList)
             {
-                if (obj is InkOperator @operator && Equals(@operator, InkOperator.Semicolon))
+                if (obj is InkOperator @operator && Equals(@operator, InkOperator.Semicolon)) //match [;]
                 {
                     return true;
                 }
@@ -928,8 +953,8 @@
         ///////////////////////////////////////////////     Settings    ////////////////////////////////////////////////
 
 
-        public const float  FLOAT_EPSILON  = 0.000001f;
-        public const double DOUBLE_EPSILON = 0.000001d;
+        public const float  EPSILON_FLOAT  = 0.000001f;
+        public const double EPSILON_DOUBLE = 0.000001d;
     }
 
 
@@ -1275,8 +1300,16 @@
     {
         public static readonly Stack<InkValue> pool = new();
 
-        public static InkValue Get()         => pool.Count > 0 ? pool.Pop() : new();
-        public static void     ReleasePool() => pool.Clear();
+        public static InkValue Get()
+        {
+            GetTime++;
+            return pool.Count > 0 ? pool.Pop() : new();
+        }
+
+        public static void ReleasePool() => pool.Clear();
+
+        public static int GetTime     = 0;
+        public static int ReleaseTime = 0;
 
         public static InkValue GetCharValue(char c)
         {
@@ -1308,6 +1341,13 @@
 
         public static void Release(InkValue value)
         {
+            if (value.dontRelease)
+            {
+                return;
+            }
+
+            ReleaseTime++;
+
             value.Value_Meta.Clear();
             value.isCalculate = false;
 
@@ -1328,6 +1368,8 @@
         public readonly List<char> Value_Meta = new();
 
         public bool isCalculate;
+
+        public bool dontRelease;
 
         /// <summary>Calculate the value</summary>
         public void Calculate()
@@ -1693,10 +1735,10 @@
                     answer.Value_bool = left.Value_int == right.Value_int;
                     break;
                 case (TypeCode.Boolean, TypeCode.Boolean) :
-                    answer.Value_bool = Math.Abs(left.Value_float - right.Value_float) < UniInk_Speed.FLOAT_EPSILON;
+                    answer.Value_bool = Math.Abs(left.Value_float - right.Value_float) < UniInk_Speed.EPSILON_FLOAT;
                     break;
                 case (TypeCode.Double, TypeCode.Double) :
-                    answer.Value_bool = Math.Abs(left.Value_double - right.Value_double) < UniInk_Speed.DOUBLE_EPSILON;
+                    answer.Value_bool = Math.Abs(left.Value_double - right.Value_double) < UniInk_Speed.EPSILON_DOUBLE;
                     break;
                 case (TypeCode.String, TypeCode.String) :
                 {
@@ -1761,7 +1803,7 @@
 
         public static void ReleasePool() => pool.Clear();
 
-        public static void Release(InkSyntaxList value)
+        public static void ReleaseAll(InkSyntaxList value)
         {
             foreach (var obj in value.ObjectList)
             {
@@ -1784,6 +1826,25 @@
             value.IndexDirty.Clear();
 
             pool.Push(value);
+        }
+
+        public static void Recover(InkSyntaxList value)
+        {
+            for (var index = 0 ; index < value.CastOther.Count ; index++)
+            {
+                var obj = value.CastOther[index];
+                if (obj is InkValue inkValue)
+                {
+                    InkValue.Release(inkValue);
+                }
+
+                value.CastOther[index] = null;
+            }
+
+            for (var index = 0 ; index < value.IndexDirty.Count ; index++)
+            {
+                value.IndexDirty[index] = false;
+            }
         }
 
         public readonly List<object> ObjectList = new(30);

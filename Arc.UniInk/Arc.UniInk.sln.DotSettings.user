@@ -15,13 +15,33 @@
   &lt;Assembly Path="C:\Windows\Microsoft.NET\Framework64\v4.0.30319\mscorlib.dll" /&gt;&#xD;
 &lt;/AssemblyExplorer&gt;</s:String>
 	<s:Boolean x:Key="/Default/Environment/Hierarchy/Build/SolBuilderDuo/RunBuildOnSolutionLoaded/@EntryValue">True</s:Boolean>
-	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=3dce56c3_002D74c0_002D4582_002D8e1c_002D7019e6a5c735/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="Test_Arithmetic_Int" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;&#xD;
+	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=29eb3a46_002D15ba_002D41ac_002D8c9f_002D2b0b77f1dad6/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" Name="Test_Expression_Lambda" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;&#xD;
   &lt;TestAncestor&gt;&#xD;
-    &lt;TestId&gt;NUnit3x::1BA70864-1706-44D0-9D58-669FD5703A14::.NETFramework,Version=v4.8::Arc.UniInk.NUnitTest.NUnit_UniInkSpeed&lt;/TestId&gt;&#xD;
-    &lt;TestId&gt;NUnit3x::1BA70864-1706-44D0-9D58-669FD5703A14::.NETFramework,Version=v4.8::Arc.UniInk.NUnitTest.Benchmark_UniInkSpeed.TEST_SCRIPTS&lt;/TestId&gt;&#xD;
+    &lt;TestId&gt;NUnit3x::1BA70864-1706-44D0-9D58-669FD5703A14::.NETFramework,Version=v4.8::Arc.UniInk.NUnitTest.NUnit_UniInkSpeed.Test_Expression_Lambda&lt;/TestId&gt;&#xD;
+    &lt;TestId&gt;NUnit3x::1BA70864-1706-44D0-9D58-669FD5703A14::.NETFramework,Version=v4.8::Arc.UniInk.NUnitTest.NUnit_UniInkSpeed.Test_Expression_Function&lt;/TestId&gt;&#xD;
+    &lt;TestId&gt;NUnit3x::1BA70864-1706-44D0-9D58-669FD5703A14::.NETFramework,Version=v4.8::Arc.UniInk.NUnitTest.NUnit_UniInkSpeed.Temp_GetStringCode&lt;/TestId&gt;&#xD;
+    &lt;TestId&gt;NUnit3x::1BA70864-1706-44D0-9D58-669FD5703A14::.NETFramework,Version=v4.8::Arc.UniInk.NUnitTest.Benchmark_UniInkSpeed.INT_UniInk&lt;/TestId&gt;&#xD;
+    &lt;TestId&gt;NUnit3x::1BA70864-1706-44D0-9D58-669FD5703A14::.NETFramework,Version=v4.8::Arc.UniInk.NUnitTest.NUnit_UniInkSpeed.Test_Arithmetic_Int&lt;/TestId&gt;&#xD;
+  &lt;/TestAncestor&gt;&#xD;
+&lt;/SessionState&gt;</s:String>
+	
+	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=668eed70_002Da280_002D44b5_002Dbab0_002De904db499d4a/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" Name="TEST_SCRIPTS_SPEED" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;&#xD;
+  &lt;TestAncestor&gt;&#xD;
     &lt;TestId&gt;NUnit3x::1BA70864-1706-44D0-9D58-669FD5703A14::.NETFramework,Version=v4.8::Arc.UniInk.NUnitTest.Benchmark_UniInkSpeed.TEST_SCRIPTS_SPEED&lt;/TestId&gt;&#xD;
   &lt;/TestAncestor&gt;&#xD;
 &lt;/SessionState&gt;</s:String>
+	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=da6bd306_002D4f32_002D4d90_002D845d_002Dbc05a27d2b71/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="Test_Arithmetic_Int" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;&#xD;
+  &lt;TestAncestor&gt;&#xD;
+    &lt;TestId&gt;NUnit3x::1BA70864-1706-44D0-9D58-669FD5703A14::.NETFramework,Version=v4.8::Arc.UniInk.NUnitTest.NUnit_UniInkSpeed.Test_Arithmetic_Int&lt;/TestId&gt;&#xD;
+    &lt;TestId&gt;NUnit3x::1BA70864-1706-44D0-9D58-669FD5703A14::.NETFramework,Version=v4.8::Arc.UniInk.NUnitTest.Benchmark_UniInkSpeed.INT_UniInk&lt;/TestId&gt;&#xD;
+    &lt;TestId&gt;NUnit3x::1BA70864-1706-44D0-9D58-669FD5703A14::.NETFramework,Version=v4.8::Arc.UniInk.NUnitTest.NUnit_UniInkSpeed.Test_Arithmetic_Bool&lt;/TestId&gt;&#xD;
+    &lt;TestId&gt;NUnit3x::1BA70864-1706-44D0-9D58-669FD5703A14::.NETFramework,Version=v4.8::Arc.UniInk.NUnitTest.NUnit_UniInkSpeed.Test_Expression_Function&lt;/TestId&gt;&#xD;
+    &lt;TestId&gt;NUnit3x::1BA70864-1706-44D0-9D58-669FD5703A14::.NETFramework,Version=v4.8::Arc.UniInk.NUnitTest.NUnit_UniInkSpeed.Test_Expression_Scripts&lt;/TestId&gt;&#xD;
+  &lt;/TestAncestor&gt;&#xD;
+&lt;/SessionState&gt;</s:String>
+	
+	
+	
 	
 	
 	
