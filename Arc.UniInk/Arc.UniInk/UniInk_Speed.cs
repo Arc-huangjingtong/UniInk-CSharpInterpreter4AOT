@@ -26,11 +26,15 @@
         /// <param name="variables"> Set variables can replace a key string with value object </param>
         public UniInk_Speed(Dictionary<string, InkValue> variables = null)
         {
-            ParsingMethods = new()
+            ParsingMethods = new(CAPACITY_LIST)
             {
-                EvaluateOperators, EvaluateFunction, EvaluateNumber
-              , EvaluateChar, EvaluateString, EvaluateBool
-              , EvaluateVariable
+                EvaluateOperators //
+              , EvaluateFunction  //
+              , EvaluateNumber    //
+              , EvaluateChar      //
+              , EvaluateString    //
+              , EvaluateBool      //
+              , EvaluateVariable  //
             };
 
             if (variables == null) return;
@@ -177,17 +181,7 @@
                     continue;
                 }
 
-                res = ProcessList(keys, 0, index); //index is the last index
-
-                if (res is InkValue inkValue)
-                {
-                    var copy = InkValue.Get();
-                    inkValue.CopyTo(copy);
-                    res = copy;
-                }
-
-                // InkSyntaxList.ReleaseAll(keys);
-                // ReleaseTempVariables();
+                res = ProcessList(keys, start, index); //index is the last index
 
                 break;
             }
@@ -199,6 +193,7 @@
         {
             foreach (var variable in dic_Variables_Temp)
             {
+                variable.Value.dontRelease = false;
                 InkValue.Release(variable.Value);
             }
 
@@ -330,7 +325,14 @@
                 {
                     if (keys.ObjectList[i] is InkValue inkValue)
                     {
-                        keys.CastOther[i] = inkValue.Clone();
+                        if (keys.CastOther[i] == null)
+                        {
+                            keys.CastOther[i] = inkValue.Clone();
+                        }
+                        else if (keys.CastOther[i] is InkValue inkValue2)
+                        {
+                            inkValue.CopyTo(inkValue2);
+                        }
                     }
                     else if (keys.ObjectList[i] != null)
                     {
@@ -392,7 +394,7 @@
 
 
         /// <summary> Some UnaryPostfix operators func mapping </summary>
-        protected static readonly Dictionary<InkOperator, Func<object, object, object>> dic_OperatorsFunc = new()
+        protected static readonly Dictionary<InkOperator, Func<object, object, object>> dic_OperatorsFunc = new(CAPACITY_DICT)
         {
             { InkOperator.Plus, InkOperator.InkOperator_Plus }                     //
           , { InkOperator.Minus, InkOperator.InkOperator_Minus }                   //
@@ -412,7 +414,7 @@
         };
 
         /// <summary> Some Escaped Char mapping                </summary>
-        protected static readonly Dictionary<char, char> dic_EscapedChar = new()
+        protected static readonly Dictionary<char, char> dic_EscapedChar = new(CAPACITY_DICT)
         {
             { '\\', '\\' }, { '\'', '\'' } //
           , { '0', '\0' }, { 'a', '\a' }   //
@@ -422,20 +424,20 @@
         };
 
         /// <summary> Some Global Functions mapping            </summary>
-        public static readonly Dictionary<int, InkFunction> dic_GlobalFunctions = new();
+        public static readonly Dictionary<int, InkFunction> dic_GlobalFunctions = new(CAPACITY_DICT);
 
         /// <summary> Some local functions mapping             </summary>
-        public readonly Dictionary<int, InkFunction> dic_Functions = new()
+        public readonly Dictionary<int, InkFunction> dic_Functions = new(CAPACITY_DICT)
         {
             //
-            { 82475, new(list => InkValue.GetIntValue((int)((InkValue)list[0] + (InkValue)list[1] + (InkValue)list[2])), new[] { typeof(int), typeof(int), typeof(int) }, typeof(int)) }
+            { 82475, new(list => InkValue.GetIntValue(((int)(InkValue)list[0] + (int)(InkValue)list[1] + (int)(InkValue)list[2]))) }
         };
 
         /// <summary> Some local variables mapping             </summary>
-        public readonly Dictionary<int, InkValue> dic_Variables = new();
+        public readonly Dictionary<int, InkValue> dic_Variables = new(CAPACITY_DICT);
 
         /// <summary> Some temp  variables mapping             </summary>
-        public readonly Dictionary<int, InkValue> dic_Variables_Temp = new();
+        public readonly Dictionary<int, InkValue> dic_Variables_Temp = new(CAPACITY_DICT);
 
 
         /////////////////////////////////////////////// Parsing Methods ////////////////////////////////////////////////
@@ -579,29 +581,31 @@
             if (keys.Count > 0 && keys[keys.Count - 1] is InkOperator operatorValue && Equals(operatorValue, InkOperator.KeyVar))
             {
                 var startIndex = i;
-                while (i < expression.Length && expression[i] != ' ')
+
+                while (i < expression.Length && expression[i] != ' ' && expression[i] != '=')
                 {
                     i++;
                 }
 
+                i--;
 
-                var ketCode = GetStringSliceHashCode(expression, startIndex, i - 1);
+                var keyHash = GetStringSliceHashCode(expression, startIndex, i);
 
 
-                if (dic_Variables.TryGetValue(ketCode, out _))
+                if (dic_Variables.TryGetValue(keyHash, out _))
                 {
                     throw new InkSyntaxException($"the variable[{expression.Substring(startIndex, i - startIndex)}] is already exist!");
                 }
 
                 var inkValue = InkValue.Get();
-                inkValue.ValueType = TypeCode.DBNull;
-                dic_Variables_Temp.Add(ketCode, inkValue);
+                inkValue.ValueType   = TypeCode.DBNull;
+                inkValue.dontRelease = true;
+                dic_Variables_Temp.Add(keyHash, inkValue);
+
 
                 keys.SetDirty(keys.Count - 1);
 
-                keys.Add(dic_Variables_Temp[ketCode]);
-
-                i += i - startIndex - 1;
+                keys.Add(dic_Variables_Temp[keyHash]);
 
                 return true;
             }
@@ -955,6 +959,8 @@
 
         public const float  EPSILON_FLOAT  = 0.000001f;
         public const double EPSILON_DOUBLE = 0.000001d;
+        public const int    CAPACITY_LIST  = 30;
+        public const int    CAPACITY_DICT  = 80;
     }
 
 
@@ -964,7 +970,7 @@
     /// <summary>UniInk Operator : Custom your own Operator!</summary>
     public partial class InkOperator
     {
-        public static readonly Dictionary<int, InkOperator> Dic_Values = new();
+        public static readonly Dictionary<int, InkOperator> Dic_Values = new(UniInk_Speed.CAPACITY_DICT);
 
         //priority refer to : https://learn.microsoft.com/zh-cn/dotnet/csharp/language-reference/operators/
         //keyword  refer to : https://learn.microsoft.com/zh-cn/dotnet/csharp/language-reference/keywords/
@@ -1256,7 +1262,7 @@
                         rightValue.Calculate();
                         rightValue.CopyTo(leftValue);
 
-                        return leftValue;
+                        return null;
                     }
                     case not null :
                     {
@@ -1264,7 +1270,7 @@
                         leftValue.Value_Object = right;
                         leftValue.isCalculate  = true;
 
-                        return leftValue;
+                        return null;
                     }
 
                     default : throw new InkSyntaxException($"worrying operator using!");
@@ -1279,11 +1285,11 @@
     /// <summary>UniInk Function : Custom your own Function!</summary>
     public partial class InkFunction
     {
-        public InkFunction(Func<List<object>, object> func, Type[] paramTypes, Type returnType)
+        public InkFunction(Func<List<object>, object> func)
         {
             FuncDelegate2 = func;
-            ParamTypes    = paramTypes;
-            ReturnType    = returnType;
+            // ParamTypes    = paramTypes;
+            // ReturnType    = returnType;
         }
 
         public readonly Type[] ParamTypes;
@@ -1298,12 +1304,12 @@
     /// <summary> In UniInk , every valueType is Object , No Boxing! </summary>
     public partial class InkValue
     {
-        public static readonly Stack<InkValue> pool = new();
+        public static readonly Queue<InkValue> pool = new(UniInk_Speed.CAPACITY_LIST);
 
         public static InkValue Get()
         {
             GetTime++;
-            return pool.Count > 0 ? pool.Pop() : new();
+            return pool.Count > 0 ? pool.Dequeue() : new();
         }
 
         public static void ReleasePool() => pool.Clear();
@@ -1341,17 +1347,15 @@
 
         public static void Release(InkValue value)
         {
-            if (value.dontRelease)
-            {
-                return;
-            }
+            if (value.dontRelease) return;
+
 
             ReleaseTime++;
 
             value.Value_Meta.Clear();
             value.isCalculate = false;
 
-            pool.Push(value);
+            pool.Enqueue(value);
         }
 
         public int    Value_int;
@@ -1365,7 +1369,7 @@
 
         public TypeCode ValueType;
 
-        public readonly List<char> Value_Meta = new();
+        public readonly List<char> Value_Meta = new(UniInk_Speed.CAPACITY_LIST);
 
         public bool isCalculate;
 
@@ -1393,15 +1397,17 @@
                 {
                     Value_float = 0;
                     var floatPart = 0.0f;
+                    var numCount  = 0;
 
-                    foreach (var c in Value_Meta)
+                    foreach (var c in Value_Meta) //123
                     {
                         if (c == '.') break;
 
+                        numCount++;
                         Value_float = Value_float * 10 + (c - '0');
                     }
 
-                    for (var i = Value_Meta.Count - 1 ; i >= 0 ; i--)
+                    for (var i = Value_Meta.Count - 1 ; i >= numCount ; i--)
                     {
                         if (Value_Meta[i] == '.') break;
 
@@ -1416,15 +1422,16 @@
                 {
                     Value_double = 0;
                     var floatPart = 0.0d;
+                    var numCount  = 0;
 
                     foreach (var c in Value_Meta)
                     {
                         if (c == '.') break;
-
+                        numCount++;
                         Value_double = Value_double * 10 + (c - '0');
                     }
 
-                    for (var i = Value_Meta.Count - 1 ; i >= 0 ; i--)
+                    for (var i = Value_Meta.Count - 1 ; i >= numCount ; i--)
                     {
                         if (Value_Meta[i] == '.') break;
 
@@ -1454,7 +1461,11 @@
             value.Value_double = Value_double;
             value.Value_Object = Value_Object;
             value.Value_Meta.Clear();
-            value.Value_Meta.AddRange(Value_Meta);
+
+            foreach (var meta in Value_Meta)
+            {
+                value.Value_Meta.Add(meta);
+            }
         }
 
         public InkValue Clone()
@@ -1504,8 +1515,8 @@
             {
                 case (_, TypeCode.String) :
                 case (TypeCode.String, _) :
-                    answer.Value_Meta.AddRange(left.Value_Meta);
-                    answer.Value_Meta.AddRange(right.Value_Meta);
+                    foreach (var c in left.Value_Meta) answer.Value_Meta.Add(c);
+                    foreach (var c in right.Value_Meta) answer.Value_Meta.Add(c);
                     break;
                 case (TypeCode.Int32, _) :
                     answer.Value_int = left.Value_int + right.Value_int;
@@ -1798,8 +1809,8 @@
     /// <summary> InkSyntaxList is a list of object, it can be used to store the syntax object </summary>
     public partial class InkSyntaxList
     {
-        public static readonly Stack<InkSyntaxList> pool = new();
-        public static          InkSyntaxList        Get() => pool.Count > 0 ? pool.Pop() : new InkSyntaxList();
+        public static readonly Queue<InkSyntaxList> pool = new(UniInk_Speed.CAPACITY_LIST);
+        public static          InkSyntaxList        Get() => pool.Count > 0 ? pool.Dequeue() : new();
 
         public static void ReleasePool() => pool.Clear();
 
@@ -1825,7 +1836,7 @@
             value.CastOther.Clear();
             value.IndexDirty.Clear();
 
-            pool.Push(value);
+            pool.Enqueue(value);
         }
 
         public static void Recover(InkSyntaxList value)
@@ -1847,9 +1858,9 @@
             }
         }
 
-        public readonly List<object> ObjectList = new(30);
-        public readonly List<object> CastOther  = new(30);
-        public readonly List<bool>   IndexDirty = new(30);
+        public readonly List<object> ObjectList = new(UniInk_Speed.CAPACITY_LIST);
+        public readonly List<object> CastOther  = new(UniInk_Speed.CAPACITY_LIST);
+        public readonly List<bool>   IndexDirty = new(UniInk_Speed.CAPACITY_LIST);
 
 
 

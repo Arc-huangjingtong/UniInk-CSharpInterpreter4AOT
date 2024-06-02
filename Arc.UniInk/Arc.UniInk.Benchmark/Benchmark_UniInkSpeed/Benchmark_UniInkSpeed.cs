@@ -24,11 +24,11 @@
             test.Test_Initiation();
 
             //Compile
-            SyntaxList = NUnit_UniInkSpeed.UniInk_Speed.CompileLexerAndFill(ScriptsPAY, 0, ScriptsPAY.Length - 1);
+            //SyntaxList = NUnit_UniInkSpeed.UniInk_Speed.CompileLexerAndFill(ScriptsPAY, 0, ScriptsPAY.Length - 1);
         }
 
 
-        public const string ScriptsPAY = "PAY(0,100)";
+        public const string ScriptsPAY = "PAY(Food,100);PAY(Food,100)";
 
 
 
@@ -66,7 +66,7 @@
 
 
 
-        [Benchmark] [Test]
+        //   [Benchmark] [Test]
         public void TEST_SCRIPTS_SPEED_COMPILE()
         {
             NUnit_UniInkSpeed.UniInk_Speed.ExecuteProcess(SyntaxList);
@@ -81,16 +81,21 @@
         }
 
 
-        //  [Benchmark] [Test]
+        [Benchmark] [Test]
         public void INT_UniInk()
         {
-            NUnit_UniInkSpeed.Test_Arithmetic_Int(input1);
-            NUnit_UniInkSpeed.Test_Arithmetic_Int(input2);
-            NUnit_UniInkSpeed.Test_Arithmetic_Int(input3);
-            NUnit_UniInkSpeed.Test_Arithmetic_Int(input4);
-            NUnit_UniInkSpeed.Test_Arithmetic_Int(input5);
-            NUnit_UniInkSpeed.Test_Arithmetic_Int(input6);
-            NUnit_UniInkSpeed.Test_Arithmetic_Int(input7);
+            // NUnit_UniInkSpeed.Test_Arithmetic_Int(input1);
+            // NUnit_UniInkSpeed.Test_Arithmetic_Int(input2);
+            // NUnit_UniInkSpeed.Test_Arithmetic_Int(input3);
+            // NUnit_UniInkSpeed.Test_Arithmetic_Int(input4);
+            // NUnit_UniInkSpeed.Test_Arithmetic_Int(input5);
+            // NUnit_UniInkSpeed.Test_Arithmetic_Int(input6);
+            // NUnit_UniInkSpeed.Test_Arithmetic_Int(input7);
+            NUnit_UniInkSpeed.Test_Arithmetic_Int(input9);
+            NUnit_UniInkSpeed.Test_Arithmetic_Int(input9);
+            NUnit_UniInkSpeed.Test_Arithmetic_Int(input9);
+            NUnit_UniInkSpeed.Test_Arithmetic_Int(input9);
+            NUnit_UniInkSpeed.Test_Arithmetic_Int(input9);
             NUnit_UniInkSpeed.Test_Arithmetic_Int(input9);
         }
 
@@ -107,11 +112,11 @@
         }
 
 
-        //[Benchmark] [Test]
-        public void TEST_SCRIPTS_SPEED() => NUnit_UniInkSpeed.Test_Expression_Scripts(ScriptsPAY);
+        [Benchmark] [Test]
+        public void TEST_SCRIPTS_SPEED() => NUnit_UniInkSpeed.Test_Expression_Variable(ScriptsPAY);
 
         //[Benchmark] [Test]
-        public void TEST_SCRIPTS_SPEED2() => NUnit_UniInkSpeed.Test_Expression_Scripts(input9);
+        public void TEST_SCRIPTS_SPEED2() => NUnit_UniInkSpeed.Test_Expression_Variable(input9);
 
         // [Benchmark] [Test]
         public void INT_Limit()
@@ -224,13 +229,14 @@
         private const string input5     = "333+3";
         private const string input6     = "1111111+1111111";
         private const string input7     = "9999999+9999999";
-        private const string input9     = "SUM(SUM(1,2,3),SUM(1,2,3),1) + 123456789";
+        private const string  input9     = "SUM(SUM(1,2,3),SUM(1,2,3),1) + 123456789";
         private const string input10    = "+123456789";
         private const string HelloWorld = "Hello World";
         private const string Scripts1   = "LOG(\"Hello World ! \" )             ";
         private const string Scripts2   = "var a = 1; a + 12;";
         private const string Scripts3   = "var a = 1; a + 12";
         private const string inputEmpty = "  ";
+        private const string Scripts4   = "var a = 123 ;  var b = a + 1 ; a + b    ";
 
 
 

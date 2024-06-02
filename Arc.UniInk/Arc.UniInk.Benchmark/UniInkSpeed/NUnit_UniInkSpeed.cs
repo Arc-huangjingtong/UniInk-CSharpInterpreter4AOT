@@ -13,12 +13,9 @@
 
     // ReSharper disable RedundantLogicalConditionalExpressionOperand
     // ReSharper disable PartialTypeWithSinglePart
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using NUnit.Framework;
     using Arc.UniInk;
-    using JetBrains.ProjectModel.ProjectsHost;
+    using System;
+    using NUnit.Framework;
 
 
     [TestFixture]
@@ -103,33 +100,112 @@
 
 
 
-        //  [Repeat(10000)]
-        //[TestCase("SUM(SUM(1,2,3),SUM(1,2,3),1) + 123456789", ExpectedResult = 1 + 2 + 3 + 1 + 2 + 3 + 1 + 123456789)]
-        //[TestCase("LOG(\"Hello World ! \"+\"Hello World ! \" ) ")]
-        public static int Test_Expression_Function(string input)
+        #region 2.Complex: variable declaration and assignment
+
+
+        [Repeat(10000)]
+        [TestCase("var a = 123 ;  var b = a + 1 ; a + b    ",         ExpectedResult = 123 + 123 + 1)]
+        [TestCase("var aaa= 123 ;  var bbb =aaa + 1 ; aaa + bbb    ", ExpectedResult = 123 + 123 + 1)]
+        public static int Test_Expression_Variable(string input)
         {
             var res = UniInk_Speed.Evaluate(input);
 
-            int result = 0;
+            var result = 0;
 
             if (res is InkValue inkValue)
             {
                 result = inkValue.Value_int;
-                //Console.WriteLine(inkValue.Value_String);
                 InkValue.Release(inkValue);
             }
 
-            Console.WriteLine(InkValue.GetTime);
-            Console.WriteLine(InkValue.ReleaseTime);
+            return result;
+        }
+
+        [Repeat(10000)]
+        [TestCase("var a = 123f ;  var b = a + 1f ; a + b    ", ExpectedResult = 123f + 123f + 1f)]
+        public static float Test_Expression_Variable2(string input)
+        {
+            var res = UniInk_Speed.Evaluate(input);
+
+            var result = 0f;
+
+            if (res is InkValue inkValue)
+            {
+                result = inkValue.Value_float;
+                InkValue.Release(inkValue);
+            }
+
+            return result;
+        }
+
+
+        [Repeat(10000)]
+        [TestCase("var a = 123d ;  var b = a + 1d ; a + b    ", ExpectedResult = 123d + 123d + 1d)]
+        public static double Test_Expression_Variable3(string input)
+        {
+            var res = UniInk_Speed.Evaluate(input);
+
+            var result = 0d;
+
+            if (res is InkValue inkValue)
+            {
+                result = inkValue.Value_double;
+                InkValue.Release(inkValue);
+            }
+
+            return result;
+        }
+
+
+        [Repeat(10000)]
+        [TestCase("var a = true ;  var b = !a ; a && b    ", ExpectedResult = true && !true)]
+        public static bool Test_Expression_Variable4(string input)
+        {
+            var res = UniInk_Speed.Evaluate(input);
+
+            var result = false;
+
+            if (res is InkValue inkValue)
+            {
+                result = inkValue.Value_bool;
+                InkValue.Release(inkValue);
+            }
+
+            return result;
+        }
+
+
+        #endregion
+
+
+        #region 3.Function: Function call
+
+
+        [Repeat(10000)]
+        [TestCase("SUM(SUM(1,2,3),SUM(1,2,3),1) + 123456789 ", ExpectedResult = 1 + 2 + 3 + 1 + 2 + 3 + 1 + 123456789)]
+        [TestCase("SUM(SUM(1,2,3),SUM(1,2,3),1) + SUM(1,2,3)", ExpectedResult = 1 + 2 + 3 + 1 + 2 + 3 + 1 + 1 + 2 + 3)]
+        public static int Test_Expression_Function(string input)
+        {
+            var res = UniInk_Speed.Evaluate(input);
+
+            var result = 0;
+
+            if (res is InkValue inkValue)
+            {
+                result = inkValue.Value_int;
+                InkValue.Release(inkValue);
+            }
+
+            // Console.WriteLine(InkValue.GetTime);
+            // Console.WriteLine(InkValue.ReleaseTime);
 
 
             return result;
         }
 
-        //[Repeat(10000)]
-        [TestCase("var a = 123 ;    a = a + 1                  ")]
-        // [TestCase("LOG(\"Hello World ! \"+\"Hello World ! \" ) ")]
-        public static void Test_Expression_Scripts(string input)
+        [TestCase("PAY(Food,100);PAY(Food,100)")]
+        [TestCase("LOG(\"Hello World ! \"+\"Hello World ! \" ) ")]
+        public static void Test_Expression_Function2(string input)
         {
             var res = UniInk_Speed.Evaluate(input);
 
@@ -141,6 +217,14 @@
             Console.WriteLine(InkValue.GetTime);
             Console.WriteLine(InkValue.ReleaseTime);
         }
+
+
+        #endregion
+
+
+
+        #region 4.Best Practice: Lambda Function
+
 
         // [Repeat(10000)]
         [TestCase("PAY(Food,100)")]
@@ -152,23 +236,20 @@
             {
                 InkValue.Release(inkValue);
             }
+
+
+            Console.WriteLine(InkValue.GetTime);
+            Console.WriteLine(InkValue.ReleaseTime);
         }
+
+
+        #endregion
+
 
 
         [Test]
         public static void Test_Temp() { }
 
-
-        [TestCase("Food")]
-        [TestCase("SUM")]
-        [TestCase("LOG")]
-        [TestCase("PAY")]
-        public static void Temp_GetStringCode(string str)
-        {
-            var code = UniInk_Speed.GetStringSliceHashCode(str);
-
-            Console.WriteLine(code);
-        }
 
         public enum MyEnum { Food }
 
@@ -205,22 +286,22 @@
             }
 
             isInit = true;
-            UniInk_Speed.RegisterFunction(82475, new(list => InkValue.GetIntValue((int)((InkValue)list[0] + (InkValue)list[1] + (InkValue)list[2])), new[] { typeof(int), typeof(int), typeof(int) }, typeof(int)));
-            UniInk_Speed.RegisterFunction(75556, new(prms =>
+            UniInk_Speed.RegisterFunction("SUM", new(list => InkValue.GetIntValue((int)(InkValue)list[0] + (int)(InkValue)list[1] + (int)(InkValue)list[2])));
+            UniInk_Speed.RegisterFunction("LOG", new(prms =>
             {
                 Console.WriteLine(prms[0]);
                 return null;
-            }, new[] { typeof(string) }, typeof(void)));
+            }));
 
-            UniInk_Speed.RegisterFunction(78984, new(prms =>
+            UniInk_Speed.RegisterFunction("PAY", new(prms =>
             {
-                var param1 = (MyEnum)((int)(InkValue)prms[0]);
-
-                var param2 = (int)((InkValue)(prms[1]));
-
-                PAY(param1, param2);
+                // var param1 = (MyEnum)((int)(InkValue)prms[0]);
+                //
+                // var param2 = (int)((InkValue)(prms[1]));
+                //
+                // PAY(param1, param2);
                 return null;
-            }, new[] { typeof(string) }, typeof(void)));
+            }));
 
             const int code = 2195582;
             if (!UniInk_Speed.dic_Variables.ContainsKey(code))
@@ -246,10 +327,10 @@
 
 // ☑️ PAY(Food, 150);
 // ☑️ var cards = FLT(Config,c => GET(c, Rarity) == 2);
-// var scard = FLT(cards ,c => GET(c, TYPE)   == 1);
-// var card  = PICK(scard);
-// GAIN(C,card);
-// REFRESH(1000205);
+//    var scard = FLT(cards ,c => GET(c, TYPE)   == 1);
+// ☑️var card  = PICK(scard);
+// ☑️GAIN(C,card);
+// ☑️REFRESH(1000205);
 
 
 // Architecture Design
@@ -515,3 +596,32 @@
 // BUF(C1,ATK,3);
 // BUF(C1,ATK,3);
 // BUF(C1,ATK,5);
+
+// if (collection is ICollection<T> objs)
+// {
+//     int count = objs.Count;
+//     if (count > 0)
+//     {
+//         this.EnsureCapacity(this._size + count);
+//         if (index < this._size)
+//             Array.Copy((Array) this._items, index, (Array) this._items, index + count, this._size - index);
+//         if (this == objs)
+//         {
+//             Array.Copy((Array) this._items, 0,             (Array) this._items, index,     index);
+//             Array.Copy((Array) this._items, index + count, (Array) this._items, index * 2, this._size - index);
+//         }
+//         else
+//         {
+//             T[] array = new T[count];
+//             objs.CopyTo(array, 0);
+//             array.CopyTo((Array) this._items, index);
+//         }
+//         this._size += count;
+//     }
+// }
+// else
+// {
+//     foreach (T obj in collection)
+//         this.Insert(index++, obj);
+// }
+// 上述代码摘自List<T>的AddRange方法,我有一个疑问，为什么需要创建一个新的数组，然后再拷贝到原数组中，而不是直接拷贝到原数组中呢？
