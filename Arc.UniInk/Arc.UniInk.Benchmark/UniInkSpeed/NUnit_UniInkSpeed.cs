@@ -328,7 +328,7 @@
             UniInk_Speed.RegisterFunction("FLT", new(prms =>
             {
                 var param1 = (List<Card>)((InkValue)prms[0]).Value_Object;
-                var param2 = (Predicate<Card>)prms[1];
+                var param2 = (Predicate<object>)prms[1];
 
                 return FLT(param1, param2);
             }));

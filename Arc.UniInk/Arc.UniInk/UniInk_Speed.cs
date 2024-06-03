@@ -412,39 +412,43 @@
 
                 if (!hasArrow) continue;
 
+                var (_, endIndex) = FindNoBalanceOperator(keys, InkOperator.ParenthisLeft, InkOperator.ParenthisRight, arrowIndex, paramEnd);
+
                 //var c => GET(c, Rarity) == 2)
                 var startIndex = arrowIndex - 1;
-                var endIndex   = -1;
-                var balance    = 0;
 
-                for (var i = arrowIndex ; i < keys.Count ; i++)
+                var lambdaData = InkSyntaxList.Get();
+
+                for (var i = arrowIndex + 1 ; i <= endIndex - 1 ; i++)
                 {
-                    var current = keys[i];
+                    object current;
 
-                    if (current is InkOperator operatorValue)
+                    if (keys.IndexDirty[i])
                     {
-                        if (Equals(operatorValue, InkOperator.ParenthisLeft))
-                        {
-                            balance++;
-                        }
-                        else if (Equals(operatorValue, InkOperator.ParenthisRight))
-                        {
-                            balance--;
-                        }
+                        if (keys.CastOther[i] == null) continue;
+
+                        current = keys.CastOther[i];
+
+                        keys.CastOther[i] = null;
+                    }
+                    else
+                    {
+                        current = keys[i] is InkValue inkValue ? inkValue.Clone() : keys[i];
                     }
 
-                    if (balance == -1)
-                    {
-                        endIndex = i;
-                    }
+                    lambdaData.Add(current);
                 }
 
-                var lambda = new Predicate<object>((o =>
-                                                       {
-                                                           var temp = keys[startIndex - 1] as InkValue;
-                                                           InkOperator.InkOperator_Assign(temp, o);
-                                                           return (bool)ProcessList(keys, startIndex, endIndex);
-                                                       }));
+
+                var lambda = new Predicate<object>(o =>
+                {
+                    var temp = keys[startIndex - 1] as InkValue;
+                    InkOperator.InkOperator_Assign(temp, o);
+                    var result = (bool)ProcessList(lambdaData, 0, lambdaData.Count - 1);
+                    InkSyntaxList.Recover(lambdaData);
+                    
+                    return result;
+                });
 
                 var inkObject = InkValue.GetObjectValue(lambda);
             }
@@ -961,9 +965,33 @@
             return (false, end);
         }
 
-        protected static (bool result, int index) FindNoBalanceOperator(InkSyntaxList keys, InkOperator @operatorLeft, InkOperator @operatorRight, int start, int end)
+        protected static (bool result, int index) FindNoBalanceOperator(InkSyntaxList keys, InkOperator operatorLeft, InkOperator operatorRight, int start, int end)
         {
-            
+            var balance = 0;
+
+            for (var i = start ; i < end ; i++)
+            {
+                var current = keys[i];
+
+                if (current is InkOperator operatorValue)
+                {
+                    if (Equals(operatorValue, operatorLeft))
+                    {
+                        balance++;
+                    }
+                    else if (Equals(operatorValue, operatorRight))
+                    {
+                        balance--;
+                    }
+                }
+
+                if (balance == -1)
+                {
+                    return (true, i);
+                }
+            }
+
+            return (false, -1);
         }
 
         /// <summary>Get the highest priority operator in the <see cref="keys"/>                              </summary>
