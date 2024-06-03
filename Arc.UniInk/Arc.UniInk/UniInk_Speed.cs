@@ -78,13 +78,20 @@
             }
         }
 
-        public void RegisterFunction(int hash, InkFunction inkFunc)
+        /// <summary> Register a local variable </summary>
+        public void RegisterVariable(string varName, InkValue inkValue)
         {
-            if (!dic_Functions.ContainsKey(hash))
+            var hash = GetStringSliceHashCode(varName, 0, varName.Length - 1);
+
+            InkValue.GetTime--;
+
+            if (!dic_Variables.ContainsKey(hash))
             {
-                dic_Functions.Add(hash, inkFunc);
+                inkValue.dontRelease = true;
+                dic_Variables.Add(hash, inkValue);
             }
         }
+
 
 
         /// <summary> UniInk Lexer :   Fill the SyntaxList       </summary>
@@ -147,8 +154,9 @@
         /////////////////////////////////////////////// Process Methods ////////////////////////////////////////////////
 
         /// <summary> UniInk SyntaxList : Process the SyntaxList </summary>
-        protected object ProcessList(InkSyntaxList syntaxList, int start, int end)
+        protected static object ProcessList(InkSyntaxList syntaxList, int start, int end)
         {
+            ProcessList_Lambda(syntaxList, start, end);
             ProcessList_Parenthis(syntaxList, start, end);
             ProcessList_Operators(syntaxList, start, end);
 
@@ -164,7 +172,18 @@
             return cache;
         }
 
-        protected object ProcessList_Scripts(InkSyntaxList keys)
+        protected void ReleaseTempVariables()
+        {
+            foreach (var variable in dic_Variables_Temp)
+            {
+                variable.Value.dontRelease = false;
+                InkValue.Release(variable.Value);
+            }
+
+            dic_Variables_Temp.Clear();
+        }
+
+        protected static object ProcessList_Scripts(InkSyntaxList keys)
         {
             var    start = 0;
             object res;
@@ -187,17 +206,6 @@
             }
 
             return res;
-        }
-
-        protected void ReleaseTempVariables()
-        {
-            foreach (var variable in dic_Variables_Temp)
-            {
-                variable.Value.dontRelease = false;
-                InkValue.Release(variable.Value);
-            }
-
-            dic_Variables_Temp.Clear();
         }
 
         protected static void ProcessList_Parenthis(InkSyntaxList keys, int start, int end)
@@ -383,9 +391,63 @@
 
             var result = func?.FuncDelegate2.Invoke(paramList.CastOther);
 
+            if (result is InkValue sInkValue) { }
+            else if (result is not null)
+            {
+                result = InkValue.GetObjectValue(result);
+            }
+
             InkSyntaxList.ReleaseAll(paramList); //😊
 
             keys.SetDirty(result, paramStart - 1, paramEnd);
+        }
+
+        protected static void ProcessList_Lambda(InkSyntaxList keys, int paramStart, int paramEnd)
+        {
+            var hasArrow   = true;
+            var arrowIndex = 0;
+            while (hasArrow)
+            {
+                (hasArrow, arrowIndex) = FindOperator(keys, InkOperator.Lambda, paramStart, paramEnd);
+
+                if (!hasArrow) continue;
+
+                //var c => GET(c, Rarity) == 2)
+                var startIndex = arrowIndex - 1;
+                var endIndex   = -1;
+                var balance    = 0;
+
+                for (var i = arrowIndex ; i < keys.Count ; i++)
+                {
+                    var current = keys[i];
+
+                    if (current is InkOperator operatorValue)
+                    {
+                        if (Equals(operatorValue, InkOperator.ParenthisLeft))
+                        {
+                            balance++;
+                        }
+                        else if (Equals(operatorValue, InkOperator.ParenthisRight))
+                        {
+                            balance--;
+                        }
+                    }
+
+                    if (balance == -1)
+                    {
+                        endIndex = i;
+                    }
+                }
+
+                var lambda = new Predicate<object>((o =>
+                                                       {
+                                                           var temp = keys[startIndex - 1] as InkValue;
+                                                           InkOperator.InkOperator_Assign(temp, o);
+                                                           return (bool)ProcessList(keys, startIndex, endIndex);
+                                                       }));
+
+                var inkObject = InkValue.GetObjectValue(lambda);
+            }
         }
 
 
@@ -603,7 +665,7 @@
                 dic_Variables_Temp.Add(keyHash, inkValue);
 
 
-                keys.SetDirty(keys.Count - 1);
+                keys.SetDirty(keys.Count - 1); // the keyVar
 
                 keys.Add(dic_Variables_Temp[keyHash]);
 
@@ -897,6 +959,11 @@
             }
 
             return (false, end);
+        }
+
+        protected static (bool result, int index) FindNoBalanceOperator(InkSyntaxList keys, InkOperator @operatorLeft, InkOperator @operatorRight, int start, int end)
+        {
+            
         }
 
         /// <summary>Get the highest priority operator in the <see cref="keys"/>                              </summary>
@@ -1288,8 +1355,13 @@
         public InkFunction(Func<List<object>, object> func)
         {
             FuncDelegate2 = func;
-            // ParamTypes    = paramTypes;
-            // ReturnType    = returnType;
+        }
+
+        public InkFunction(Func<List<object>, object> func, Type[] paramTypes, Type returnType)
+        {
+            FuncDelegate2 = func;
+            ParamTypes    = paramTypes;
+            ReturnType    = returnType;
         }
 
         public readonly Type[] ParamTypes;
@@ -1341,6 +1413,47 @@
             value.ValueType   = TypeCode.Int32;
             value.Value_int   = i;
             value.isCalculate = true;
+            return value;
+        }
+
+        public static InkValue GetFloatValue(float f)
+        {
+            var value = Get();
+            value.ValueType   = TypeCode.Single;
+            value.Value_float = f;
+            value.isCalculate = true;
+            return value;
+        }
+
+        public static InkValue GetDoubleValue(double d)
+        {
+            var value = Get();
+            value.ValueType    = TypeCode.Double;
+            value.Value_double = d;
+            value.isCalculate  = true;
+            return value;
+        }
+
+        public static InkValue GetString(string str)
+        {
+            var value = Get();
+            value.ValueType = TypeCode.String;
+
+            foreach (var c in str)
+            {
+                value.Value_Meta.Add(c);
+            }
+
+            value.isCalculate = true;
+            return value;
+        }
+
+        public static InkValue GetObjectValue(object obj)
+        {
+            var value = Get();
+            value.ValueType    = TypeCode.Object;
+            value.Value_Object = obj;
+            value.isCalculate  = true;
             return value;
         }
 

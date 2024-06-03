@@ -15,6 +15,7 @@
     // ReSharper disable PartialTypeWithSinglePart
     using Arc.UniInk;
     using System;
+    using System.Collections.Generic;
     using NUnit.Framework;
 
 
@@ -97,7 +98,6 @@
 
 
         #endregion
-
 
 
         #region 2.Complex: variable declaration and assignment
@@ -222,12 +222,12 @@
         #endregion
 
 
-
         #region 4.Best Practice: Lambda Function
 
 
         // [Repeat(10000)]
-        [TestCase("PAY(Food,100)")]
+
+        [TestCase("FLT(Config,var c => GET(c, Rarity) == 2)")]
         public static void Test_Expression_Lambda(string input)
         {
             var res = UniInk_Speed.Evaluate(input);
@@ -236,7 +236,6 @@
             {
                 InkValue.Release(inkValue);
             }
-
 
             Console.WriteLine(InkValue.GetTime);
             Console.WriteLine(InkValue.ReleaseTime);
@@ -275,15 +274,38 @@
         }
 
 
+        public class Card
+        {
+            public int ID;
+            public int Rarity;
+        }
+
+
+        public List<Card> Config = new List<Card>();
+
+        public static List<Card> FLT(IList<Card> cards, Predicate<Card> func)
+        {
+            var list = new System.Collections.Generic.List<Card>();
+
+            foreach (var card in cards)
+            {
+                if (func(card))
+                {
+                    list.Add(card);
+                }
+            }
+
+            return list;
+        }
+
+
         public bool isInit;
 
         [OneTimeSetUp]
         public void Test_Initiation()
         {
-            if (isInit)
-            {
-                return;
-            }
+            if (isInit) return;
+
 
             isInit = true;
             UniInk_Speed.RegisterFunction("SUM", new(list => InkValue.GetIntValue((int)(InkValue)list[0] + (int)(InkValue)list[1] + (int)(InkValue)list[2])));
@@ -295,23 +317,42 @@
 
             UniInk_Speed.RegisterFunction("PAY", new(prms =>
             {
-                // var param1 = (MyEnum)((int)(InkValue)prms[0]);
-                //
-                // var param2 = (int)((InkValue)(prms[1]));
-                //
-                // PAY(param1, param2);
+                var param1 = (MyEnum)((int)(InkValue)prms[0]);
+
+                var param2 = (int)((InkValue)(prms[1]));
+
+                PAY(param1, param2);
                 return null;
             }));
 
-            const int code = 2195582;
-            if (!UniInk_Speed.dic_Variables.ContainsKey(code))
+            UniInk_Speed.RegisterFunction("FLT", new(prms =>
             {
-                var value = InkValue.GetIntValue(0);
-                InkValue.GetTime--;
-                value.dontRelease = true;
+                var param1 = (List<Card>)((InkValue)prms[0]).Value_Object;
+                var param2 = (Predicate<Card>)prms[1];
 
-                UniInk_Speed.dic_Variables.Add(code, value);
-            }
+                return FLT(param1, param2);
+            }));
+
+
+            UniInk_Speed.RegisterFunction("GET", new(prms =>
+            {
+                var param1 = (Card)((InkValue)prms[0]).Value_Object;
+                var param2 = (int)(InkValue)prms[1];
+
+                return param2 switch
+                {
+                    0 => InkValue.GetIntValue(param1.ID)     //
+                  , 5 => InkValue.GetIntValue(param1.Rarity) //
+                  , _ => InkValue.GetIntValue(0)
+                };
+            }));
+
+
+            UniInk_Speed.RegisterVariable("Food",   InkValue.GetIntValue(0));
+            UniInk_Speed.RegisterVariable("Rarity", InkValue.GetIntValue(5));
+            UniInk_Speed.RegisterVariable("Config", InkValue.GetObjectValue(Config));
+            
+            
         }
     }
 
