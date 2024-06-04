@@ -433,18 +433,26 @@
                     }
                     else
                     {
-                        current = keys[i] is InkValue inkValue ? inkValue.Clone() : keys[i];
+                        if (keys[i] is InkValue { ValueType: not (TypeCode.Object or TypeCode.DBNull) } inkValue)
+                        {
+                            current = inkValue.Clone();
+                        }
+                        else
+                        {
+                            current = keys[i];
+                        }
                     }
 
                     lambdaData.Add(current);
                 }
 
+                var variable = keys[startIndex] as InkValue;
+
 
                 var lambda = new Predicate<object>(o =>
                 {
-                    var temp = keys[startIndex - 1] as InkValue;
-                    InkOperator.InkOperator_Assign(temp, o);
-                    var result = (bool)ProcessList(lambdaData, 0, lambdaData.Count - 1);
+                    InkOperator.InkOperator_Assign(variable, o);
+                    var result = (bool)(InkValue)ProcessList(lambdaData, 0, lambdaData.Count - 1);
                     InkSyntaxList.Recover(lambdaData);
 
                     return result;
