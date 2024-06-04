@@ -158,7 +158,8 @@
 
 
         [Repeat(10000)]
-        [TestCase("var a = true ;  var b = !a ; a && b    ", ExpectedResult = true && !true)]
+        [TestCase("var a = true ;  var b = !a ; a && b         ", ExpectedResult = true && !true)]
+        [TestCase("var a = CRE(1,3) ;   GET(a, Rarity) == 3    ", ExpectedResult = true)]
         public static bool Test_Expression_Variable4(string input)
         {
             var res = UniInk_Speed.Evaluate(input);
@@ -196,10 +197,6 @@
                 InkValue.Release(inkValue);
             }
 
-            // Console.WriteLine(InkValue.GetTime);
-            // Console.WriteLine(InkValue.ReleaseTime);
-
-
             return result;
         }
 
@@ -234,11 +231,22 @@
 
             if (res is InkValue inkValue)
             {
+                if (inkValue.Value_Object is List<Card> cards)
+                {
+                    Console.WriteLine(cards.Count);
+                    foreach (var card in cards)
+                    {
+                        Console.WriteLine(card.ID);
+                        Console.WriteLine(card.Rarity);
+                    }
+                }
+
                 InkValue.Release(inkValue);
             }
 
-            Console.WriteLine(InkValue.GetTime);
-            Console.WriteLine(InkValue.ReleaseTime);
+
+            // Console.WriteLine(InkValue.GetTime);
+            // Console.WriteLine(InkValue.ReleaseTime);
         }
 
 
@@ -281,7 +289,14 @@
         }
 
 
-        public List<Card> Config = new List<Card>();
+        public Card CRE(int id, int rarity) => new() { ID = id, Rarity = rarity };
+
+
+        public List<Card> Config = new List<Card>()
+        {
+            new Card() { ID = 1, Rarity = 2 }, new Card() { ID = 2, Rarity = 2 }, new Card() { ID = 3, Rarity = 3 }
+          , new Card() { ID = 4, Rarity = 4 }, new Card() { ID = 5, Rarity = 5 }, new Card() { ID = 6, Rarity = 6 }
+        };
 
         public static List<Card> FLT(IList<Card> cards, Predicate<Card> func)
         {
@@ -328,7 +343,7 @@
             UniInk_Speed.RegisterFunction("FLT", new(prms =>
             {
                 var param1 = (List<Card>)((InkValue)prms[0]).Value_Object;
-                var param2 = (Predicate<object>)prms[1];
+                var param2 = (Predicate<object>)((InkValue)prms[1]).Value_Object;
 
                 return FLT(param1, param2);
             }));
@@ -348,11 +363,17 @@
             }));
 
 
+            UniInk_Speed.RegisterFunction("CRE", new(prms =>
+            {
+                var param1 = (int)(InkValue)prms[0];
+                var param2 = (int)(InkValue)prms[1];
+
+                return new Card() { ID = param1, Rarity = param2 };
+            }));
+
             UniInk_Speed.RegisterVariable("Food",   InkValue.GetIntValue(0));
             UniInk_Speed.RegisterVariable("Rarity", InkValue.GetIntValue(5));
             UniInk_Speed.RegisterVariable("Config", InkValue.GetObjectValue(Config));
-            
-            
         }
     }
 

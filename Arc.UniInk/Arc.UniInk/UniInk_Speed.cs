@@ -446,11 +446,13 @@
                     InkOperator.InkOperator_Assign(temp, o);
                     var result = (bool)ProcessList(lambdaData, 0, lambdaData.Count - 1);
                     InkSyntaxList.Recover(lambdaData);
-                    
+
                     return result;
                 });
 
                 var inkObject = InkValue.GetObjectValue(lambda);
+
+                keys.SetDirty(inkObject, startIndex, endIndex - 1);
             }
         }
 
@@ -969,7 +971,7 @@
         {
             var balance = 0;
 
-            for (var i = start ; i < end ; i++)
+            for (var i = start ; i <= end ; i++)
             {
                 var current = keys[i];
 
