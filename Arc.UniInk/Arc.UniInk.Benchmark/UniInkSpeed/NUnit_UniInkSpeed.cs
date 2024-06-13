@@ -231,22 +231,22 @@
 
             if (res is InkValue inkValue)
             {
-                if (inkValue.Value_Object is List<Card> cards)
-                {
-                    Console.WriteLine(cards.Count);
-                    foreach (var card in cards)
-                    {
-                        Console.WriteLine(card.ID);
-                        Console.WriteLine(card.Rarity);
-                    }
-                }
+                // if (inkValue.Value_Object is List<Card> cards)
+                // {
+                //     Console.WriteLine(cards.Count);
+                //     foreach (var card in cards)
+                //     {
+                //         Console.WriteLine(card.ID);
+                //         Console.WriteLine(card.Rarity);
+                //     }
+                // }
 
                 InkValue.Release(inkValue);
             }
 
 
-            // Console.WriteLine(InkValue.GetTime);
-            // Console.WriteLine(InkValue.ReleaseTime);
+            Console.WriteLine(InkValue.GetTime);
+            Console.WriteLine(InkValue.ReleaseTime);
         }
 
 
@@ -300,17 +300,17 @@
 
         public static List<Card> FLT(IList<Card> cards, Predicate<Card> func)
         {
-            var list = new System.Collections.Generic.List<Card>();
+            // var list = new System.Collections.Generic.List<Card>();
+            //
+            // foreach (var card in cards)
+            // {
+            //     if (func(card))
+            //     {
+            //         list.Add(card);
+            //     }
+            // }
 
-            foreach (var card in cards)
-            {
-                if (func(card))
-                {
-                    list.Add(card);
-                }
-            }
-
-            return list;
+            return null;
         }
 
 

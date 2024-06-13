@@ -1,19 +1,18 @@
-﻿/************************************************************************************************************************
- *  📰 Title    : UniInk (https://github.com/Arc-huangjingtong/UniInk-CSharpInterpreter4Unity)                          *
- *  🔖 Version  : 1.0.0                                                                                                 *
- *  👩‍💻 Author   : Arc (https://github.com/Arc-huangjingtong)                                                            *
- *  🔑 Licence  : MIT (https://github.com/Arc-huangjingtong/UniInk-CSharpInterpreter4Unity/blob/main/LICENSE)           *
- *  🔍 Origin   : ExpressionEvaluator (https://github.com/codingseb/ExpressionEvaluator)                                *
- *  🤝 Support  : [.NET Framework 4+] [C# 8.0+] [Support IL2CPP]                                                        *
- *  📝 Desc     : High performance & Easy-use C# Simple Interpreter                                                     *
- *  🆘 Helper   : RegexStudy      : (https://regex101.com/r/0PN0yS/1)                                                   *
- *  🆘 Helper   : Reflection      : (https://mattwarren.org/2016/12/14/Why-is-Reflection-slow/)                         *
-/************************************************************************************************************************/
-
-
-
-namespace Arc.UniInk
+﻿namespace Arc.UniInk
 {
+
+    /*******************************************************************************************************************
+    *  📰 Title    : UniInk (https://github.com/Arc-huangjingtong/UniInk-CSharpInterpreter4Unity)                      *
+    *  🔖 Version  : 1.0.0                                                                                             *
+    *  👩‍💻 Author   : Arc (https://github.com/Arc-huangjingtong)                                                        *
+    *  🔑 Licence  : MIT (https://github.com/Arc-huangjingtong/UniInk-CSharpInterpreter4Unity/blob/main/LICENSE)       *
+    *  🔍 Origin   : ExpressionEvaluator (https://github.com/codingseb/ExpressionEvaluator)                            *
+    *  🤝 Support  : [.NET Framework 4+] [C# 8.0+] [Support IL2CPP]                                                    *
+    *  📝 Desc     : High performance & Easy-use C# Simple Interpreter                                                 *
+    *  🆘 Helper   : RegexStudy      : (https://regex101.com/r/0PN0yS/1)                                               *
+    *  🆘 Helper   : Reflection      : (https://mattwarren.org/2016/12/14/Why-is-Reflection-slow/)                     *
+    /*******************************************************************************************************************/
+
 
     using System;
     using System.Collections;

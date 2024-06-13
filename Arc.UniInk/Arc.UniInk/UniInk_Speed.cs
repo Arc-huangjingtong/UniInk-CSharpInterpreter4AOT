@@ -10,6 +10,7 @@
     *📝 Desc     :  [High performance] [zero box & unbox] [zero GC!] [zero reflection runtime] [Easy-use]              *
     /*******************************************************************************************************************/
 
+    // ReSharper disable SpecifyACultureInStringConversionExplicitly
     // ReSharper disable PartialTypeWithSinglePart
     using System;
     using System.Collections.Generic;
@@ -92,7 +93,12 @@
             }
         }
 
-
+        /// <summary> Register a local function </summary>
+        public static void RegisterGlobalFunction(string fucName, InkFunction inkFunc)
+        {
+            var hash = GetStringSliceHashCode(fucName, 0, fucName.Length - 1);
+            dic_GlobalFunctions.Add(hash, inkFunc);
+        }
 
         /// <summary> UniInk Lexer :   Fill the SyntaxList       </summary>
         public InkSyntaxList CompileLexerAndFill(string expression, int startIndex, int endIndex)
@@ -122,7 +128,8 @@
             return keys;
         }
 
-        public object ExecuteProcess(InkSyntaxList keys)
+        /// <summary> UniInk Parser : Execute the SyntaxList and return the result object </summary>
+        public static object ExecuteProcess(InkSyntaxList keys)
         {
             var res = InputIsScript(keys) ? ProcessList_Scripts(keys) : ProcessList(keys, 0, keys.Count - 1);
 
@@ -130,21 +137,19 @@
             return res;
         }
 
+        /// <summary> Release the resources in UniInk </summary>
         public void RecoverResources(InkSyntaxList keys)
         {
             InkSyntaxList.ReleaseAll(keys);
+            InkSyntaxList.ReleaseTemp();
+
             ReleaseTempVariables();
         }
 
 
-        /// <summary> Register a local function </summary>
-        public static void RegisterGlobalFunction(string fucName, InkFunction inkFunc)
-        {
-            var hash = GetStringSliceHashCode(fucName, 0, fucName.Length - 1);
-            dic_GlobalFunctions.Add(hash, inkFunc);
-        }
 
-        /// <summary> Clear the cache in UniInk anytime , Internal cache pool will be clear      </summary>
+        /// <summary> Clear the cache in UniInk anytime , Internal cache pool will be clear </summary>
+        /// <remarks> Most of the time you don't need to call                               </remarks>
         public static void ClearCache()
         {
             InkValue.ReleasePool();
@@ -160,16 +165,16 @@
             ProcessList_Parenthis(syntaxList, start, end);
             ProcessList_Operators(syntaxList, start, end);
 
-            var cache = syntaxList.CastOther[start];
+            var resultCache = syntaxList.CastOther[start];
 
-            if (cache is InkValue inkValue)
+            if (resultCache is InkValue inkValue)
             {
                 var copy = InkValue.Get();
                 inkValue.CopyTo(copy);
-                cache = copy;
+                resultCache = copy;
             }
 
-            return cache;
+            return resultCache;
         }
 
         protected void ReleaseTempVariables()
@@ -355,7 +360,7 @@
         protected static void ProcessList_Functions(InkSyntaxList keys, int paramStart, int paramEnd)
         {
             var func      = keys[paramStart - 1] as InkFunction; //😊
-            var paramList = InkSyntaxList.Get();                 //😊
+            var paramList = InkSyntaxList.GetTemp();             //😊
 
             for (var i = paramStart + 1 ; i <= paramEnd - 1 ; i++)
             {
@@ -391,33 +396,33 @@
 
             var result = func?.FuncDelegate2.Invoke(paramList.CastOther);
 
-            if (result is InkValue sInkValue) { }
+            if (result is InkValue) { }
             else if (result is not null)
             {
                 result = InkValue.GetObjectValue(result);
             }
-
-            InkSyntaxList.ReleaseAll(paramList); //😊
 
             keys.SetDirty(result, paramStart - 1, paramEnd);
         }
 
         protected static void ProcessList_Lambda(InkSyntaxList keys, int paramStart, int paramEnd)
         {
-            var hasArrow   = true;
-            var arrowIndex = 0;
-            while (hasArrow)
+            while (true)
             {
-                (hasArrow, arrowIndex) = FindOperator(keys, InkOperator.Lambda, paramStart, paramEnd);
+                var (hasArrow, arrowIndex) = FindOperator(keys, InkOperator.Lambda, paramStart, paramEnd);
 
-                if (!hasArrow) continue;
+                if (!hasArrow) break;
 
-                var (_, endIndex) = FindNoBalanceOperator(keys, InkOperator.ParenthisLeft, InkOperator.ParenthisRight, arrowIndex, paramEnd);
+                var (hasBalance, endIndex) = FindNoBalanceOperator(keys, InkOperator.ParenthisLeft, InkOperator.ParenthisRight, arrowIndex, paramEnd);
+
+                if (!hasBalance) throw new InkSyntaxException("Parenthis is not balance!");
+
 
                 //var c => GET(c, Rarity) == 2)
                 var startIndex = arrowIndex - 1;
 
-                var lambdaData = InkSyntaxList.Get();
+                var lambdaData = InkSyntaxList.GetTemp();
+
 
                 for (var i = arrowIndex + 1 ; i <= endIndex - 1 ; i++)
                 {
@@ -446,16 +451,16 @@
                     lambdaData.Add(current);
                 }
 
-                var variable = keys[startIndex] as InkValue;
+                // var variable = keys[startIndex] as InkValue;
 
 
                 var lambda = new Predicate<object>(o =>
                 {
-                    InkOperator.InkOperator_Assign(variable, o);
-                    var result = (bool)(InkValue)ProcessList(lambdaData, 0, lambdaData.Count - 1);
-                    InkSyntaxList.Recover(lambdaData);
+                    // InkOperator.InkOperator_Assign(variable, o);
+                    // var result = (bool)(InkValue)ProcessList(lambdaData, 0, lambdaData.Count - 1);
+                    // InkSyntaxList.Recover(lambdaData);
 
-                    return result;
+                    return true;
                 });
 
                 var inkObject = InkValue.GetObjectValue(lambda);
@@ -463,7 +468,6 @@
                 keys.SetDirty(inkObject, startIndex, endIndex - 1);
             }
         }
-
 
 
         ///////////////////////////////////////////////  Mapping  Data  ////////////////////////////////////////////////
@@ -503,11 +507,7 @@
         public static readonly Dictionary<int, InkFunction> dic_GlobalFunctions = new(CAPACITY_DICT);
 
         /// <summary> Some local functions mapping             </summary>
-        public readonly Dictionary<int, InkFunction> dic_Functions = new(CAPACITY_DICT)
-        {
-            //
-            { 82475, new(list => InkValue.GetIntValue(((int)(InkValue)list[0] + (int)(InkValue)list[1] + (int)(InkValue)list[2]))) }
-        };
+        public readonly Dictionary<int, InkFunction> dic_Functions = new(CAPACITY_DICT);
 
         /// <summary> Some local variables mapping             </summary>
         public readonly Dictionary<int, InkValue> dic_Variables = new(CAPACITY_DICT);
@@ -528,7 +528,7 @@
         /// <param name="keys"> the object stack to push or pop        </param>
         /// <param name="i"> the <see cref="expression"/> start index  </param>
         /// <returns> the evaluate is success or not                 </returns> 
-        protected bool EvaluateOperators(string expression, InkSyntaxList keys, ref int i)
+        protected static bool EvaluateOperators(string expression, InkSyntaxList keys, ref int i)
         {
             for (var operatorLen = InkOperator.MaxOperatorLen - 1 ; operatorLen >= 0 ; operatorLen--)
             {
@@ -551,7 +551,7 @@
         /// <param name="keys"> the object stack to push or pop        </param>
         /// <param name="i"> the <see cref="expression"/> start index  </param>
         /// <returns> the evaluate is success or not                 </returns>
-        protected bool EvaluateNumber(string expression, InkSyntaxList keys, ref int i)
+        protected static bool EvaluateNumber(string expression, InkSyntaxList keys, ref int i)
         {
             if (StartsWithNumbersFromIndex(expression, i, out var numberMatch, out var len))
             {
@@ -569,7 +569,7 @@
         /// <param name="keys"> the object stack to push or pop        </param>
         /// <param name="i"> the <see cref="expression"/> start index  </param>
         /// <returns> the evaluate is success or not                 </returns>
-        protected bool EvaluateBool(string expression, InkSyntaxList keys, ref int i)
+        protected static bool EvaluateBool(string expression, InkSyntaxList keys, ref int i)
         {
             if (StartsWithBoolFromIndex(expression, i, out var boolMatch, out var len))
             {
@@ -586,7 +586,7 @@
         /// <param name="keys"> the object stack to push or pop        </param>
         /// <param name="i">the <see cref="expression"/> start index   </param>
         /// <returns> the evaluate is success or not                 </returns>
-        protected bool EvaluateChar(string expression, InkSyntaxList keys, ref int i)
+        protected static bool EvaluateChar(string expression, InkSyntaxList keys, ref int i)
         {
             if (StartsWithCharFormIndex(expression, i, out var value, out var len))
             {
@@ -603,7 +603,7 @@
         /// <param name="keys"> the object stack to push or pop        </param>
         /// <param name="i"> the <see cref="expression"/> start index  </param>
         /// <returns> the evaluate is success or not                 </returns> 
-        protected bool EvaluateString(string expression, InkSyntaxList keys, ref int i)
+        protected static bool EvaluateString(string expression, InkSyntaxList keys, ref int i)
         {
             if (StartsWithStringFormIndex(expression, i, out var value, out var len))
             {
@@ -1044,7 +1044,7 @@
         public static int GetStringSliceHashCode(string str) => GetStringSliceHashCode(str, 0, str.Length - 1);
 
 
-        /// <summary> Judge the input String is a Script or not (depend on the operator:[;])</summary>
+        /// <summary> Judge the input String is a Script or not (depend on the operator:[;])                  </summary>
         protected static bool InputIsScript(InkSyntaxList keys)
         {
             foreach (var obj in keys.ObjectList)
@@ -1424,8 +1424,8 @@
 
         public static void ReleasePool() => pool.Clear();
 
-        public static int GetTime     = 0;
-        public static int ReleaseTime = 0;
+        public static int GetTime;
+        public static int ReleaseTime;
 
         public static InkValue GetCharValue(char c)
         {
@@ -1578,8 +1578,9 @@
                     foreach (var c in Value_Meta)
                     {
                         if (c == '.') break;
-                        numCount++;
+
                         Value_double = Value_double * 10 + (c - '0');
+                        numCount++;
                     }
 
                     for (var i = Value_Meta.Count - 1 ; i >= numCount ; i--)
@@ -1650,10 +1651,7 @@
 
         public static InkValue operator +(InkValue left, InkValue right)
         {
-            if (left is null && right is null)
-            {
-                throw new InkSyntaxException("left is null && right is null");
-            }
+            InkSyntaxException.ThrowIfParamsIsNull(left, right);
 
             var answer = Get();
 
@@ -1688,10 +1686,7 @@
 
         public static InkValue operator -(InkValue left, InkValue right)
         {
-            if (left is null || right is null)
-            {
-                throw new InkSyntaxException("left is null || right is null");
-            }
+            InkSyntaxException.ThrowIfParamsIsNull(left, right);
 
             var answer = Get();
 
@@ -1721,10 +1716,7 @@
 
         public static InkValue operator *(InkValue left, InkValue right)
         {
-            if (left is null || right is null)
-            {
-                throw new InkSyntaxException("left is null || right is null");
-            }
+            InkSyntaxException.ThrowIfParamsIsNull(left, right);
 
             var answer = Get();
 
@@ -1755,10 +1747,7 @@
 
         public static InkValue operator /(InkValue left, InkValue right)
         {
-            if (left is null || right is null)
-            {
-                throw new InkSyntaxException("left is null || right is null");
-            }
+            InkSyntaxException.ThrowIfParamsIsNull(left, right);
 
             var answer = Get();
 
@@ -1788,10 +1777,7 @@
 
         public static InkValue operator %(InkValue left, InkValue right)
         {
-            if (left is null || right is null)
-            {
-                throw new InkSyntaxException("left is null || right is null");
-            }
+            InkSyntaxException.ThrowIfParamsIsNull(left, right);
 
             var answer = Get();
 
@@ -1821,10 +1807,7 @@
 
         public static InkValue operator >(InkValue left, InkValue right)
         {
-            if (left is null || right is null)
-            {
-                throw new InkSyntaxException("left is null || right is null");
-            }
+            InkSyntaxException.ThrowIfParamsIsNull(left, right);
 
             var answer = GetBoolValue(false);
 
@@ -1851,10 +1834,7 @@
 
         public static InkValue operator <(InkValue left, InkValue right)
         {
-            if (left is null || right is null)
-            {
-                throw new InkSyntaxException("left is null || right is null");
-            }
+            InkSyntaxException.ThrowIfParamsIsNull(left, right);
 
             var answer = GetBoolValue(false);
 
@@ -1881,10 +1861,7 @@
 
         public static InkValue operator ==(InkValue left, InkValue right)
         {
-            if (left is null || right is null)
-            {
-                throw new InkSyntaxException("left is null || right is null");
-            }
+            InkSyntaxException.ThrowIfParamsIsNull(left, right);
 
             var answer = GetBoolValue(false);
 
@@ -1936,13 +1913,13 @@
         public static InkValue operator !(InkValue  left) => left.Clone().Negate();
 
 
-        public static explicit operator int(InkValue    st) => st.Value_int;
-        public static explicit operator float(InkValue  st) => st.Value_float;
-        public static explicit operator double(InkValue st) => st.Value_double;
-        public static explicit operator bool(InkValue   st) => st.Value_bool;
-        public static explicit operator char(InkValue   st) => st.Value_char;
-        public static explicit operator string(InkValue st) => st.Value_String;
-
+        public static explicit operator int(InkValue             st) => st.Value_int;
+        public static explicit operator float(InkValue           st) => st.Value_float;
+        public static explicit operator double(InkValue          st) => st.Value_double;
+        public static explicit operator bool(InkValue            st) => st.Value_bool;
+        public static explicit operator char(InkValue            st) => st.Value_char;
+        public static explicit operator string(InkValue          st) => st.Value_String;
+        public static                   object ToObject(InkValue st) => st.Value_Object;
 
 
         protected InkValue Negate()
@@ -1960,8 +1937,16 @@
     /// <summary> InkSyntaxList is a list of object, it can be used to store the syntax object </summary>
     public partial class InkSyntaxList
     {
-        public static readonly Queue<InkSyntaxList> pool = new(UniInk_Speed.CAPACITY_LIST);
+        public static readonly Queue<InkSyntaxList> pool        = new(UniInk_Speed.CAPACITY_LIST);
+        public static readonly List<InkSyntaxList>  LambdaCache = new(UniInk_Speed.CAPACITY_LIST);
         public static          InkSyntaxList        Get() => pool.Count > 0 ? pool.Dequeue() : new();
+
+        public static InkSyntaxList GetTemp()
+        {
+            var get = Get();
+            LambdaCache.Add(get);
+            return get;
+        }
 
         public static void ReleasePool() => pool.Clear();
 
@@ -1988,6 +1973,16 @@
             value.IndexDirty.Clear();
 
             pool.Enqueue(value);
+        }
+
+        public static void ReleaseTemp()
+        {
+            foreach (var inkSyntaxList in LambdaCache)
+            {
+                ReleaseAll(inkSyntaxList);
+            }
+
+            LambdaCache.Clear();
         }
 
         public static void Recover(InkSyntaxList value)
@@ -2044,8 +2039,16 @@
     public partial class InkSyntaxException : Exception
     {
         public InkSyntaxException(string message) : base(message) { }
+
+        public static void ThrowIfParamsIsNull(object param1, object param2)
+        {
+            if (param1 is null || param2 is null)
+            {
+                throw new InkSyntaxException("param1 is null || param2 is null");
+            }
+        }
     }
 
 }
-//1785 lines of code
+//2058 lines of code
 //3000 lines of code [MAX]

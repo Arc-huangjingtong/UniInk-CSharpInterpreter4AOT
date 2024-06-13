@@ -12,3 +12,5 @@ Arc.UniInk.Test/Properties/
 *.cache
 *.dll
 *.pdb
+*.exe
+*.log
