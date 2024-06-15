@@ -1,13 +1,13 @@
 ```
 
-BenchmarkDotNet v0.13.12, Windows 10 (10.0.19044.1415/21H2/November2021Update)
-Intel Core i7-10700F CPU 2.90GHz, 1 CPU, 16 logical and 8 physical cores
-  [Host]     : .NET Framework 4.8 (4.8.4400.0), X86 LegacyJIT
-  DefaultJob : .NET Framework 4.8 (4.8.4400.0), X86 LegacyJIT
+BenchmarkDotNet v0.13.12, Windows 11 (10.0.22631.2506/23H2/2023Update/SunValley3)
+13th Gen Intel Core i5-13400F, 1 CPU, 16 logical and 10 physical cores
+  [Host]     : .NET Framework 4.8.1 (4.8.9181.0), X86 LegacyJIT
+  DefaultJob : .NET Framework 4.8.1 (4.8.9181.0), X86 LegacyJIT
 
 
 ```
-| Method             | Mean      | Error     | StdDev    | Allocated |
-|------------------- |----------:|----------:|----------:|----------:|
-| INT_UniInk         | 48.630 μs | 0.1425 μs | 0.1333 μs |         - |
-| TEST_SCRIPTS_SPEED |  3.752 μs | 0.0076 μs | 0.0063 μs |         - |
+| Method             | Mean      | Error     | StdDev    | Gen0   | Allocated |
+|------------------- |----------:|----------:|----------:|-------:|----------:|
+| INT_UniInk         | 32.725 μs | 0.3136 μs | 0.2934 μs |      - |      96 B |
+| TEST_SCRIPTS_SPEED |  2.695 μs | 0.0212 μs | 0.0198 μs | 0.0038 |      32 B |

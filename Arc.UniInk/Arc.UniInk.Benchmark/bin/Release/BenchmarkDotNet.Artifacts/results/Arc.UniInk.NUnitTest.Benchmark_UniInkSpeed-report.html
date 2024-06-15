@@ -2,7 +2,7 @@
 <html lang='en'>
 <head>
 <meta charset='utf-8' />
-<title>Arc.UniInk.NUnitTest.Benchmark_UniInkSpeed-20240603-131836</title>
+<title>Arc.UniInk.NUnitTest.Benchmark_UniInkSpeed-20240615-175451</title>
 
 <style type="text/css">
 	table { border-collapse: collapse; display: block; width: 100%; overflow: auto; }
@@ -13,18 +13,18 @@
 </head>
 <body>
 <pre><code>
-BenchmarkDotNet v0.13.12, Windows 10 (10.0.19044.1415/21H2/November2021Update)
-Intel Core i7-10700F CPU 2.90GHz, 1 CPU, 16 logical and 8 physical cores
-  [Host]     : .NET Framework 4.8 (4.8.4400.0), X86 LegacyJIT
-  DefaultJob : .NET Framework 4.8 (4.8.4400.0), X86 LegacyJIT
+BenchmarkDotNet v0.13.12, Windows 11 (10.0.22631.2506/23H2/2023Update/SunValley3)
+13th Gen Intel Core i5-13400F, 1 CPU, 16 logical and 10 physical cores
+  [Host]     : .NET Framework 4.8.1 (4.8.9181.0), X86 LegacyJIT
+  DefaultJob : .NET Framework 4.8.1 (4.8.9181.0), X86 LegacyJIT
 </code></pre>
 <pre><code></code></pre>
 
 <table>
-<thead><tr><th>Method      </th><th>Mean</th><th>Error</th><th>StdDev</th><th>Allocated</th>
+<thead><tr><th>Method      </th><th>Mean</th><th>Error</th><th>StdDev</th><th>Gen0</th><th>Allocated</th>
 </tr>
-</thead><tbody><tr><td>INT_UniInk</td><td>48.630 &mu;s</td><td>0.1425 &mu;s</td><td>0.1333 &mu;s</td><td>-</td>
-</tr><tr><td>TEST_SCRIPTS_SPEED</td><td>3.752 &mu;s</td><td>0.0076 &mu;s</td><td>0.0063 &mu;s</td><td>-</td>
+</thead><tbody><tr><td>INT_UniInk</td><td>32.725 &mu;s</td><td>0.3136 &mu;s</td><td>0.2934 &mu;s</td><td>-</td><td>96 B</td>
+</tr><tr><td>TEST_SCRIPTS_SPEED</td><td>2.695 &mu;s</td><td>0.0212 &mu;s</td><td>0.0198 &mu;s</td><td>0.0038</td><td>32 B</td>
 </tr></tbody></table>
 </body>
 </html>
