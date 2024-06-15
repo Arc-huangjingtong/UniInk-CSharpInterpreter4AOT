@@ -1,0 +1,11 @@
+D:\Project\UniInk\Arc.UniInk\Arc.UniInk.BestPractices\bin\Release\Arc.UniInk.BestPractices.dll
+D:\Project\UniInk\Arc.UniInk\Arc.UniInk.BestPractices\bin\Release\Arc.UniInk.BestPractices.pdb
+D:\Project\UniInk\Arc.UniInk\Arc.UniInk.BestPractices\bin\Release\Arc.UniInk.dll
+D:\Project\UniInk\Arc.UniInk\Arc.UniInk.BestPractices\bin\Release\nunit.framework.dll
+D:\Project\UniInk\Arc.UniInk\Arc.UniInk.BestPractices\bin\Release\Arc.UniInk.pdb
+D:\Project\UniInk\Arc.UniInk\Arc.UniInk.BestPractices\bin\Release\nunit.framework.xml
+D:\Project\UniInk\Arc.UniInk\Arc.UniInk.BestPractices\obj\Release\Arc.UniInk.BestPractices.csproj.AssemblyReference.cache
+D:\Project\UniInk\Arc.UniInk\Arc.UniInk.BestPractices\obj\Release\Arc.UniInk.BestPractices.csproj.CoreCompileInputs.cache
+D:\Project\UniInk\Arc.UniInk\Arc.UniInk.BestPractices\obj\Release\Arc.UniInk.BestPractices.csproj.CopyComplete
+D:\Project\UniInk\Arc.UniInk\Arc.UniInk.BestPractices\obj\Release\Arc.UniInk.BestPractices.dll
+D:\Project\UniInk\Arc.UniInk\Arc.UniInk.BestPractices\obj\Release\Arc.UniInk.BestPractices.pdb
