@@ -69,7 +69,7 @@
         //   [Benchmark] [Test]
         public void TEST_SCRIPTS_SPEED_COMPILE()
         {
-            NUnit_UniInkSpeed.UniInk_Speed.ExecuteProcess(SyntaxList);
+            UniInk_Speed.ExecuteProcess(SyntaxList);
             InkSyntaxList.Recover(SyntaxList);
         }
 
@@ -113,7 +113,9 @@
 
 
         [Benchmark] [Test]
-        public void TEST_SCRIPTS_SPEED() => NUnit_UniInkSpeed.Test_Expression_Variable(ScriptsPAY);
+        public void TEST_SCRIPTS_SPEED() => NUnit_UniInkSpeed.Test_Expression_Variable(FLT);
+
+        private const string FLT = "FLT(Config,var c => GET(c, Rarity) == 2)";  
 
         //[Benchmark] [Test]
         public void TEST_SCRIPTS_SPEED2() => NUnit_UniInkSpeed.Test_Expression_Variable(input9);
@@ -229,7 +231,7 @@
         private const string input5     = "333+3";
         private const string input6     = "1111111+1111111";
         private const string input7     = "9999999+9999999";
-        private const string  input9     = "SUM(SUM(1,2,3),SUM(1,2,3),1) + 123456789";
+        private const string input9     = "SUM(SUM(1,2,3),SUM(1,2,3),1) + 123456789";
         private const string input10    = "+123456789";
         private const string HelloWorld = "Hello World";
         private const string Scripts1   = "LOG(\"Hello World ! \" )             ";
