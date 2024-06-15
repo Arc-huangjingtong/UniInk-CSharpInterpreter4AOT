@@ -1,14 +1,13 @@
 # project cache
 Arc.UniInk/.idea/
 Arc.UniInk/packages/
-Arc.UniInk/Arc.UniInk/bin/
-Arc.UniInk/Arc.UniInk/obj/
 Arc.UniInk/Arc.UniInk/Properties/
-
-Arc.UniInk.Test/bin/
-Arc.UniInk.Test/obj/
-Arc.UniInk.Test/Properties/
 *.dll
 *.cache
-*.dll
 *.pdb
+
+# project cache
+/Arc.UniInk/Arc.UniInk.Benchmark/bin/
+/Arc.UniInk/Arc.UniInk.Benchmark/obj/
+/Arc.UniInk/Arc.UniInk/bin/
+/Arc.UniInk/Arc.UniInk/obj/
