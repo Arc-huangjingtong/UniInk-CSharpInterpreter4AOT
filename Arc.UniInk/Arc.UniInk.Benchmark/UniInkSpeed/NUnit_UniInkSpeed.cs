@@ -222,31 +222,29 @@
         #region 4.Best Practice: Lambda Function
 
 
-        // [Repeat(10000)]
-
-        [TestCase("FLT(Config,var c => GET(c, Rarity) == 2)")]
+        //[Repeat(10000)]
+        [TestCase("FLT(Config,var c => GET(c, Rarity) == 2  && GET(c, ID) == 1)")]
         public static void Test_Expression_Lambda(string input)
         {
             var res = UniInk_Speed.Evaluate(input);
 
             if (res is InkValue inkValue)
             {
-                // if (inkValue.Value_Object is List<Card> cards)
-                // {
-                //     Console.WriteLine(cards.Count);
-                //     foreach (var card in cards)
-                //     {
-                //         Console.WriteLine(card.ID);
-                //         Console.WriteLine(card.Rarity);
-                //     }
-                // }
+                if (inkValue.Value_Object is List<Card> cards)
+                {
+                    Console.WriteLine(cards.Count);
+                    foreach (var card in cards)
+                    {
+                        Console.WriteLine(card.ID);
+                        Console.WriteLine(card.Rarity);
+                    }
+                }
 
                 InkValue.Release(inkValue);
             }
 
-
-            Console.WriteLine(InkValue.GetTime);
-            Console.WriteLine(InkValue.ReleaseTime);
+            // Console.WriteLine(InkValue.GetTime);
+            // Console.WriteLine(InkValue.ReleaseTime);
         }
 
 
@@ -300,17 +298,17 @@
 
         public static List<Card> FLT(IList<Card> cards, Predicate<Card> func)
         {
-            // var list = new System.Collections.Generic.List<Card>();
-            //
-            // foreach (var card in cards)
-            // {
-            //     if (func(card))
-            //     {
-            //         list.Add(card);
-            //     }
-            // }
+            var list = new System.Collections.Generic.List<Card>();
+            
+            foreach (var card in cards)
+            {
+                if (func(card))
+                {
+                    list.Add(card);
+                }
+            }
 
-            return null;
+            return list;
         }
 
 
@@ -373,6 +371,7 @@
 
             UniInk_Speed.RegisterVariable("Food",   InkValue.GetIntValue(0));
             UniInk_Speed.RegisterVariable("Rarity", InkValue.GetIntValue(5));
+            UniInk_Speed.RegisterVariable("ID",     InkValue.GetIntValue(0));
             UniInk_Speed.RegisterVariable("Config", InkValue.GetObjectValue(Config));
         }
     }

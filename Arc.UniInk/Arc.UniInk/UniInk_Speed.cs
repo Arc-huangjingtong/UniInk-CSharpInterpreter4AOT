@@ -287,6 +287,12 @@
                     break;
                 }
 
+                if (left is InkOperator)
+                {
+                    left       = null;
+                    startIndex = index;
+                }
+
                 for (var i = index + 1 ; i <= _endIndex ; i++) // Right
                 {
                     if (keys.IndexDirty[i])
@@ -451,16 +457,16 @@
                     lambdaData.Add(current);
                 }
 
-                // var variable = keys[startIndex] as InkValue;
-
+                var variable = keys[startIndex] as InkValue;
 
                 var lambda = new Predicate<object>(o =>
                 {
-                    // InkOperator.InkOperator_Assign(variable, o);
-                    // var result = (bool)(InkValue)ProcessList(lambdaData, 0, lambdaData.Count - 1);
-                    // InkSyntaxList.Recover(lambdaData);
+                    // this section has GC 🙂
+                    InkOperator.InkOperator_Assign(variable, o);
+                    var result = (bool)(InkValue)ProcessList(lambdaData, 0, lambdaData.Count - 1);
+                    InkSyntaxList.Recover(lambdaData);
 
-                    return true;
+                    return result;
                 });
 
                 var inkObject = InkValue.GetObjectValue(lambda);
@@ -514,6 +520,7 @@
 
         /// <summary> Some temp  variables mapping             </summary>
         public readonly Dictionary<int, InkValue> dic_Variables_Temp = new(CAPACITY_DICT);
+
 
 
         /////////////////////////////////////////////// Parsing Methods ////////////////////////////////////////////////
@@ -703,6 +710,11 @@
                 if (dic_Variables.TryGetValue(varHash, out var variable2))
                 {
                     keys.Add(variable2);
+                    if (variable2.getter)
+                    {
+                        variable2.Getter(variable2);
+                    }
+
                     i += len;
                     return true;
                 }
@@ -1137,15 +1149,15 @@
 
         public static int MaxOperatorLen;
 
-        /// <summary>the lower the value, the higher the priority</summary>
+        /// <summary> the lower the value, the higher the priority </summary>
         public readonly short PriorityIndex;
 
         public readonly string Name;
 
-        /// <summary>the indexer of the operator   </summary>
+        /// <summary> the indexer of the operator    </summary>
         protected static short indexer;
 
-        /// <summary>the only value of the operator</summary>
+        /// <summary> the only value of the operator </summary>
         protected readonly short OperatorValue = indexer++;
 
 
@@ -1496,6 +1508,15 @@
         }
 
 
+        public static InkValue GetterValue(Action<InkValue> getter)
+        {
+            var value = Get();
+            value.getter = true;
+            value.Getter = getter;
+            return value;
+        }
+
+
         public static void Release(InkValue value)
         {
             if (value.dontRelease) return;
@@ -1526,7 +1547,14 @@
 
         public bool dontRelease;
 
-        /// <summary>Calculate the value</summary>
+        public bool setter;
+        public bool getter;
+
+        public Action<InkValue> Setter;
+        public Action<InkValue> Getter;
+
+
+        /// <summary> Calculate the value </summary>
         public void Calculate()
         {
             if (isCalculate) return;
@@ -1913,13 +1941,14 @@
         public static InkValue operator !(InkValue  left) => left.Clone().Negate();
 
 
-        public static explicit operator int(InkValue             st) => st.Value_int;
-        public static explicit operator float(InkValue           st) => st.Value_float;
-        public static explicit operator double(InkValue          st) => st.Value_double;
-        public static explicit operator bool(InkValue            st) => st.Value_bool;
-        public static explicit operator char(InkValue            st) => st.Value_char;
-        public static explicit operator string(InkValue          st) => st.Value_String;
-        public static                   object ToObject(InkValue st) => st.Value_Object;
+        public static explicit operator int(InkValue    st) => st.Value_int;
+        public static explicit operator float(InkValue  st) => st.Value_float;
+        public static explicit operator double(InkValue st) => st.Value_double;
+        public static explicit operator bool(InkValue   st) => st.Value_bool;
+        public static explicit operator char(InkValue   st) => st.Value_char;
+        public static explicit operator string(InkValue st) => st.Value_String;
+
+        public static object ToObject(InkValue st) => st.Value_Object;
 
 
         protected InkValue Negate()

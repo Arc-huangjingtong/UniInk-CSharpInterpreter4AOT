@@ -14,18 +14,15 @@
     [MemoryDiagnoser]
     public class Benchmark_UniInkSpeed
     {
-        public Benchmark_UniInkSpeed() => Initiation();
+        public Benchmark_UniInkSpeed() => TEST_INITIATION();
 
         [OneTimeSetUp]
-        public void Initiation()
-        {
-            var test = new NUnit_UniInkSpeed();
+        public void TEST_INITIATION() => new NUnit_UniInkSpeed().Test_Initiation();
 
-            test.Test_Initiation();
 
-            //Compile
-            //SyntaxList = NUnit_UniInkSpeed.UniInk_Speed.CompileLexerAndFill(ScriptsPAY, 0, ScriptsPAY.Length - 1);
-        }
+        [Benchmark] [Test]
+        public void TEST_SCRIPTS_SPEED() => NUnit_UniInkSpeed.Test_Expression_Variable(FLT);
+
 
 
         public const string ScriptsPAY = "PAY(Food,100);PAY(Food,100)";
@@ -112,10 +109,8 @@
         }
 
 
-        [Benchmark] [Test]
-        public void TEST_SCRIPTS_SPEED() => NUnit_UniInkSpeed.Test_Expression_Variable(FLT);
 
-        private const string FLT = "FLT(Config,var c => GET(c, Rarity) == 2)";  
+        private const string FLT = "FLT(Config,var c => GET(c, Rarity) == 2)";
 
         //[Benchmark] [Test]
         public void TEST_SCRIPTS_SPEED2() => NUnit_UniInkSpeed.Test_Expression_Variable(input9);
