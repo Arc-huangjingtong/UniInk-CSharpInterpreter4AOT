@@ -22,13 +22,12 @@ namespace Arc.UniInk.BestPractices
         public void Test1()
         {
             var test = DuelAction.Evaluator.Evaluate("grower");
-
-            var test2 = DuelAction.Evaluator.Evaluate("grower");
             if (test is InkValue value)
             {
                 Console.WriteLine(value.Value_int);
             }
 
+            var test2 = DuelAction.Evaluator.Evaluate("grower");
             if (test2 is InkValue value2)
             {
                 Console.WriteLine(value2.Value_int);

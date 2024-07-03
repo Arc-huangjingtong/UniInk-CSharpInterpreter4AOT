@@ -100,7 +100,7 @@
             dic_GlobalFunctions.Add(hash, inkFunc);
         }
 
-        /// <summary> UniInk Lexer :   Fill the SyntaxList       </summary>
+        /// <summary> UniInk Lexer  :   Fill the SyntaxList       </summary>
         public InkSyntaxList CompileLexerAndFill(string expression, int startIndex, int endIndex)
         {
             var keys = InkSyntaxList.Get();
@@ -132,8 +132,7 @@
         public static object ExecuteProcess(InkSyntaxList keys)
         {
             var res = InputIsScript(keys) ? ProcessList_Scripts(keys) : ProcessList(keys, 0, keys.Count - 1);
-
-
+            
             return res;
         }
 
@@ -175,17 +174,6 @@
             }
 
             return resultCache;
-        }
-
-        protected void ReleaseTempVariables()
-        {
-            foreach (var variable in dic_Variables_Temp)
-            {
-                variable.Value.dontRelease = false;
-                InkValue.Release(variable.Value);
-            }
-
-            dic_Variables_Temp.Clear();
         }
 
         protected static object ProcessList_Scripts(InkSyntaxList keys)
@@ -475,6 +463,16 @@
             }
         }
 
+        protected void ReleaseTempVariables()
+        {
+            foreach (var variable in dic_Variables_Temp)
+            {
+                variable.Value.dontRelease = false;
+                InkValue.Release(variable.Value);
+            }
+
+            dic_Variables_Temp.Clear();
+        }
 
         ///////////////////////////////////////////////  Mapping  Data  ////////////////////////////////////////////////
 
@@ -499,7 +497,7 @@
           , { InkOperator.Assign, InkOperator.InkOperator_Assign }                 //
         };
 
-        /// <summary> Some Escaped Char mapping                </summary>
+        /// <summary> Some Escaped Char mapping </summary>
         protected static readonly Dictionary<char, char> dic_EscapedChar = new(CAPACITY_DICT)
         {
             { '\\', '\\' }, { '\'', '\'' } //
@@ -509,16 +507,16 @@
           , { 't', '\t' }, { 'v', '\v' }   //
         };
 
-        /// <summary> Some Global Functions mapping            </summary>
+        /// <summary> Some Global Functions mapping </summary>
         public static readonly Dictionary<int, InkFunction> dic_GlobalFunctions = new(CAPACITY_DICT);
 
-        /// <summary> Some local functions mapping             </summary>
+        /// <summary> Some local functions mapping </summary>
         public readonly Dictionary<int, InkFunction> dic_Functions = new(CAPACITY_DICT);
 
-        /// <summary> Some local variables mapping             </summary>
+        /// <summary> Some local variables mapping </summary>
         public readonly Dictionary<int, InkValue> dic_Variables = new(CAPACITY_DICT);
 
-        /// <summary> Some temp  variables mapping             </summary>
+        /// <summary> Some temp  variables mapping </summary>
         public readonly Dictionary<int, InkValue> dic_Variables_Temp = new(CAPACITY_DICT);
 
 
@@ -1679,7 +1677,10 @@
 
         public static InkValue operator +(InkValue left, InkValue right)
         {
-            InkSyntaxException.ThrowIfParamsIsNull(left, right);
+            if (left is null || right is null)
+            {
+                throw new InkSyntaxException("param1 is null || param2 is null");
+            }
 
             var answer = Get();
 
@@ -1714,7 +1715,10 @@
 
         public static InkValue operator -(InkValue left, InkValue right)
         {
-            InkSyntaxException.ThrowIfParamsIsNull(left, right);
+            if (left is null || right is null)
+            {
+                throw new InkSyntaxException("param1 is null || param2 is null");
+            }
 
             var answer = Get();
 
@@ -1744,7 +1748,10 @@
 
         public static InkValue operator *(InkValue left, InkValue right)
         {
-            InkSyntaxException.ThrowIfParamsIsNull(left, right);
+            if (left is null || right is null)
+            {
+                throw new InkSyntaxException("param1 is null || param2 is null");
+            }
 
             var answer = Get();
 
@@ -1775,7 +1782,10 @@
 
         public static InkValue operator /(InkValue left, InkValue right)
         {
-            InkSyntaxException.ThrowIfParamsIsNull(left, right);
+            if (left is null || right is null)
+            {
+                throw new InkSyntaxException("param1 is null || param2 is null");
+            }
 
             var answer = Get();
 
@@ -1805,7 +1815,10 @@
 
         public static InkValue operator %(InkValue left, InkValue right)
         {
-            InkSyntaxException.ThrowIfParamsIsNull(left, right);
+            if (left is null || right is null)
+            {
+                throw new InkSyntaxException($"{nameof(left)} is null || {nameof(right)} is null");
+            }
 
             var answer = Get();
 
@@ -1835,7 +1848,10 @@
 
         public static InkValue operator >(InkValue left, InkValue right)
         {
-            InkSyntaxException.ThrowIfParamsIsNull(left, right);
+            if (left is null || right is null)
+            {
+                throw new InkSyntaxException($"{nameof(left)} is null || {nameof(right)} is null");
+            }
 
             var answer = GetBoolValue(false);
 
@@ -1862,7 +1878,10 @@
 
         public static InkValue operator <(InkValue left, InkValue right)
         {
-            InkSyntaxException.ThrowIfParamsIsNull(left, right);
+            if (left is null || right is null)
+            {
+                throw new InkSyntaxException($"{nameof(left)} is null || {nameof(right)} is null");
+            }
 
             var answer = GetBoolValue(false);
 
@@ -1889,7 +1908,10 @@
 
         public static InkValue operator ==(InkValue left, InkValue right)
         {
-            InkSyntaxException.ThrowIfParamsIsNull(left, right);
+            if (left is null || right is null)
+            {
+                throw new InkSyntaxException($"{nameof(left)} is null || {nameof(right)} is null");
+            }
 
             var answer = GetBoolValue(false);
 
@@ -1947,8 +1969,6 @@
         public static explicit operator bool(InkValue   st) => st.Value_bool;
         public static explicit operator char(InkValue   st) => st.Value_char;
         public static explicit operator string(InkValue st) => st.Value_String;
-
-        public static object ToObject(InkValue st) => st.Value_Object;
 
 
         protected InkValue Negate()
@@ -2068,14 +2088,6 @@
     public partial class InkSyntaxException : Exception
     {
         public InkSyntaxException(string message) : base(message) { }
-
-        public static void ThrowIfParamsIsNull(object param1, object param2)
-        {
-            if (param1 is null || param2 is null)
-            {
-                throw new InkSyntaxException("param1 is null || param2 is null");
-            }
-        }
     }
 
 }

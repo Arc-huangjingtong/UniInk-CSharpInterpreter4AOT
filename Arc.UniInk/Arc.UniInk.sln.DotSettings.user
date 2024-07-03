@@ -15,14 +15,14 @@
   &lt;Assembly Path="C:\Windows\Microsoft.NET\Framework64\v4.0.30319\mscorlib.dll" /&gt;&#xD;
 &lt;/AssemblyExplorer&gt;</s:String>
 	<s:Boolean x:Key="/Default/Environment/Hierarchy/Build/SolBuilderDuo/RunBuildOnSolutionLoaded/@EntryValue">True</s:Boolean>
-	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=250fe40c_002D9b9c_002D4edf_002Db63c_002Dc37fbadf7d5d/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" Name="Test_Expression_Lambda" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;&#xD;
+	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=250fe40c_002D9b9c_002D4edf_002Db63c_002Dc37fbadf7d5d/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="Test_Expression_Lambda" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;&#xD;
   &lt;TestAncestor&gt;&#xD;
     &lt;TestId&gt;NUnit3x::1BA70864-1706-44D0-9D58-669FD5703A14::.NETFramework,Version=v4.8::Arc.UniInk.NUnitTest.NUnit_UniInkSpeed.Test_Expression_Lambda&lt;/TestId&gt;&#xD;
     &lt;TestId&gt;NUnit3x::47A5BDB7-973B-4769-BBAB-49959FEB47E0::.NETFramework,Version=v4.8::Arc.UniInk.BestPractices.Tests.Test1&lt;/TestId&gt;&#xD;
     &lt;TestId&gt;NUnit3x::1BA70864-1706-44D0-9D58-669FD5703A14::.NETFramework,Version=v4.8::Arc.UniInk.NUnitTest.NUnit_UniInkSpeed&lt;/TestId&gt;&#xD;
   &lt;/TestAncestor&gt;&#xD;
 &lt;/SessionState&gt;</s:String>
-	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=769c2460_002D5aad_002D4ff9_002D93a7_002D39f005ab2192/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="Test_Expression_Scripts" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;&#xD;
+	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=769c2460_002D5aad_002D4ff9_002D93a7_002D39f005ab2192/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" Name="Test_Expression_Scripts" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;&#xD;
   &lt;TestAncestor&gt;&#xD;
     &lt;TestId&gt;NUnit3x::1BA70864-1706-44D0-9D58-669FD5703A14::.NETFramework,Version=v4.8::Arc.UniInk.NUnitTest.NUnit_UniInkSpeed.Test_Expression_Scripts&lt;/TestId&gt;&#xD;
     &lt;TestId&gt;NUnit3x::1BA70864-1706-44D0-9D58-669FD5703A14::.NETFramework,Version=v4.8::Arc.UniInk.NUnitTest.NUnit_UniInkSpeed.Test_Expression_Lambda&lt;/TestId&gt;&#xD;
