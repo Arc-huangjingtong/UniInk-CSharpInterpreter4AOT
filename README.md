@@ -2,23 +2,28 @@
 
 # ✒️ UniInk - AOT C# Interpreter
 
-
 ![Stars Num](https://img.shields.io/github/stars/Arc-huangjingtong/UniInk-CSharpInterpreter4Unity?style=social&logo=github)
 ![Forks Num](https://img.shields.io/github/forks/Arc-huangjingtong/UniInk-CSharpInterpreter4Unity?style=social&logo=github)
 ![License  ](https://img.shields.io/badge/license-MIT-yellow)
 ![Version  ](https://img.shields.io/badge/version-1.0.0-green)
-![C#       ](https://img.shields.io/badge/CSharp-8.0%20or%20later-blue)
+![C#       ](https://img.shields.io/badge/CSharp-8.0%20+%20-blue)
 ![Platforms](https://img.shields.io/badge/platforms-Android%20|%20Windows%20|%20(ios)-lightgrey)
 ---
 
-
 # 📝RoadMap
 
+- [ ] Support more features.
 - [ ] Nuget Package Support.
 - [ ] Unity Package Support.
 - [ ] Write more test cases.
 
 # ✨Features
+
+- ### the UniInk is a single file, you can download/copy the file and put it in your project.
+- ### you can easy to extend the operator and function and more,because the code is clear and simple( only 2000lines )
+- ### the performance is very good, the GC is 0 and the boxing is 0.
+
+
 
 ## Evaluate Expression
 
@@ -55,7 +60,6 @@ Console.WriteLine(res2.Value_double);
 
 ```
 
-
 - ### ✨Support Logical Operations ( Easy extend Operator )
 
 ```csharp
@@ -65,7 +69,6 @@ var res = Ink.Evaluate("1 < 2 || 2 ==1 || 2 < 1") as InkValue;
 Console.WriteLine(res.Value_bool); 
 
 ```
-
 
 ## Evaluate Scripts
 
@@ -98,8 +101,6 @@ var res = Ink.Evaluate("var a = CRE(1,3) ;   GET(a, Rarity) == 3 ") as InkValue;
 var res = Ink.Evaluate("FLT(Config,var c => GET(c, Rarity) == 2 && GET(c, ID) == 1)") as InkValue;
 
 ```
-
-
 
 # 💬Support
 
