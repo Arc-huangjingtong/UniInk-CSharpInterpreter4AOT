@@ -299,7 +299,7 @@
         public static List<Card> FLT(IList<Card> cards, Predicate<Card> func)
         {
             var list = new System.Collections.Generic.List<Card>();
-            
+
             foreach (var card in cards)
             {
                 if (func(card))

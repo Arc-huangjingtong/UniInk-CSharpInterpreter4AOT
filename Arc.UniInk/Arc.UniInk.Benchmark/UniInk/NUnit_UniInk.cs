@@ -23,7 +23,7 @@
     [TestFixture]
     public class NUnit_UniInk
     {
-        private static readonly UniInk Ink    = new();
+        private static readonly UniInk_Classic InkClassic    = new();
         private static readonly Random random = new();
 
         private static long Memory;
@@ -36,10 +36,10 @@
             Memory = Process.GetCurrentProcess().WorkingSet64;
 
             var test = new HelperClass();
-            Ink.Context = test;
-            Ink.Types.Add("TestEnum",    typeof(TestEnum));
-            Ink.Types.Add("HelperClass", typeof(HelperClass));
-            Ink.StaticTypesForExtensionsMethods.Add(typeof(ExtensionClass));
+            InkClassic.Context = test;
+            InkClassic.Types.Add("TestEnum",    typeof(TestEnum));
+            InkClassic.Types.Add("HelperClass", typeof(HelperClass));
+            InkClassic.StaticTypesForExtensionsMethods.Add(typeof(ExtensionClass));
         }
 
         [OneTimeTearDown]
@@ -55,7 +55,7 @@
         [TestCase("+2222+(333-3+3-3)"), Repeat(1000)]
         public static void Test_EvaluateNumber(string input)
         {
-            var res = Ink.Evaluate(input);
+            var res = InkClassic.Evaluate(input);
             
 
             //ClassicAssert.AreEqual(res, 2552);
@@ -76,7 +76,7 @@
 
             var expectedResult = CalculateExpectedResult(operand1, operand2, randomOperator);
 
-            var actualResult = Ink.Evaluate<int>(expression);
+            var actualResult = InkClassic.Evaluate<int>(expression);
 
             ClassicAssert.AreEqual(expectedResult, actualResult);
             TestContext.Progress.WriteLine($"✅:{expression} = " + $"{actualResult}");
@@ -92,7 +92,7 @@
         [TestCase("PI+E             ",              null)]                //Evaluate Custom Property
         public void Test02_SimpleExpression(string script, object answer)
         {
-            var ans = Ink.Evaluate(script);
+            var ans = InkClassic.Evaluate(script);
             if (answer is null)
             {
                 ClassicAssert.NotNull(ans);
@@ -114,7 +114,7 @@
         [TestCase("AList(\"aaa\",\"bbb\"   )",            null)]
         public void Test03_MultipleArgsFunction(string script, object answer)
         {
-            var ans = Ink.Evaluate(script);
+            var ans = InkClassic.Evaluate(script);
             if (answer is null)
             {
                 ClassicAssert.NotNull(ans);
@@ -135,7 +135,7 @@
         [TestCase("var sum = 0;  for  (var i = 0 ; i < 100 ; i++)    { sum += i; } return sum;")] //Test [for]
         public void Test04_blockKeyword(string script)
         {
-            var ans = Ink.ScriptEvaluate(script);
+            var ans = InkClassic.ScriptEvaluate(script);
             TestContext.Progress.WriteLine($"✅:{ans}");
             ClassicAssert.NotNull(ans);
 
@@ -148,8 +148,8 @@
         [TestCase("List<int> list = D;list.Add(1);list.Add(2);list.Add(3);list.Add(4);list.Add(5);return list;")]
         public void Test05_Type(string script)
         {
-            Ink.Types.Add("List<int>", typeof(List<int>));
-            var ans = Ink.ScriptEvaluate(script);
+            InkClassic.Types.Add("List<int>", typeof(List<int>));
+            var ans = InkClassic.ScriptEvaluate(script);
             TestContext.Progress.WriteLine($"✅:{ans}");
             ClassicAssert.NotNull(ans);
 
@@ -163,7 +163,7 @@
         [TestCase("this.Test3(\"aaa\");")]
         public void Test06_ExtensionMethod(string script)
         {
-            var ans = Ink.ScriptEvaluate(script);
+            var ans = InkClassic.ScriptEvaluate(script);
             TestContext.Progress.WriteLine($"✅:{ans}");
             ClassicAssert.NotNull(ans);
         }
@@ -173,7 +173,7 @@
         [TestCase("ParamsTest(\"aaa\");")]
         public void Test07_ParamKeyword(string script)
         {
-            var ans = Ink.ScriptEvaluate(script);
+            var ans = InkClassic.ScriptEvaluate(script);
             TestContext.Progress.WriteLine($"✅:{ans}");
             ClassicAssert.NotNull(ans);
         }
@@ -181,7 +181,7 @@
         [TestCase("OutTest(out int a);return a;")]
         public void Test08_OutKeyword(string script)
         {
-            var ans = Ink.ScriptEvaluate(script);
+            var ans = InkClassic.ScriptEvaluate(script);
             TestContext.Progress.WriteLine($"✅:{ans}");
             ClassicAssert.NotNull(ans);
         }
@@ -209,7 +209,7 @@
         [TestCase(" TestC<List<int>>(D);  ")]      //测试多泛型参数
         public void Test04_Scripts(string script)
         {
-            var ans = Ink.ScriptEvaluate(script);
+            var ans = InkClassic.ScriptEvaluate(script);
             ClassicAssert.NotNull(ans);
             TestContext.Progress.WriteLine($"✅:{script}={ans}" + " ---  " + ans.GetType());
 
@@ -225,7 +225,7 @@
         {
             try
             {
-                Ink.Evaluate(script);
+                InkClassic.Evaluate(script);
             }
             catch (Exception e)
             {

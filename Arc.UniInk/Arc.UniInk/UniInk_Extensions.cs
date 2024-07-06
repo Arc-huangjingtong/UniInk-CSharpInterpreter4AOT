@@ -1,6 +1,9 @@
 ﻿namespace Arc.UniInk.Note
 {
 
+    using System.Text.RegularExpressions;
+
+
     /*******************************************************************************************************************
     *📰 Title    :  UniInk_Note (https://github.com/Arc-huangjingtong/UniInk-CSharpInterpreter4Unity)                  *
     *🔖 Version  :  1.0.0                                                                                              *
@@ -8,11 +11,9 @@
     *📝 Desc     :  Provide commonly used string-related processing tools                                              *
     /*******************************************************************************************************************/
 
-    using System.Text.RegularExpressions;
 
-
-
-    public static class UniInkHelper
+    /// <summary> Provide commonly tools in <see cref="UniInk_Speed"/> </summary> 
+    public static class UniInk_Extensions
     {
         #region Remove comments
 

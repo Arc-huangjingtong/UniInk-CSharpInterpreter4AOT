@@ -1,5 +1,7 @@
 # ✒️ UniInk - AOT C# Interpreter
 
+![Header](MarkDown_Assets/UniInk_ReadmeHeader.png)
+
 ![Stars Num](https://img.shields.io/github/stars/Arc-huangjingtong/UniInk-CSharpInterpreter4Unity?style=social&logo=github)
 ![Forks Num](https://img.shields.io/github/forks/Arc-huangjingtong/UniInk-CSharpInterpreter4Unity?style=social&logo=github)
 ![License  ](https://img.shields.io/badge/license-MIT-yellow)
@@ -8,68 +10,95 @@
 ![Platforms](https://img.shields.io/badge/platforms-Android%20|%20Windows%20|%20(ios)-lightgrey)
 ---
 
-```diff
-! This repository is a work in progress and is not yet complete.
-```
 
 # 📝RoadMap
 
-- [x] Add support for custom functions.
-- [x] Delete some useless features.
-- [ ] Zero reflection model
-- [ ] Optimize reflection performance.
-- [ ] Add high performance model.
+- [ ] Nuget Package Support.
+- [ ] Unity Package Support.
+- [ ] Write more test cases.
 
 # ✨Features
 
-| Feature           | Description                                                                  |
-|-------------------|------------------------------------------------------------------------------|
-| Single Script     | 🧩 Seamlessly integrate UniInk into your C# projects with ease.              |
-| Light Weight      | 💪 Lightweight design ensures optimal performance.                           |
-| Rich Feature      | 📝 Supports a wide range of scripting functionalities for dynamic behavior.  |
-| Beginner-Friendly | 🙌 User-friendly Comment makes it accessible for beginners.                  |
-| Extensible        | 🔌 Easily extend UniInk's functionality with custom functions and libraries. |
+## Evaluate Expression
 
-
-# 💡Example Usage
+- ### ✨Support Arithmetic Operations ( Easy extend Operator )
 
 ```csharp
-using UniInk;
 
-class Program
-{
-    static void Main()
-    {
-        
-        UniInk Ink = new()                               // Initialize a new instance;
-        int ans1 = Ink.Evaluate<int>("(45 * 2) + 3");    // ans1 = 93;
-        int ans2 = Ink.Evaluate<int>("65 > 7 ? 3 : 2");  // ans2 = 3; (supports ternary operators)
-        
-        object ans = Ink.ScriptEvaluate
-            ("if(3>5){return 3;}else if(3==5){return 3;}else{return 5;}"); // ans = 5; (supports ifelse statement)
-        object ans = Ink.Evaluate
-            ("Avg (1,2,3,4,5,6,7,8,9,10   )"); // ans = 5; (supports custom functions)
-        
-        Ink.Context= new MyScriptAllAction(); // Set the context; you can use the MyScriptAllAction All members;
-        Ink.Evaluate("MyMethod()");           // Evaluate MyMethod Directly;
-    }
-    
-    public class MyScriptAllAction
-    {
-        public static void MyMethod()
-        {
-            Console.WriteLine("MyMethod");
-        }
-    }
-    
-    
-}
+// 1. Create a new instance of the interpreter 
+var Ink = new UniInk_Speed();
+// 2. Evaluate the expression , and as it to InkValue
+var res1 = Ink.Evaluate(" +9 * (1+1 + 1 + 1 + 1+1+1)") as InkValue;
+// 3. Get the result with the type you want, the result is 63
+Console.WriteLine(res1.Value_int); 
+
+// PS : the process of calculation is 0 GC and 0 Boxing
+//      if you want improve the performance further , recycle the InkValue
+
+InkValue.Release(res1); // now the GC is 0 completely!
+
 ```
 
-# 📝License
+Other example
 
-UniInk is licensed under the [MIT License](LICENSE). Feel free to use, modify, and distribute this project as per the
-terms of the license.
+```csharp
+
+var Ink = new UniInk_Speed();
+// float type
+var res = Ink.Evaluate("3333333.3333333f-3.3f+3.3f+  3.3f - 3.3f") as InkValue;
+Console.WriteLine(res.Value_float);
+
+// double type
+var res2 = Ink.Evaluate("+123456789.987654321d + 987654321.123456789d") as InkValue;
+Console.WriteLine(res2.Value_double);
+
+```
+
+
+- ### ✨Support Logical Operations ( Easy extend Operator )
+
+```csharp
+
+// bool type
+var res = Ink.Evaluate("1 < 2 || 2 ==1 || 2 < 1") as InkValue;
+Console.WriteLine(res.Value_bool); 
+
+```
+
+
+## Evaluate Scripts
+
+- ### ✨Support Variable Assignment
+
+```csharp
+
+// the result will return the last expression
+var res = Ink.Evaluate("var aaa= 123 ;  var bbb =aaa + 1 ; aaa + bbb ") as InkValue;
+Console.WriteLine(res.Value_int); 
+
+```
+
+- ### ✨Support Function Call
+
+```csharp
+
+// the result will return the last expression
+// has API to register the function
+var res = Ink.Evaluate("var a = CRE(1,3) ;   GET(a, Rarity) == 3 ") as InkValue;
+
+
+```
+
+- ### ✨Support Lambda Expression
+
+```csharp
+
+// this may be complex, but we also support it
+var res = Ink.Evaluate("FLT(Config,var c => GET(c, Rarity) == 2 && GET(c, ID) == 1)") as InkValue;
+
+```
+
+
 
 # 💬Support
 

@@ -60,7 +60,8 @@
         /// <param name= "endIndex" > The  end  index of the expression(contain the  end  index)   </param>
         public object Evaluate(string expression, int startIndex, int endIndex)
         {
-            var keys   = CompileLexerAndFill(expression, startIndex, endIndex);
+            var keys = CompileLexerAndFill(expression, startIndex, endIndex);
+
             var result = ExecuteProcess(keys);
 
             RecoverResources(keys);
@@ -132,7 +133,7 @@
         public static object ExecuteProcess(InkSyntaxList keys)
         {
             var res = InputIsScript(keys) ? ProcessList_Scripts(keys) : ProcessList(keys, 0, keys.Count - 1);
-            
+
             return res;
         }
 
@@ -1082,7 +1083,7 @@
     ////////////////////////////////////////////////// Helping Class ///////////////////////////////////////////////////
 
 
-    /// <summary>UniInk Operator : Custom your own Operator!</summary>
+    /// <summary> UniInk Operator : Custom your own Operator! </summary>
     public partial class InkOperator
     {
         public static readonly Dictionary<int, InkOperator> Dic_Values = new(UniInk_Speed.CAPACITY_DICT);
@@ -1397,7 +1398,7 @@
     }
 
 
-    /// <summary>UniInk Function : Custom your own Function!</summary>
+    /// <summary> UniInk Function : Custom your own Function! </summary>
     public partial class InkFunction
     {
         public InkFunction(Func<List<object>, object> func)
@@ -1506,7 +1507,7 @@
         }
 
 
-        public static InkValue GetterValue(Action<InkValue> getter)
+        public static InkValue SetGetter(Action<InkValue> getter)
         {
             var value = Get();
             value.getter = true;
@@ -1677,11 +1678,6 @@
 
         public static InkValue operator +(InkValue left, InkValue right)
         {
-            if (left is null || right is null)
-            {
-                throw new InkSyntaxException("param1 is null || param2 is null");
-            }
-
             var answer = Get();
 
             answer.ValueType = left!.ValueType;
@@ -1715,11 +1711,6 @@
 
         public static InkValue operator -(InkValue left, InkValue right)
         {
-            if (left is null || right is null)
-            {
-                throw new InkSyntaxException("param1 is null || param2 is null");
-            }
-
             var answer = Get();
 
             answer.ValueType = left!.ValueType;
@@ -1748,11 +1739,6 @@
 
         public static InkValue operator *(InkValue left, InkValue right)
         {
-            if (left is null || right is null)
-            {
-                throw new InkSyntaxException("param1 is null || param2 is null");
-            }
-
             var answer = Get();
 
             answer.ValueType = left!.ValueType;
@@ -1782,11 +1768,6 @@
 
         public static InkValue operator /(InkValue left, InkValue right)
         {
-            if (left is null || right is null)
-            {
-                throw new InkSyntaxException("param1 is null || param2 is null");
-            }
-
             var answer = Get();
 
             answer.ValueType = left!.ValueType;
@@ -1815,11 +1796,6 @@
 
         public static InkValue operator %(InkValue left, InkValue right)
         {
-            if (left is null || right is null)
-            {
-                throw new InkSyntaxException($"{nameof(left)} is null || {nameof(right)} is null");
-            }
-
             var answer = Get();
 
             answer.ValueType = left!.ValueType;
@@ -1848,11 +1824,6 @@
 
         public static InkValue operator >(InkValue left, InkValue right)
         {
-            if (left is null || right is null)
-            {
-                throw new InkSyntaxException($"{nameof(left)} is null || {nameof(right)} is null");
-            }
-
             var answer = GetBoolValue(false);
 
             left.Calculate();
@@ -1878,11 +1849,6 @@
 
         public static InkValue operator <(InkValue left, InkValue right)
         {
-            if (left is null || right is null)
-            {
-                throw new InkSyntaxException($"{nameof(left)} is null || {nameof(right)} is null");
-            }
-
             var answer = GetBoolValue(false);
 
             left.Calculate();
@@ -1908,11 +1874,6 @@
 
         public static InkValue operator ==(InkValue left, InkValue right)
         {
-            if (left is null || right is null)
-            {
-                throw new InkSyntaxException($"{nameof(left)} is null || {nameof(right)} is null");
-            }
-
             var answer = GetBoolValue(false);
 
             left.Calculate();
@@ -1963,12 +1924,12 @@
         public static InkValue operator !(InkValue  left) => left.Clone().Negate();
 
 
-        public static explicit operator int(InkValue    st) => st.Value_int;
-        public static explicit operator float(InkValue  st) => st.Value_float;
-        public static explicit operator double(InkValue st) => st.Value_double;
-        public static explicit operator bool(InkValue   st) => st.Value_bool;
-        public static explicit operator char(InkValue   st) => st.Value_char;
-        public static explicit operator string(InkValue st) => st.Value_String;
+        public static implicit operator int(InkValue    st) => st.Value_int;
+        public static implicit operator float(InkValue  st) => st.Value_float;
+        public static implicit operator double(InkValue st) => st.Value_double;
+        public static implicit operator bool(InkValue   st) => st.Value_bool;
+        public static implicit operator char(InkValue   st) => st.Value_char;
+        public static implicit operator string(InkValue st) => st.Value_String;
 
 
         protected InkValue Negate()

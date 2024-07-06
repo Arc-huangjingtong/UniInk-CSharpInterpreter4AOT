@@ -54,9 +54,9 @@
         <Reference Include="System.Xml"/>
     </ItemGroup>
     <ItemGroup>
-        <Compile Include="UniInk.cs" />
+        <Compile Include="UniInk_Classic.cs" />
         <Compile Include="Properties\AssemblyInfo.cs"/>
-        <Compile Include="UniInk_Note.cs" />
+        <Compile Include="UniInk_Extensions.cs" />
         <Compile Include="UniInk_Speed.cs" />
     </ItemGroup>
     <ItemGroup>

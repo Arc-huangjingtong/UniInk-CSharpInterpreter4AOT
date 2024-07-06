@@ -1,37 +1,38 @@
-﻿using System;
-using NUnit.Framework;
-
-
-namespace Arc.UniInk.BestPractices
+﻿namespace Arc.UniInk.BestPractices
 {
+
+    using System;
+    using NUnit.Framework;
+
 
     [TestFixture]
     public class Tests
     {
-        public readonly DuelAction Action = new DuelAction();
+        public readonly ScriptAction Action = new ScriptAction();
 
         [OneTimeSetUp]
-        public void Setup()
-        {
-            Action.Initialization(null);
-        }
-
-
+        public void Setup() { }
 
         [Test]
-        public void Test1()
+        public void Test_Getter()
         {
-            var test = DuelAction.Evaluator.Evaluate("grower");
+            var test = ScriptAction.Evaluator.Evaluate("grower");
             if (test is InkValue value)
             {
                 Console.WriteLine(value.Value_int);
             }
 
-            var test2 = DuelAction.Evaluator.Evaluate("grower");
+            var test2 = ScriptAction.Evaluator.Evaluate("grower");
             if (test2 is InkValue value2)
             {
                 Console.WriteLine(value2.Value_int);
             }
+        }
+
+        [Test]
+        public void Test_01()
+        {
+            var script = "grower";
         }
     }
 

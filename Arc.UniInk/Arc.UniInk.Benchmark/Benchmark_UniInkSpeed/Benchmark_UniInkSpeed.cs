@@ -132,13 +132,13 @@
         // [Benchmark] [Test]
         public void INT_UniInkNoSpeed()
         {
-            _uniInk.ScriptEvaluate(input1 + ";");
-            _uniInk.ScriptEvaluate(input2 + ";");
-            _uniInk.ScriptEvaluate(input3 + ";");
-            _uniInk.ScriptEvaluate(input4 + ";");
-            _uniInk.ScriptEvaluate(input5 + ";");
-            _uniInk.ScriptEvaluate(input6 + ";");
-            _uniInk.ScriptEvaluate(input7 + ";");
+            _uniInkClassic.ScriptEvaluate(input1 + ";");
+            _uniInkClassic.ScriptEvaluate(input2 + ";");
+            _uniInkClassic.ScriptEvaluate(input3 + ";");
+            _uniInkClassic.ScriptEvaluate(input4 + ";");
+            _uniInkClassic.ScriptEvaluate(input5 + ";");
+            _uniInkClassic.ScriptEvaluate(input6 + ";");
+            _uniInkClassic.ScriptEvaluate(input7 + ";");
         }
 
 
@@ -152,7 +152,7 @@
         //  [Benchmark] [Test]
         public void TEST_SCRIPTS()
         {
-            _uniInk.ScriptEvaluate(Scripts2);
+            _uniInkClassic.ScriptEvaluate(Scripts2);
         }
 
 
@@ -217,7 +217,7 @@
         public int num9999999 = 9999999;
         public int Sum;
 
-        private readonly UniInk _uniInk = new UniInk();
+        private readonly UniInk_Classic _uniInkClassic = new UniInk_Classic();
 
         private const string input1     = "2222+(333-3+3-3)";
         private const string input2     = "333-3";

@@ -1,6 +1,15 @@
 ﻿namespace Arc.UniInk
 {
 
+    using System;
+    using System.Collections;
+    using System.Collections.Generic;
+    using System.Text;
+    using System.Text.RegularExpressions;
+    using System.Reflection;
+    using System.Linq;
+
+
     /*******************************************************************************************************************
     *  📰 Title    : UniInk (https://github.com/Arc-huangjingtong/UniInk-CSharpInterpreter4Unity)                      *
     *  🔖 Version  : 1.0.0                                                                                             *
@@ -14,22 +23,15 @@
     /*******************************************************************************************************************/
 
 
-    using System;
-    using System.Collections;
-    using System.Collections.Generic;
-    using System.Text;
-    using System.Text.RegularExpressions;
-    using System.Reflection;
-    using System.Linq;
 
-
-
-    public class UniInk
+    /// <summary> UniInk_Classic is a Past tense UniInk , but is a very important reference about regex match & Reflection used in Evaluater </summary>
+    /// <remarks> if you want more help , see <see cref="NUnit_UniInk"/> </remarks>
+    public class UniInk_Classic
     {
         /// <summary> Constructor </summary>
         /// <param name="context"  > Set context use as "This" or use internal member variables directly </param>
         /// <param name="variables"> Set variables can replace a key string with value object            </param>
-        public UniInk(object context = null, Dictionary<string, object> variables = null)
+        public UniInk_Classic(object context = null, Dictionary<string, object> variables = null)
         {
             Context   = context;
             Variables = variables ?? new Dictionary<string, object>();
@@ -321,7 +323,7 @@
         };
 
         /// <summary> Some complex StandardFunc </summary>
-        protected static readonly Dictionary<string, Func<UniInk, List<string>, object>> dic_ComplexStandardFunc = new()
+        protected static readonly Dictionary<string, Func<UniInk_Classic, List<string>, object>> dic_ComplexStandardFunc = new()
         {
             { "Avg", (self,   args) => args.ConvertAll(arg => Convert.ToDouble(self.Evaluate(arg))).Sum() / args.Count } // 平均值
           , { "AList", (self, args) => args.ConvertAll(arg => self.Evaluate(arg)) }                                      // 列表
@@ -2155,7 +2157,7 @@
         }
 
 
-        private static readonly MethodInfo primitiveExplicitCastMethodInfo = typeof(UniInk).GetMethod(nameof(PrimitiveExplicitCast), BindingFlags.Static | BindingFlags.NonPublic);
+        private static readonly MethodInfo primitiveExplicitCastMethodInfo = typeof(UniInk_Classic).GetMethod(nameof(PrimitiveExplicitCast), BindingFlags.Static | BindingFlags.NonPublic);
 
         private static object PrimitiveExplicitCast <T>(object value) => (T)value;
 
@@ -2349,17 +2351,17 @@
 
 
     /// <summary>关于已经/将要被求值的表达式的信息</summary>
-    /// <remarks>用于<see cref="UniInk.ExpressionEvaluating"/>事件</remarks>
+    /// <remarks>用于<see cref="UniInk_Classic.ExpressionEvaluating"/>事件</remarks>
     public class ExpressionEvaluationEventArg
     {
         /// <summary>将用于计算表达式的求值器</summary>
-        public UniInk Evaluator { get; set; }
+        public UniInk_Classic Evaluator { get; set; }
 
         /// <summary>被解释的表达式,可以被修改</summary>
         public string Expression { get; set; }
 
         /// <summary>设置求值的返回值</summary>
-        /// 用于 <see cref="UniInk.ExpressionEvaluated"/> 事件, 存储计算结果
+        /// 用于 <see cref="UniInk_Classic.ExpressionEvaluated"/> 事件, 存储计算结果
         public object Value { get; set; }
 
         /// <summary>真: 表达式已经被求值, 假: 表达式还未被求值</summary>
@@ -2369,7 +2371,7 @@
         /// <param name="expression">要求值的表达式</param>
         /// <param name="evaluator">将用于计算表达式的求值器</param>
         /// <param name="value"></param>
-        public ExpressionEvaluationEventArg(string expression, UniInk evaluator, object _value = null)
+        public ExpressionEvaluationEventArg(string expression, UniInk_Classic evaluator, object _value = null)
         {
             Expression = expression;
             Evaluator  = evaluator;
@@ -2395,7 +2397,7 @@
         public object This { get; set; }
 
         /// <summary>当前解释器的引用</summary>
-        public UniInk Evaluator { get; set; }
+        public UniInk_Classic Evaluator { get; set; }
 
         /// <summary>是否是泛型类型</summary>
         public bool HasGenericTypes => !string.IsNullOrEmpty(genericTypes);
@@ -2413,7 +2415,7 @@
         /// <param name="onInstance">要在其上计算字段或属性的对象实例(赋值给<see cref="This"/>)</param>
         /// <param name="genericTypes">在属性访问时指定的泛型类型</param>
         /// <param name="evaluateGenericTypes">用于解释A func to evaluate the list of specific types given between &lt; and &gt;</param>
-        public VariableEvaluationEventArg(string name, UniInk evaluator = null, object onInstance = null, string _genericTypes = null, Func<string, Type[]> _evaluateGenericTypes = null)
+        public VariableEvaluationEventArg(string name, UniInk_Classic evaluator = null, object onInstance = null, string _genericTypes = null, Func<string, Type[]> _evaluateGenericTypes = null)
         {
             Name                 = name;
             This                 = onInstance;
@@ -2431,9 +2433,9 @@
         /// <summary>构造器</summary>
         /// <param name="name">函数或者方法的名字</param>
         /// <param name="args">传递给函数或方法的参数</param>
-        /// <param name="evaluator"><see cref="UniInk"/>检测要求值的函数或方法</param>
+        /// <param name="evaluator"><see cref="UniInk_Classic"/>检测要求值的函数或方法</param>
         /// <param name="onInstance">要对方法求值的对象实例 (赋值给 <see cref="This"/>)</param>
-        public FunctionEvaluationEventArg(string name, List<string> args = null, UniInk evaluator = null, object onInstance = null)
+        public FunctionEvaluationEventArg(string name, List<string> args = null, UniInk_Classic evaluator = null, object onInstance = null)
         {
             Name      = name;
             Args      = args ?? new List<string>();
@@ -2471,7 +2473,7 @@
         public object This { get; set; }
 
         /// <summary>当前解释器的引用</summary>
-        public UniInk Evaluator { get; set; }
+        public UniInk_Classic Evaluator { get; set; }
     }
 
 
