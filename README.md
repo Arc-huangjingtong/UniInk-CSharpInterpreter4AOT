@@ -1,6 +1,6 @@
 # ✒️ UniInk - AOT C# Interpreter
 
-![Header](MarkDown_Assets/UniInk_ReadmeHeader.png)
+![Header](MarkDown_Assets/UniInk_ReadmeHeader.jpg)
 
 ![Stars Num](https://img.shields.io/github/stars/Arc-huangjingtong/UniInk-CSharpInterpreter4Unity?style=social&logo=github)
 ![Forks Num](https://img.shields.io/github/forks/Arc-huangjingtong/UniInk-CSharpInterpreter4Unity?style=social&logo=github)
