@@ -1,0 +1,11 @@
+F:\UniInk-CSharpInterpreter4AOT\Arc.UniInk\Arc.UniInk.BestPractices\bin\Release\Arc.UniInk.BestPractices.dll
+F:\UniInk-CSharpInterpreter4AOT\Arc.UniInk\Arc.UniInk.BestPractices\bin\Release\Arc.UniInk.BestPractices.pdb
+F:\UniInk-CSharpInterpreter4AOT\Arc.UniInk\Arc.UniInk.BestPractices\bin\Release\Arc.UniInk.dll
+F:\UniInk-CSharpInterpreter4AOT\Arc.UniInk\Arc.UniInk.BestPractices\bin\Release\nunit.framework.dll
+F:\UniInk-CSharpInterpreter4AOT\Arc.UniInk\Arc.UniInk.BestPractices\bin\Release\Arc.UniInk.pdb
+F:\UniInk-CSharpInterpreter4AOT\Arc.UniInk\Arc.UniInk.BestPractices\bin\Release\nunit.framework.xml
+F:\UniInk-CSharpInterpreter4AOT\Arc.UniInk\Arc.UniInk.BestPractices\obj\Release\Arc.UniInk.BestPractices.csproj.AssemblyReference.cache
+F:\UniInk-CSharpInterpreter4AOT\Arc.UniInk\Arc.UniInk.BestPractices\obj\Release\Arc.UniInk.BestPractices.csproj.CoreCompileInputs.cache
+F:\UniInk-CSharpInterpreter4AOT\Arc.UniInk\Arc.UniInk.BestPractices\obj\Release\Arc.UniInk.BestPractices.csproj.CopyComplete
+F:\UniInk-CSharpInterpreter4AOT\Arc.UniInk\Arc.UniInk.BestPractices\obj\Release\Arc.UniInk.BestPractices.dll
+F:\UniInk-CSharpInterpreter4AOT\Arc.UniInk\Arc.UniInk.BestPractices\obj\Release\Arc.UniInk.BestPractices.pdb
