@@ -1090,38 +1090,38 @@
 
         //priority refer to : https://learn.microsoft.com/zh-cn/dotnet/csharp/language-reference/operators/
         //keyword  refer to : https://learn.microsoft.com/zh-cn/dotnet/csharp/language-reference/keywords/
-        public static readonly InkOperator ParenthisLeft  = new("(", 1);    //1.圆括号 (  - 用于改变默认的优先级。
-        public static readonly InkOperator ParenthisRight = new(")", 1);    //1.圆括号 )  - 用于改变默认的优先级。
-        public static readonly InkOperator Dot            = new(".", 2);    //2.成员访问 .
-        public static readonly InkOperator BracketStart   = new("[", 2);    //2.数组索引 []
-        public static readonly InkOperator BracketEnd     = new("]", 2);    //2.数组索引 []
-        public static readonly InkOperator Increment      = new("++", 2);   //2.suffix ++ (prefix 3) 
-        public static readonly InkOperator Decrement      = new("--", 2);   //2.suffix -- (prefix 3)
-        public static readonly InkOperator LogicalNOT     = new("!", 3);    //3.逻辑非 !
-        public static readonly InkOperator BitNot         = new("~", 3);    //3.位 非 ~
-        public static readonly InkOperator Cast           = new("😊()", 4); //4.显式类型转换
-        public static readonly InkOperator Multiply       = new("*", 5);    //5.乘 *
-        public static readonly InkOperator Divide         = new("/", 5);    //5.除 /
-        public static readonly InkOperator Modulo         = new("%", 5);    //5.取模 %
-        public static readonly InkOperator Plus           = new("+", 6);    //6.加 + (一元加号优先级3) 
-        public static readonly InkOperator Minus          = new("-", 6);    //6.减 - (一元减号优先级3)
-        public static readonly InkOperator LeftShift      = new("<<", 7);   //7.左移 <<
-        public static readonly InkOperator RightShift     = new(">>", 7);   //7.右移 >>
-        public static readonly InkOperator Lower          = new("<", 8);    //8.小于 <
-        public static readonly InkOperator Greater        = new(">", 8);    //8.大于 >
-        public static readonly InkOperator LowerOrEqual   = new("<=", 8);   //8.小于等于 <=
-        public static readonly InkOperator GreaterOrEqual = new(">=", 8);   //8.大于等于 >=
-        public static readonly InkOperator Equal          = new("==", 9);   //9.等于 ==     (等价比较运算
-        public static readonly InkOperator NotEqual       = new("!=", 9);   //9.不等于 !=   (等价比较运算
-        public static readonly InkOperator BitwiseAnd     = new("&", 10);   //8.按位与 &
-        public static readonly InkOperator BitwiseXor     = new("^", 11);   //9.按位异或 ^
-        public static readonly InkOperator BitwiseOr      = new("|", 12);   //10.按位或 |
-        public static readonly InkOperator ConditionalAnd = new("&&", 13);  //11.逻辑与 &&  (短路逻辑运算
-        public static readonly InkOperator ConditionalOr  = new("||", 14);  //12.逻辑或 ||  (短路逻辑运算
-        public static readonly InkOperator Conditional    = new("?:", 15);  //15.条件运算 ?: - 三元条件运算符。
-        public static readonly InkOperator Assign         = new("=", 16);   //16.赋值 =、加等 +=、减等 -=、乘等 *=、除等 /=、模等 %=、左移等 <<=、右移等 >>=、按位与等 &=、按位或等 |=、按位异或等 ^= - 赋值运算。
-        public static readonly InkOperator Comma          = new(",", 16);   //17.逗号 , - 用于分隔表达式
-        public static readonly InkOperator Lambda         = new("=>", 17);  //17. Lambda 表达式
+        public static readonly InkOperator ParenthisLeft  = new("(", 1);
+        public static readonly InkOperator ParenthisRight = new(")", 1);
+        public static readonly InkOperator Dot            = new(".", 2);
+        public static readonly InkOperator BracketStart   = new("[", 2);
+        public static readonly InkOperator BracketEnd     = new("]", 2);
+        public static readonly InkOperator Increment      = new("++", 2);
+        public static readonly InkOperator Decrement      = new("--", 2);
+        public static readonly InkOperator LogicalNOT     = new("!", 3);
+        public static readonly InkOperator BitNot         = new("~", 3);
+        public static readonly InkOperator Cast           = new("😊()", 4);
+        public static readonly InkOperator Multiply       = new("*", 5);
+        public static readonly InkOperator Divide         = new("/", 5);
+        public static readonly InkOperator Modulo         = new("%", 5);
+        public static readonly InkOperator Plus           = new("+", 6);
+        public static readonly InkOperator Minus          = new("-", 6);
+        public static readonly InkOperator LeftShift      = new("<<", 7);
+        public static readonly InkOperator RightShift     = new(">>", 7);
+        public static readonly InkOperator Lower          = new("<", 8);
+        public static readonly InkOperator Greater        = new(">", 8);
+        public static readonly InkOperator LowerOrEqual   = new("<=", 8);
+        public static readonly InkOperator GreaterOrEqual = new(">=", 8);
+        public static readonly InkOperator Equal          = new("==", 9);
+        public static readonly InkOperator NotEqual       = new("!=", 9);
+        public static readonly InkOperator BitwiseAnd     = new("&", 10);
+        public static readonly InkOperator BitwiseXor     = new("^", 11);
+        public static readonly InkOperator BitwiseOr      = new("|", 12);
+        public static readonly InkOperator ConditionalAnd = new("&&", 13);
+        public static readonly InkOperator ConditionalOr  = new("||", 14);
+        public static readonly InkOperator Conditional    = new("?:", 15);
+        public static readonly InkOperator Assign         = new("=", 16);
+        public static readonly InkOperator Comma          = new(",", 16);
+        public static readonly InkOperator Lambda         = new("=>", 17);
         public static readonly InkOperator BraceLeft      = new("{", 20);
         public static readonly InkOperator BraceRight     = new("}", 20);
         public static readonly InkOperator Semicolon      = new(";", 20);
@@ -1680,25 +1680,24 @@
         {
             var answer = Get();
 
-            answer.ValueType = left!.ValueType;
+            answer.ValueType = left.ValueType;
 
             left.Calculate();
             right.Calculate();
 
-            switch (answer.ValueType, right.ValueType)
+            switch (left.ValueType, right.ValueType)
             {
-                case (_, TypeCode.String) :
-                case (TypeCode.String, _) :
+                case (TypeCode.String, TypeCode.String) : 
                     foreach (var c in left.Value_Meta) answer.Value_Meta.Add(c);
                     foreach (var c in right.Value_Meta) answer.Value_Meta.Add(c);
                     break;
-                case (TypeCode.Int32, _) :
+                case (TypeCode.Int32, TypeCode.Int32) :
                     answer.Value_int = left.Value_int + right.Value_int;
                     break;
-                case (TypeCode.Single, _) :
+                case (TypeCode.Single, TypeCode.Single) :
                     answer.Value_float = left.Value_float + right.Value_float;
                     break;
-                case (TypeCode.Double, _) :
+                case (TypeCode.Double, TypeCode.Double) :
                     answer.Value_double = left.Value_double + right.Value_double;
                     break;
                 default : throw new InkSyntaxException("worrying operator using!");
@@ -1718,15 +1717,15 @@
             left.Calculate();
             right!.Calculate();
 
-            switch (answer.ValueType)
+            switch (left.ValueType, right.ValueType)
             {
-                case TypeCode.Int32 :
+                case (TypeCode.Int32, TypeCode.Int32) :
                     answer.Value_int = left.Value_int - right.Value_int;
                     break;
-                case TypeCode.Single :
+                case (TypeCode.Single, TypeCode.Single) :
                     answer.Value_float = left.Value_float - right.Value_float;
                     break;
-                case TypeCode.Double :
+                case (TypeCode.Double, TypeCode.Double) :
                     answer.Value_double = left.Value_double - right.Value_double;
                     break;
                 default : throw new InkSyntaxException("worrying operator using!");
@@ -1770,20 +1769,20 @@
         {
             var answer = Get();
 
-            answer.ValueType = left!.ValueType;
-
             left.Calculate();
-            right!.Calculate();
+            right.Calculate();
 
-            switch (answer.ValueType)
+            answer.ValueType = left.ValueType;
+
+            switch (left.ValueType, right.ValueType)
             {
-                case TypeCode.Int32 :
+                case (TypeCode.Int32, TypeCode.Int32) :
                     answer.Value_int = left.Value_int / right.Value_int;
                     break;
-                case TypeCode.Single :
+                case (TypeCode.Single, TypeCode.Single) :
                     answer.Value_float = left.Value_float / right.Value_float;
                     break;
-                case TypeCode.Double :
+                case (TypeCode.Double, TypeCode.Double) :
                     answer.Value_double = left.Value_double / right.Value_double;
                     break;
                 default : throw new InkSyntaxException("worrying operator using!");
@@ -1798,20 +1797,20 @@
         {
             var answer = Get();
 
-            answer.ValueType = left!.ValueType;
+            answer.ValueType = left.ValueType;
 
             left.Calculate();
-            right!.Calculate();
+            right.Calculate();
 
-            switch (answer.ValueType)
+            switch (left.ValueType, right.ValueType)
             {
-                case TypeCode.Int32 :
+                case (TypeCode.Int32, TypeCode.Int32) :
                     answer.Value_int = left.Value_int % right.Value_int;
                     break;
-                case TypeCode.Single :
+                case (TypeCode.Single, TypeCode.Single) :
                     answer.Value_float = left.Value_float % right.Value_float;
                     break;
-                case TypeCode.Double :
+                case (TypeCode.Double, TypeCode.Double) :
                     answer.Value_double = left.Value_double % right.Value_double;
                     break;
                 default : throw new InkSyntaxException("worrying operator using!");
@@ -1874,10 +1873,10 @@
 
         public static InkValue operator ==(InkValue left, InkValue right)
         {
-            var answer = GetBoolValue(false);
+            left!.Calculate();
+            right!.Calculate();
 
-            left.Calculate();
-            right.Calculate();
+            var answer = GetBoolValue(false);
 
             switch (left.ValueType, right.ValueType)
             {
