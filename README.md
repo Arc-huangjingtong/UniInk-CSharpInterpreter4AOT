@@ -16,6 +16,7 @@
 - [ ] Nuget Package Support.
 - [ ] Unity Package Support.
 - [ ] Write more test cases.
+- [ ] Serializable function？ maybe interesting ！
 
 # ✨Features
 
