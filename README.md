@@ -95,8 +95,16 @@ Console.WriteLine(res.Value_int);
 
 ```csharp
 
+// has API to register the function such as CRE:
+UniInk_Speed.RegisterFunction("CRE", new(prms =>
+{
+    var param1 = (InkValue)prms[0];
+    var param2 = (InkValue)prms[1];
+
+    return new Card() { ID = param1, Rarity = param2 };
+}));
+
 // the result will return the last expression
-// has API to register the function
 var res = Ink.Evaluate("var a = CRE(1,3) ;   GET(a, Rarity) == 3 ") as InkValue;
 
 
@@ -108,6 +116,23 @@ var res = Ink.Evaluate("var a = CRE(1,3) ;   GET(a, Rarity) == 3 ") as InkValue;
 
 // this may be complex, but we also support it
 var res = Ink.Evaluate("FLT(Config,var c => GET(c, Rarity) == 2 && GET(c, ID) == 1)") as InkValue;
+
+```
+
+- ### ✨Support Property Getter
+
+```csharp
+
+// use register variable to set getter
+UniInk_Speed.RegisterVariable("grower", InkValue.SetGetter(value =>
+{
+    value.ValueType = TypeCode.Int32;
+    value.Value_int = grower++; // grower is a member variable 
+}));
+
+// the result is different every time
+var res = Ink.Evaluate("grower + 10086") as InkValue;
+
 
 ```
 

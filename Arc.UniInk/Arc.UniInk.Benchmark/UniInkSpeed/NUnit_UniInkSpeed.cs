@@ -67,8 +67,8 @@
 
             UniInk_Speed.RegisterFunction("CRE", new(prms =>
             {
-                var param1 = (int)(InkValue)prms[0];
-                var param2 = (int)(InkValue)prms[1];
+                var param1 = (InkValue)prms[0];
+                var param2 = (InkValue)prms[1];
 
                 return new Card() { ID = param1, Rarity = param2 };
             }));
