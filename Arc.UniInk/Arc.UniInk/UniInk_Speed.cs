@@ -1687,7 +1687,7 @@
 
             switch (left.ValueType, right.ValueType)
             {
-                case (TypeCode.String, TypeCode.String) : 
+                case (TypeCode.String, TypeCode.String) :
                     foreach (var c in left.Value_Meta) answer.Value_Meta.Add(c);
                     foreach (var c in right.Value_Meta) answer.Value_Meta.Add(c);
                     break;

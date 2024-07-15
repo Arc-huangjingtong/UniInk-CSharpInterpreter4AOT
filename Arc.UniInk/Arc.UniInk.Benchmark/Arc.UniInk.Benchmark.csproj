@@ -419,9 +419,12 @@
         <Compile Include="Refer_Sprache\Tests\PosAwareStr.cs" />
         <Compile Include="Refer_Sprache\Tests\RegexTests.cs" />
         <Compile Include="Refer_Sprache\Tests\ResultTests.cs" />
-        <Compile Include="UniInkSpeed\NUnit_UniInkSpeed.cs"/>
-        <Compile Include="UniInk\NUnit_UniInk.cs"/>
-        <Compile Include="Utils\Utils_MemoryTool.cs"/>
+        <Compile Include="UniInkSpeed\NUnit_UniInkSpeed.cs" />
+        <Compile Include="UniInk\NUnit_UniInk.cs" />
+        <Compile Include="Utils\Utils_MemoryTool.cs" />
+        <Compile Include="Refer_ExpressionEvaluator\ExpressionEvaluator.cs" />
+        <Compile Include="Refer_ParsecSharp\ExpressionParser.cs" />
+        
     </ItemGroup>
     <ItemGroup>
         <ProjectReference Include="..\Arc.UniInk\Arc.UniInk.csproj">
@@ -430,12 +433,12 @@
         </ProjectReference>
     </ItemGroup>
     <ItemGroup>
-        <Analyzer Include="..\packages\Microsoft.CodeAnalysis.Analyzers.3.3.3\analyzers\dotnet\cs\Microsoft.CodeAnalysis.Analyzers.dll"/>
-        <Analyzer Include="..\packages\Microsoft.CodeAnalysis.Analyzers.3.3.3\analyzers\dotnet\cs\Microsoft.CodeAnalysis.CSharp.Analyzers.dll"/>
+        <Analyzer Include="..\packages\Microsoft.CodeAnalysis.Analyzers.3.3.3\analyzers\dotnet\cs\Microsoft.CodeAnalysis.Analyzers.dll" />
+        <Analyzer Include="..\packages\Microsoft.CodeAnalysis.Analyzers.3.3.3\analyzers\dotnet\cs\Microsoft.CodeAnalysis.CSharp.Analyzers.dll" />
     </ItemGroup>
     <ItemGroup>
-        <None Include="App.config"/>
-        <None Include="packages.config"/>
+        <None Include="App.config" />
+        <None Include="packages.config" />
     </ItemGroup>
     <ItemGroup>
       <Folder Include="Refer_ExpressionEvaluator\" />
