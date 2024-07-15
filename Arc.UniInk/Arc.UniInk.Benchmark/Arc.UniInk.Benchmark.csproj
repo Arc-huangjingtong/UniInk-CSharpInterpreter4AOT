@@ -73,6 +73,9 @@
         <Reference Include="BouncyCastle.Crypto, Version=1.9.0.0, Culture=neutral, PublicKeyToken=0e99375e54769942, processorArchitecture=MSIL">
             <HintPath>..\packages\Portable.BouncyCastle.1.9.0\lib\net40\BouncyCastle.Crypto.dll</HintPath>
         </Reference>
+        <Reference Include="CodingSeb.ExpressionEvaluator, Version=1.4.40.0, Culture=neutral, processorArchitecture=MSIL">
+          <HintPath>..\packages\CodingSeb.ExpressionEvaluator.1.4.40\lib\net462\CodingSeb.ExpressionEvaluator.dll</HintPath>
+        </Reference>
         <Reference Include="CommandLine, Version=2.9.1.0, Culture=neutral, PublicKeyToken=5a870481e358d379, processorArchitecture=MSIL">
             <HintPath>..\packages\CommandLineParser.2.9.1\lib\net461\CommandLine.dll</HintPath>
         </Reference>
@@ -303,6 +306,9 @@
         </Reference>
         <Reference Include="OSExtensions, Version=1.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
             <HintPath>..\packages\Microsoft.Diagnostics.Tracing.TraceEvent.3.0.2\lib\net462\OSExtensions.dll</HintPath>
+        </Reference>
+        <Reference Include="ParsecSharp, Version=3.5.0.0, Culture=neutral, processorArchitecture=MSIL">
+          <HintPath>..\packages\ParsecSharp.3.5.0\lib\netstandard2.0\ParsecSharp.dll</HintPath>
         </Reference>
         <Reference Include="Perfolizer, Version=0.2.1.0, Culture=neutral, PublicKeyToken=e864f2ec9c0b6d4c, processorArchitecture=MSIL">
             <HintPath>..\packages\Perfolizer.0.2.1\lib\netstandard2.0\Perfolizer.dll</HintPath>

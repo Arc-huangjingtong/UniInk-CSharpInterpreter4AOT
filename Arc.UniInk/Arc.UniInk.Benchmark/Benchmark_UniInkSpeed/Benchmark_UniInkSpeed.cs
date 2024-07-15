@@ -6,8 +6,11 @@
     using System.Linq;
     using System.Linq.Expressions;
     using BenchmarkDotNet.Attributes;
+    using BenchmarkDotNet;
     using LinqyCalculator;
     using NUnit.Framework;
+    using CodingSeb.ExpressionEvaluator;
+    //using ParsecSharp.Examples;
 
 
     [TestFixture]
@@ -24,7 +27,7 @@
                                                         + "64+65+66+67+68+69+70+71+72+73+74+75+76+77+78+79+80+81+82+83+84+85+86+87+88+89+90+91+92+93+"
                                                         + "94+95+96+97+98+99+100";
 
-        public const string TestInput_Arithmetic_Int_03 = "1*2*3*4*5*6*7*8*9*10*11*12*13/13/12/11/10/9/8/7/6/5/4/3/2/1";
+        public const string TestInput_Arithmetic_Int_03 = "1*2*3*4*5*6*7*8*9*10*11*12/12/11/10/9/8/7/6/5/4/3/2/1";
 
         public const string TestInput_Arithmetic_Int_04 = "0-1-2-3-4-5-6-7-8-9-10-11-12-13-14-15-16-17-18-19-20-21-22-23-24-25-26-27-28-29-30-31-32-33-"
                                                         + "34-35-36-37-38-39-40-41-42-43-44-45-46-47-48-49-50-51-52-53-54-55-56-57-58-59-60-61-62-63-64-"
@@ -45,18 +48,34 @@
             var result3 = NUnit_UniInkSpeed.Test_Arithmetic_Int(TestInput_Arithmetic_Int_03);
             var result4 = NUnit_UniInkSpeed.Test_Arithmetic_Int(TestInput_Arithmetic_Int_04);
 
+#if DEBUG
             Console.WriteLine(result1 + "|" + result2 + "|" + result3 + "|" + result4);
+#endif
         }
 
         [Benchmark] [Test]
-        public void TEST_Arithmetic__UniInk_()
+        public void TEST_Arithmetic__ExpressionEvaluator()
         {
-            var result1 = NUnit_UniInkSpeed.Test_Arithmetic_Int(TestInput_Arithmetic_Int_01);
-            var result2 = NUnit_UniInkSpeed.Test_Arithmetic_Int(TestInput_Arithmetic_Int_02);
-            var result3 = NUnit_UniInkSpeed.Test_Arithmetic_Int(TestInput_Arithmetic_Int_03);
-            var result4 = NUnit_UniInkSpeed.Test_Arithmetic_Int(TestInput_Arithmetic_Int_04);
+            var result1 = _expressionEvaluator.Evaluate<int>(TestInput_Arithmetic_Int_01);
+            var result2 = _expressionEvaluator.Evaluate<int>(TestInput_Arithmetic_Int_02);
+            var result3 = _expressionEvaluator.Evaluate<int>(TestInput_Arithmetic_Int_03);
+            var result4 = _expressionEvaluator.Evaluate<int>(TestInput_Arithmetic_Int_04);
 
+#if DEBUG
             Console.WriteLine(result1 + "|" + result2 + "|" + result3 + "|" + result4);
+#endif
+        }
+
+        [Benchmark] [Test]
+        public void TEST_Arithmetic__Sprache()
+        {
+            var result1 = ExpressionParser.ParseExpression(TestInput_Arithmetic_Int_01).Compile().Invoke();
+            var result2 = ExpressionParser.ParseExpression(TestInput_Arithmetic_Int_02).Compile().Invoke();
+            var result3 = ExpressionParser.ParseExpression(TestInput_Arithmetic_Int_03).Compile().Invoke();
+            var result4 = ExpressionParser.ParseExpression(TestInput_Arithmetic_Int_04).Compile().Invoke();
+#if DEBUG
+            Console.WriteLine(result1 + "|" + result2 + "|" + result3 + "|" + result4);
+#endif
         }
 
 
@@ -73,37 +92,6 @@
         {
             var syntax = NUnit_UniInkSpeed.UniInk_Speed.CompileLexerAndFill(ScriptsPAY, 0, ScriptsPAY.Length - 1);
             InkSyntaxList.ReleaseAll(syntax);
-        }
-
-
-        [Benchmark] [Test]
-        public void INT_UniInk()
-        {
-            // NUnit_UniInkSpeed.Test_Arithmetic_Int(input1);
-            // NUnit_UniInkSpeed.Test_Arithmetic_Int(input2);
-            // NUnit_UniInkSpeed.Test_Arithmetic_Int(input3);
-            // NUnit_UniInkSpeed.Test_Arithmetic_Int(input4);
-            // NUnit_UniInkSpeed.Test_Arithmetic_Int(input5);
-            // NUnit_UniInkSpeed.Test_Arithmetic_Int(input6);
-            // NUnit_UniInkSpeed.Test_Arithmetic_Int(input7);
-            NUnit_UniInkSpeed.Test_Arithmetic_Int(input9);
-            NUnit_UniInkSpeed.Test_Arithmetic_Int(input9);
-            NUnit_UniInkSpeed.Test_Arithmetic_Int(input9);
-            NUnit_UniInkSpeed.Test_Arithmetic_Int(input9);
-            NUnit_UniInkSpeed.Test_Arithmetic_Int(input9);
-            NUnit_UniInkSpeed.Test_Arithmetic_Int(input9);
-        }
-
-        //[Benchmark] [Test]
-        public void BOOL_UNIINK()
-        {
-            NUnit_UniInkSpeed.Test_Arithmetic_Bool(inputBoolTest1);
-            NUnit_UniInkSpeed.Test_Arithmetic_Bool(inputBoolTest2);
-            NUnit_UniInkSpeed.Test_Arithmetic_Bool(inputBoolTest3);
-            NUnit_UniInkSpeed.Test_Arithmetic_Bool(inputBoolTest4);
-            NUnit_UniInkSpeed.Test_Arithmetic_Bool(inputBoolTest5);
-            NUnit_UniInkSpeed.Test_Arithmetic_Bool(inputBoolTest6);
-            NUnit_UniInkSpeed.Test_Arithmetic_Bool(inputBoolTest7);
         }
 
 
@@ -127,31 +115,9 @@
 
 
 
-        // [Benchmark] [Test]
-        public void INT_UniInkNoSpeed()
-        {
-            _uniInkClassic.ScriptEvaluate(input1 + ";");
-            _uniInkClassic.ScriptEvaluate(input2 + ";");
-            _uniInkClassic.ScriptEvaluate(input3 + ";");
-            _uniInkClassic.ScriptEvaluate(input4 + ";");
-            _uniInkClassic.ScriptEvaluate(input5 + ";");
-            _uniInkClassic.ScriptEvaluate(input6 + ";");
-            _uniInkClassic.ScriptEvaluate(input7 + ";");
-        }
-
-
-
         public static readonly Dictionary<string, Delegate> Test3 = new() { { HelloWorld, Test2 } };
 
         public static void LOG(string str) { }
-
-
-
-        //  [Benchmark] [Test]
-        public void TEST_SCRIPTS()
-        {
-            _uniInkClassic.ScriptEvaluate(Scripts2);
-        }
 
 
 
@@ -162,17 +128,6 @@
 
         public enum MyEnum { A, B, C, D }
 
-        // [Benchmark] [Test]
-        public void INT_Sprache()
-        {
-            var parsed1 = ExpressionParser.ParseExpression(input1).Compile().Invoke();
-            var parsed2 = ExpressionParser.ParseExpression(input2).Compile().Invoke();
-            var parsed3 = ExpressionParser.ParseExpression(input3).Compile().Invoke();
-            var parsed4 = ExpressionParser.ParseExpression(input4).Compile().Invoke();
-            var parsed5 = ExpressionParser.ParseExpression(input5).Compile().Invoke();
-            var parsed6 = ExpressionParser.ParseExpression(input6).Compile().Invoke();
-            var parsed7 = ExpressionParser.ParseExpression(input7).Compile().Invoke();
-        }
 
 
         public const string        ScriptsPAY = "PAY(Food,100);PAY(Food,100)";
@@ -217,7 +172,8 @@
         public int num9999999 = 9999999;
         public int Sum;
 
-        private readonly UniInk_Classic _uniInkClassic = new UniInk_Classic();
+        private readonly UniInk_Classic      _uniInkClassic       = new UniInk_Classic();
+        private readonly ExpressionEvaluator _expressionEvaluator = new ExpressionEvaluator();
 
         private const string input1     = "2222+(333-3+3-3)";
         private const string input2     = "333-3";
