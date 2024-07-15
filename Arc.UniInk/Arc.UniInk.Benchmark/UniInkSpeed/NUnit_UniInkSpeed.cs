@@ -253,7 +253,18 @@
 
 
         [Test]
-        public static void Test_Temp() { }
+        public static void Test_Temp()
+        {
+            const string TestInput_Arithmetic_01 = "12345678+87654321-1*2*3*4*5*6*7*8*9+9*8*7*6*5*4*3*2*1+1*2*3*4*5*6*7*8*9-87654321-12345678"; // 
+
+            var res = UniInk_Speed.Evaluate(TestInput_Arithmetic_01);
+
+            if (res is InkValue inkValue)
+            {
+                Console.WriteLine(inkValue.Value_int);
+                InkValue.Release(inkValue);
+            }
+        }
 
 
         public enum MyEnum { Food }

@@ -25,7 +25,10 @@
 
 
     /// <summary> UniInk_Classic is a Past tense UniInk , but is a very important reference about regex match & Reflection used in Evaluater </summary>
-    /// <remarks> if you want more help , see <see cref="NUnit_UniInk"/> </remarks>
+    /// <remarks>
+    /// </para>: UniInk_Classic support context , that is a very convenient feature
+    /// </para>: if you want more help , see  <see cref="NUnit_UniInk"/>
+    /// </remarks>
     public class UniInk_Classic
     {
         /// <summary> Constructor </summary>
