@@ -2,6 +2,7 @@
 {
 
     using System;
+    using System.Threading;
     using BenchmarkDotNet.Attributes;
     using LinqyCalculator;
     using NUnit.Framework;
@@ -49,7 +50,7 @@
         public void TEST_INITIATION() => new NUnit_UniInkSpeed().Test_Initiation();
 
 
-        [Benchmark] [Test]
+        [Benchmark(Baseline = true)] [Test]
         public void TEST_Arithmetic__UniInkSpeed()
         {
             var result1 = NUnit_UniInkSpeed.Test_Arithmetic_Int(TestInput_Arithmetic_Int_01);
