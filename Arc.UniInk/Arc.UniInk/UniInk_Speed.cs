@@ -184,7 +184,7 @@
 
             while (true)
             {
-                var (success, index) = FindOperator(keys, InkOperator.Semicolon, 0, keys.Count - 1);
+                var (success, index) = FindOperator(keys, InkOperator.Semicolon, start, keys.Count - 1);
 
                 if (success)
                 {

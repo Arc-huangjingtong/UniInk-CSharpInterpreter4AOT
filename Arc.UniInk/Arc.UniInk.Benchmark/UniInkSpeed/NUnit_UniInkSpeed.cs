@@ -121,6 +121,7 @@
         [TestCase("9*(1+1 + 1 + 1 + 1+1+1)", ExpectedResult = 9 * (1  + 1 + 1 + 1 + 1 + 1 + 1))]
         [TestCase("   999999 + 999999     ", ExpectedResult = 999999 + 999999)]
         [TestCase("9*((1+(1+1)+(1+1))+1+1)", ExpectedResult = 9 * ((1 + (1 + 1) + (1 + 1)) + 1 + 1))]
+        [TestCase("9*((1+(2+3)+(4+5))+6+7)", ExpectedResult = 9 * ((1 + (2 + 3) + (4 + 5)) + 6 + 7))]
         [TestCase("9 * ( ( 1 + 2 * 3 ) /2)", ExpectedResult = 9 * ((1 + 2 * 3) / 2))]
         public static int Test_Arithmetic_Int(string input)
         {
