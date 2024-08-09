@@ -20,6 +20,14 @@
     /// <remarks> If you want to custom your own rules , you should read the code easily and modify it !      </remarks>
     public partial class UniInk_Speed
     {
+        ///////////////////////////////////////////////     Settings    ////////////////////////////////////////////////
+
+        public const float  EPSILON_FLOAT  = 0.000001f;
+        public const double EPSILON_DOUBLE = 0.000001d;
+        public const int    CAPACITY_LIST  = 30;
+        public const int    CAPACITY_DICT  = 80;
+
+
         ///////////////////////////////////////////////   Constructor   ////////////////////////////////////////////////
 
         /// <summary> Default Constructor : Initialize variables and parsing Methods        </summary>
@@ -132,7 +140,7 @@
         /// <summary> UniInk Parser : Execute the SyntaxList and return the result object </summary>
         public static object ExecuteProcess(InkSyntaxList keys)
         {
-            var res = InputIsScript(keys) ? ProcessList_Scripts(keys) : ProcessList(keys, 0, keys.Count - 1);
+            var res = InputIsScript(keys) ? ProcessList_ScriptsWithIfStatement(keys) : ProcessList(keys, 0, keys.Count - 1);
 
             return res;
         }
@@ -1055,28 +1063,21 @@
         public static int GetStringSliceHashCode(string str) => GetStringSliceHashCode(str, 0, str.Length - 1);
 
 
-        /// <summary> Judge the input String is a Script or not (depend on the operator:[;])                  </summary>
+        /// <summary> Judge the input String is a Script or not (depend on the operator:[;] [{])              </summary>
         protected static bool InputIsScript(InkSyntaxList keys)
         {
             foreach (var obj in keys.ObjectList)
             {
-                if (obj is InkOperator @operator && Equals(@operator, InkOperator.Semicolon)) //match [;]
+                //match [;] or [{]
+                if (obj is InkOperator @operator && (Equals(@operator, InkOperator.Semicolon) || Equals(@operator, InkOperator.BraceLeft)))
                 {
                     return true;
                 }
             }
 
+
             return false;
         }
-
-
-        ///////////////////////////////////////////////     Settings    ////////////////////////////////////////////////
-
-
-        public const float  EPSILON_FLOAT  = 0.000001f;
-        public const double EPSILON_DOUBLE = 0.000001d;
-        public const int    CAPACITY_LIST  = 30;
-        public const int    CAPACITY_DICT  = 80;
     }
 
 

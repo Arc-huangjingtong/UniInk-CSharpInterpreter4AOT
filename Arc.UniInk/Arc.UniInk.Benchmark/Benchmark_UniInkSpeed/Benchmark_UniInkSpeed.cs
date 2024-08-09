@@ -105,16 +105,16 @@
 
 
         public static readonly InkSyntaxList Compiled_TestInput_Arithmetic_Int_01 =
-            NUnit_UniInkSpeed.UniInk_Speed.CompileLexerAndFill(TestInput_Arithmetic_Int_01, 0, TestInput_Arithmetic_Int_01.Length - 1);
+            NUnit_UniInkSpeed.Ink.CompileLexerAndFill(TestInput_Arithmetic_Int_01, 0, TestInput_Arithmetic_Int_01.Length - 1);
 
         public static readonly InkSyntaxList Compiled_TestInput_Arithmetic_Int_02 =
-            NUnit_UniInkSpeed.UniInk_Speed.CompileLexerAndFill(TestInput_Arithmetic_Int_02, 0, TestInput_Arithmetic_Int_02.Length - 1);
+            NUnit_UniInkSpeed.Ink.CompileLexerAndFill(TestInput_Arithmetic_Int_02, 0, TestInput_Arithmetic_Int_02.Length - 1);
 
         public static readonly InkSyntaxList Compiled_TestInput_Arithmetic_Int_03 =
-            NUnit_UniInkSpeed.UniInk_Speed.CompileLexerAndFill(TestInput_Arithmetic_Int_03, 0, TestInput_Arithmetic_Int_03.Length - 1);
+            NUnit_UniInkSpeed.Ink.CompileLexerAndFill(TestInput_Arithmetic_Int_03, 0, TestInput_Arithmetic_Int_03.Length - 1);
 
         public static readonly InkSyntaxList Compiled_TestInput_Arithmetic_Int_04 =
-            NUnit_UniInkSpeed.UniInk_Speed.CompileLexerAndFill(TestInput_Arithmetic_Int_04, 0, TestInput_Arithmetic_Int_04.Length - 1);
+            NUnit_UniInkSpeed.Ink.CompileLexerAndFill(TestInput_Arithmetic_Int_04, 0, TestInput_Arithmetic_Int_04.Length - 1);
 
 
         [Benchmark] [Test] [Repeat(100)]

@@ -22,7 +22,7 @@
     [TestFixture]
     public sealed partial class NUnit_UniInkSpeed
     {
-        public static readonly UniInk_Speed UniInk_Speed = new();
+        public static readonly UniInk_Speed Ink = new();
 
         public bool isInit;
 
@@ -33,14 +33,14 @@
 
             isInit = true;
 
-            UniInk_Speed.RegisterFunction("SUM", new(list => InkValue.GetIntValue((int)(InkValue)list[0] + (int)(InkValue)list[1] + (int)(InkValue)list[2])));
-            UniInk_Speed.RegisterFunction("LOG", new(prms =>
+            Ink.RegisterFunction("SUM", new(list => InkValue.GetIntValue((int)(InkValue)list[0] + (int)(InkValue)list[1] + (int)(InkValue)list[2])));
+            Ink.RegisterFunction("LOG", new(prms =>
             {
                 Console.WriteLine(prms[0]);
                 return null;
             }));
 
-            UniInk_Speed.RegisterFunction("PAY", new(prms =>
+            Ink.RegisterFunction("PAY", new(prms =>
             {
                 var param1 = (MyEnum)((int)(InkValue)prms[0]);
 
@@ -51,7 +51,7 @@
             }));
 
 
-            UniInk_Speed.RegisterFunction("GET", new(prms =>
+            Ink.RegisterFunction("GET", new(prms =>
             {
                 var param1 = (Card)((InkValue)prms[0]).Value_Object;
                 var param2 = (int)(InkValue)prms[1];
@@ -65,7 +65,7 @@
             }));
 
 
-            UniInk_Speed.RegisterFunction("CRE", new(prms =>
+            Ink.RegisterFunction("CRE", new(prms =>
             {
                 var param1 = (InkValue)prms[0];
                 var param2 = (InkValue)prms[1];
@@ -73,7 +73,7 @@
                 return new Card() { ID = param1, Rarity = param2 };
             }));
 
-            UniInk_Speed.RegisterFunction("FLT", new(prms =>
+            Ink.RegisterFunction("FLT", new(prms =>
             {
                 var param1 = (List<Card>)((InkValue)prms[0]).Value_Object;
                 var param2 = (Predicate<object>)((InkValue)prms[1]).Value_Object;
@@ -97,17 +97,17 @@
             }
 
 
-            UniInk_Speed.RegisterVariable("grower", InkValue.SetGetter(value =>
+            Ink.RegisterVariable("grower", InkValue.SetGetter(value =>
             {
                 value.ValueType = TypeCode.Int32;
                 value.Value_int = grower++;
             }));
 
 
-            UniInk_Speed.RegisterVariable("Food",   InkValue.GetIntValue(0));
-            UniInk_Speed.RegisterVariable("Rarity", InkValue.GetIntValue(5));
-            UniInk_Speed.RegisterVariable("ID",     InkValue.GetIntValue(0));
-            UniInk_Speed.RegisterVariable("Config", InkValue.GetObjectValue(Config));
+            Ink.RegisterVariable("Food",   InkValue.GetIntValue(0));
+            Ink.RegisterVariable("Rarity", InkValue.GetIntValue(5));
+            Ink.RegisterVariable("ID",     InkValue.GetIntValue(0));
+            Ink.RegisterVariable("Config", InkValue.GetObjectValue(Config));
         }
 
         #region 1.Basic: Arithmetic Test , return result InkValue and Release it
@@ -126,7 +126,7 @@
         //[TestCase("9 * +5 ",                 ExpectedResult = 9 * +5)] not support
         public static int Test_Arithmetic_Int(string input)
         {
-            var res    = (InkValue)UniInk_Speed.Evaluate(input);
+            var res    = (InkValue)Ink.Evaluate(input);
             var result = res!.Value_int;
             InkValue.Release(res);
 
@@ -142,7 +142,7 @@
         [TestCase("3333333.3333333f-3.3f+3.3f+  3.3f - 3.3f",        ExpectedResult = 3333333.3333333f - 3.3f + 3.3f + 3.3f - 3.3f)]
         public static float Test_Arithmetic_Float(string input)
         {
-            var res    = (InkValue)UniInk_Speed.Evaluate(input);
+            var res    = (InkValue)Ink.Evaluate(input);
             var result = res!.Value_float;
             InkValue.Release(res);
 
@@ -159,7 +159,7 @@
         [TestCase("3333333.3333333-3.3+3.3+  3.3 - 3.3",          ExpectedResult = 3333333.3333333 - 3.3 + 3.3 + 3.3 - 3.3)]
         public static double Test_Arithmetic_Double(string input)
         {
-            var res    = (InkValue)UniInk_Speed.Evaluate(input);
+            var res    = (InkValue)Ink.Evaluate(input);
             var result = res!.Value_double;
             InkValue.Release(res);
 
@@ -178,7 +178,7 @@
         [TestCase("1 != 2 || 2 != 1                ", ExpectedResult = 1 != 2 || 2           != 1)]
         public static bool Test_Arithmetic_Bool(string input)
         {
-            var res    = (InkValue)UniInk_Speed.Evaluate(input);
+            var res    = (InkValue)Ink.Evaluate(input);
             var result = res!.Value_bool;
             InkValue.Release(res);
             return result;
@@ -192,11 +192,11 @@
 
 
         [Repeat(10000)]
-        [TestCase("var a = 123 ;  var b = a + 1 ; a + b    ",         ExpectedResult = 123 + 123 + 1)]
+        [TestCase("var a = 123 ;;  var b = a + 1 ; a + b    ",        ExpectedResult = 123 + 123 + 1)]
         [TestCase("var aaa= 123 ;  var bbb =aaa + 1 ; aaa + bbb    ", ExpectedResult = 123 + 123 + 1)]
         public static int Test_Expression_Variable(string input)
         {
-            var res = UniInk_Speed.Evaluate(input);
+            var res = Ink.Evaluate(input);
 
             var result = 0;
 
@@ -213,7 +213,7 @@
         [TestCase("var a = 123f ;  var b = a + 1f ; a + b    ", ExpectedResult = 123f + 123f + 1f)]
         public static float Test_Expression_Variable2(string input)
         {
-            var res = UniInk_Speed.Evaluate(input);
+            var res = Ink.Evaluate(input);
 
             var result = 0f;
 
@@ -231,7 +231,7 @@
         [TestCase("var a = 123d ;  var b = a + 1d ; a + b    ", ExpectedResult = 123d + 123d + 1d)]
         public static double Test_Expression_Variable3(string input)
         {
-            var res = UniInk_Speed.Evaluate(input);
+            var res = Ink.Evaluate(input);
 
             var result = 0d;
 
@@ -250,7 +250,7 @@
         [TestCase("var a = CRE(1,3) ;   GET(a, Rarity) == 3    ", ExpectedResult = true)]
         public static bool Test_Expression_Variable4(string input)
         {
-            var res = UniInk_Speed.Evaluate(input);
+            var res = Ink.Evaluate(input);
 
             var result = false;
 
@@ -275,7 +275,7 @@
         [TestCase("SUM(SUM(1,2,3),SUM(1,2,3),1) + SUM(1,2,3)", ExpectedResult = 1 + 2 + 3 + 1 + 2 + 3 + 1 + 1 + 2 + 3)]
         public static int Test_Expression_Function(string input)
         {
-            var res = UniInk_Speed.Evaluate(input);
+            var res = Ink.Evaluate(input);
 
             var result = 0;
 
@@ -292,7 +292,7 @@
         [TestCase("LOG(\"Hello World ! \"+\"Hello World ! \" ) ")]
         public static void Test_Expression_Function2(string input)
         {
-            var res = UniInk_Speed.Evaluate(input);
+            var res = Ink.Evaluate(input);
 
             if (res is InkValue inkValue)
             {
@@ -315,7 +315,7 @@
         [TestCase("FLT(Config,var c => GET(c, Rarity) == 2  && GET(c, ID) == 1)")]
         public static void Test_Expression_Lambda(string input)
         {
-            var res = UniInk_Speed.Evaluate(input);
+            var res = Ink.Evaluate(input);
 
             if (res is InkValue inkValue)
             {
@@ -347,7 +347,7 @@
         [TestCase("grower + 100000")]
         public static void Test_Expression_Getter(string input)
         {
-            var test = UniInk_Speed.Evaluate(input);
+            var test = Ink.Evaluate(input);
             if (test is InkValue value)
             {
                 Console.WriteLine(value.Value_int); // each time , the result will be different 
@@ -366,7 +366,7 @@
         {
             const string TestInput_Arithmetic_01 = "12345678+87654321-1*2*3*4*5*6*7*8*9+9*8*7*6*5*4*3*2*1+1*2*3*4*5*6*7*8*9-87654321-12345678"; // 
 
-            var res = UniInk_Speed.Evaluate(TestInput_Arithmetic_01);
+            var res = Ink.Evaluate(TestInput_Arithmetic_01);
 
             if (res is InkValue inkValue)
             {
@@ -375,19 +375,46 @@
             }
         }
 
+        ///////////////////////////////////////////////  Extension Test ////////////////////////////////////////////////
+
+        [Repeat(10)]
+        [TestCase("if(1 > 2) { 123 } else { 456 }")]
+        public static void Test_Expression_IfStatements(string input)
+        {
+            var test = Ink.Evaluate(input);
+            if (test is InkValue value)
+            {
+                Console.WriteLine(value.Value_int); // each time , the result will be different 
+
+                InkValue.Release(value);
+            }
+        }
+
+        [TestCase("((((((()()()()()))))))")]
+        [TestCase("()")]
+        [TestCase("()()")]
+        [TestCase("(())(())")]
+        public static void Temp_Function_GetMatchOperator(string input)
+        {
+            var keys = Ink.CompileLexerAndFill(input, 0, input.Length - 1);
+
+            Console.WriteLine(keys.Count);
+
+            var res = UniInk_Speed.GetMatchOperator(keys, InkOperator.ParenthisLeft, InkOperator.ParenthisRight, 0, keys.Count - 1);
+
+            Console.WriteLine(res.StartIndex);
+            Console.WriteLine(res.EndIndex);
+        }
 
 
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-
+        ///////////////////////////////////////////////  Helper Object  ////////////////////////////////////////////////
 
         public enum MyEnum { Food }
 
-
-        public int FoodNum;
-
         public int grower = 100;
 
+        public       int FoodNum;
         public const int Food = (int)MyEnum.Food;
 
         public static void PAY(MyEnum @enum, int num)
