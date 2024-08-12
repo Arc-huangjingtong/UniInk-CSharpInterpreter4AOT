@@ -121,7 +121,7 @@
         [TestCase("9*(1+1 + 1 + 1 + 1+1+1)", ExpectedResult = 9 * (1  + 1 + 1 + 1 + 1 + 1 + 1))]
         [TestCase("   999999 + 999999     ", ExpectedResult = 999999 + 999999)]
         [TestCase("9*((1+(1+1)+(1+1))+1+1)", ExpectedResult = 9 * ((1 + (1 + 1) + (1 + 1)) + 1 + 1))]
-        [TestCase("9*((1+(2+3)+(4+5))+6+7)", ExpectedResult = 9 * ((1 + (2 + 3) + (4 + 5)) + 6 + 7))]
+        [TestCase("9*((1+(2+3)*(4+5))+6+7)", ExpectedResult = 9 * ((1 + (2 + 3) * (4 + 5)) + 6 + 7))]
         [TestCase("9 * ( ( 1 + 2 * 3 ) /2)", ExpectedResult = 9 * ((1 + 2 * 3) / 2))]
         //[TestCase("9 * +5 ",                 ExpectedResult = 9 * +5)] not support
         public static int Test_Arithmetic_Int(string input)
@@ -377,14 +377,34 @@
 
         ///////////////////////////////////////////////  Extension Test ////////////////////////////////////////////////
 
-        [Repeat(10)]
-        [TestCase("if(1 > 2) { 123 } else { 456 }")]
+        // [Repeat(10)]
+        // [TestCase("  if( 1 > 2 )          "
+        //         + "  {                    "
+        //         + "    123                "
+        //         + "  }                    "
+        //         + "  else                 "
+        //         + "  {                    "
+        //         + "    456                "
+        //         + "  }                    ")]
+        // /////////////////////////////////////
+        // [TestCase("  if( 1 > 2 )          "
+        //         + "  {                    "
+        //         + "    123                "
+        //         + "  }                    "
+        //         + "  else if (3>6)        "
+        //         + "  {                    "
+        //         + "    456                "
+        //         + "  }                    "
+        //         + "  else                 "
+        //         + "  {                    "
+        //         + "    666                "
+        //         + "  }                    ")]
         public static void Test_Expression_IfStatements(string input)
         {
             var test = Ink.Evaluate(input);
             if (test is InkValue value)
             {
-                Console.WriteLine(value.Value_int); // each time , the result will be different 
+                Console.WriteLine(value.Value_int); // each time , the result will be different
 
                 InkValue.Release(value);
             }

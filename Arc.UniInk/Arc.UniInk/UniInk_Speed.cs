@@ -504,6 +504,7 @@
           , { InkOperator.ConditionalAnd, InkOperator.InkOperator_ConditionalAnd } //
           , { InkOperator.ConditionalOr, InkOperator.InkOperator_ConditionalOr }   //
           , { InkOperator.Assign, InkOperator.InkOperator_Assign }                 //
+          , { InkOperator.KeyReturn, InkOperator.InkOperator_Return }              //
         };
 
         /// <summary> Some Escaped Char mapping </summary>
@@ -940,7 +941,7 @@
         }
 
 
-        /// <summary>Find the section between <see cref="sct_start"/> and <see cref="sct_end"/>               </summary>
+        /// <summary> Find the innermost section between <see cref="sct_start"/> and <see cref="sct_end"/>    </summary>
         /// <param name="keys"     > the keys to find section in                                                </param>
         /// <param name="sct_start"> the start section key : the last  find before <see cref="sct_end"/>        </param>
         /// <param name="sct_end"  > the end   section key : the first find after  <see cref="sct_start"/>      </param>
@@ -975,6 +976,44 @@
 
             return (startIndex != -1 && endIndex != -1, startIndex, endIndex);
         }
+
+        /// <summary> Find the outermost operator range in the specified left and right </summary>
+        public static (int StartIndex, int EndIndex) GetMatchOperator(InkSyntaxList keys, InkOperator opLeft, InkOperator opRight, int start, int end)
+        {
+            int startIndex = -1, balance = -1;
+
+            for (var i = start ; i <= end ; i++)
+            {
+                if (keys[i] is InkOperator op && Equals(op, opLeft))
+                {
+                    startIndex = i;
+                    balance    = 1;
+                    break;
+                }
+            }
+
+            for (var i = startIndex + 1 ; i <= end ; i++)
+            {
+                if (keys[i] is InkOperator opL && Equals(opL, opLeft))
+                {
+                    balance++;
+                }
+                else if (keys[i] is InkOperator opR && Equals(opR, opRight))
+                {
+                    balance--;
+
+                    if (balance == 0)
+                    {
+                        return (startIndex, i);
+                    }
+                }
+            }
+
+
+            return (-1, -1);
+        }
+
+
 
         protected static (bool result, int index) FindOperator(InkSyntaxList keys, InkOperator @operator, int start, int end)
         {
@@ -1134,16 +1173,16 @@
 
 
         public static readonly InkOperator KeyIf       = new("if", 20);
-        public static readonly InkOperator KeyElse     = new("else", 20);
-        public static readonly InkOperator KeySwitch   = new("switch", 20);
-        public static readonly InkOperator KeyWhile    = new("while", 20);
-        public static readonly InkOperator KeyFor      = new("for", 20);
-        public static readonly InkOperator KeyForeach  = new("foreach", 20);
-        public static readonly InkOperator KeyIn       = new("in", 20);
-        public static readonly InkOperator KeyReturn   = new("return", 20);
-        public static readonly InkOperator KeyBreak    = new("break", 20);
-        public static readonly InkOperator KeyContinue = new("continue", 20);
         public static readonly InkOperator KeyVar      = new("var", 20);
+        public static readonly InkOperator KeyElse     = new("else", 20);
+        public static readonly InkOperator KeyReturn   = new("return", 20);
+        public static readonly InkOperator KeySwitch   = new("switch", 20);   // don't support
+        public static readonly InkOperator KeyWhile    = new("while", 20);    // don't support
+        public static readonly InkOperator KeyFor      = new("for", 20);      // don't support
+        public static readonly InkOperator KeyForeach  = new("foreach", 20);  // don't support
+        public static readonly InkOperator KeyIn       = new("in", 20);       // don't support
+        public static readonly InkOperator KeyBreak    = new("break", 20);    // don't support
+        public static readonly InkOperator KeyContinue = new("continue", 20); // don't support
         public static readonly InkOperator Empty       = new("😊", short.MaxValue);
 
 
@@ -1396,6 +1435,20 @@
 
             throw new InkSyntaxException($"the left value is not a variable!");
         }
+
+        public static object InkOperator_Return(object left, object right)
+        {
+            switch (right)
+            {
+                case InkValue rightValue :
+                {
+                    var result = rightValue.Clone();
+                    result.returner = true;
+                    return result;
+                }
+                default : throw new InkSyntaxException($"unknown type{left}--{right}");
+            }
+        }
     }
 
 
@@ -1549,6 +1602,7 @@
 
         public bool setter;
         public bool getter;
+        public bool returner;
 
         public Action<InkValue> Setter;
         public Action<InkValue> Getter;
@@ -2017,6 +2071,8 @@
         public readonly List<object> ObjectList = new(UniInk_Speed.CAPACITY_LIST);
         public readonly List<object> CastOther  = new(UniInk_Speed.CAPACITY_LIST);
         public readonly List<bool>   IndexDirty = new(UniInk_Speed.CAPACITY_LIST);
+
+        public object ReturnObject = null;
 
 
 

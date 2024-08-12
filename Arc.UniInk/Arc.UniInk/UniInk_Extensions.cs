@@ -126,7 +126,9 @@
             }
 
             var flag_if     = true;
+            var flag_result = false;
             var ifCondition = false;
+            var currentEnd  = operationEnd;
 
 
             // 计算条件
@@ -148,7 +150,7 @@
 
             while (true)
             {
-                // 同时检查下一个 else 和 if 的 位置关系 ,然后更具他们的关系,是可以直接枚举所有的情况的(非常优雅)
+                // Check the position relationship between the next else and if, and then enumerate all cases based on their relationship (very elegant)
                 var (success_else, index_else) = FindOperator(keys, InkOperator.KeyElse, operationEnd + 1, keys.Count - 1);
                 var (success_if, index_if)     = FindOperator(keys, InkOperator.KeyIf,   operationEnd + 1, keys.Count - 1);
 
@@ -158,88 +160,79 @@
                 // 4. 如果找到了 else , 找到 if 且 if 在 else 之后(大于1) , 说明这是一个 else 语句 , 虽然后面还有 IF, 但是交给下一次循环即可
                 // 5. 如果找到了 else , 找到 if 且 if 在 else 之前(等于1) , 说明这是一个 else if 语句
 
-
-                switch (success_else, success_if, index_else - index_if)
+                switch (success_else, success_if, index_if - index_else)
                 {
                     case (false, false, _) : return operationEnd;
                     case (false, true, _) :  return operationEnd;
-                    case (true, true, > 1) : return operationEnd;
-
-                    case (true, true, 1) :
-                        ProcessList(keys, operationStart + 1, operationEnd - 1);
-                        break;
-                }
-            }
-        }
-
-
-        protected static void GetIfStatementEndIndex(InkSyntaxList keys, int start)
-        {
-            var index          = start;
-            var conditionStart = start + 1;
-            //var conditionEnd   = FindOperator(keys, InkOperator.ParenthisRight, conditionStart, end).index;
-        }
-
-
-        /// <summary> Find the operator range in the specified left and right </summary>
-        public static (int StartIndex, int EndIndex) GetMatchOperator(InkSyntaxList keys, InkOperator operatorLeft, InkOperator operatorRight, int start, int end)
-        {
-            int startIndex = -1, balance = -1;
-
-            for (var i = start ; i <= end ; i++)
-            {
-                if (keys[i] is InkOperator op && Equals(op, operatorLeft))
-                {
-                    startIndex = i;
-                    balance    = 1;
-                    break;
-                }
-            }
-
-            for (var i = startIndex + 1 ; i <= end ; i++)
-            {
-                if (keys[i] is InkOperator opL && Equals(opL, operatorLeft))
-                {
-                    balance++;
-                }
-                else if (keys[i] is InkOperator opR && Equals(opR, operatorRight))
-                {
-                    balance--;
-
-                    if (balance == 0)
+                    case (true, false, _) :
+                    case (true, true, > 1) :
                     {
-                        return (startIndex, i);
+                        var (opElseStart, opElseEnd)
+                            = GetMatchOperator(keys, InkOperator.BraceLeft, InkOperator.BraceRight, index_else + 1, keys.Count - 1);
+
+                        if (!ifCondition)
+                        {
+                            ProcessList(keys, opElseStart + 1, opElseEnd - 1);
+                        }
+
+                        return opElseEnd;
+                    }
+                    case (true, true, 1) : // else if
+                    {
+                        //if (1 == 1)
+                        //{
+                        //  1 + 1;
+                        //}
+                        //else if (1 == 1)
+                        //{
+                        //  1 - 1;
+                        //}
+                        //else 
+                        //{
+                        //  1 - 1;
+                        //}
+                        //FuncA();
+                        //FuncB();
+
+                        // 匹配 else if 后的条件
+                        var (cdsStart, cdsEnd)
+                            = GetMatchOperator(keys, InkOperator.ParenthisLeft, InkOperator.ParenthisRight, index_if + 1, keys.Count - 1);
+
+                        // 计算 else if 条件后的操作
+                        var (opElseStart, opElseEnd)
+                            = GetMatchOperator(keys, InkOperator.BraceLeft, InkOperator.BraceRight, cdsEnd + 1, keys.Count - 1);
+
+                        if (!ifCondition) //如果还没有找到正确的条件
+                        {
+                            // 计算 else if 后的条件
+                            var condition_elseif = ProcessList(keys, cdsStart + 1, cdsEnd - 1);
+
+                            if (condition_elseif is InkValue conditionValue_elseif)
+                            {
+                                ifCondition = conditionValue_elseif;
+                            }
+
+                            if (!ifCondition)
+                            {
+                                ProcessList(keys, opElseStart + 1, opElseEnd - 1);
+                            }
+                        }
+
+
+                        break;
                     }
                 }
             }
-
-
-            return (-1, -1);
         }
 
 
-
-        public enum EStatement { IF, ELSE, ELSE_IF }
 
         // the sign of an if statement:
         // Begin : keyword [if] (condition) { operation } 
         // Then  : keyword [else if] (condition) { operation } need : [if] 
         // End   : keyword [else] { operation } need : [if] and close [if]
 
-        //if (1 == 1)
-        //{
-        //  1 + 1;
-        //}
-        //else if (1 == 1)
-        //{
-        //  1 - 1;
-        //}
-        //else 
-        //{
-        //  1 - 1;
-        //}
-        //FuncA();
-        //FuncB();
+
 
         // if (Has State Keywords)
         // {
