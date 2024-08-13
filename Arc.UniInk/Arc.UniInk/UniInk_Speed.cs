@@ -140,7 +140,7 @@
         /// <summary> UniInk Parser : Execute the SyntaxList and return the result object </summary>
         public static object ExecuteProcess(InkSyntaxList keys)
         {
-            var res = InputIsScript(keys) ? ProcessList_ScriptsWithIfStatement(keys) : ProcessList(keys, 0, keys.Count - 1);
+            var res = InputIsScript(keys) ? ProcessList_Scripts(keys) : ProcessList(keys, 0, keys.Count - 1);
 
             return res;
         }

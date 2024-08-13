@@ -122,8 +122,8 @@
         [TestCase("   999999 + 999999     ", ExpectedResult = 999999 + 999999)]
         [TestCase("9*((1+(1+1)+(1+1))+1+1)", ExpectedResult = 9 * ((1 + (1 + 1) + (1 + 1)) + 1 + 1))]
         [TestCase("9*((1+(2+3)*(4+5))+6+7)", ExpectedResult = 9 * ((1 + (2 + 3) * (4 + 5)) + 6 + 7))]
-        [TestCase("9 * ( ( 1 + 2 * 3 ) /2)", ExpectedResult = 9 * ((1 + 2 * 3) / 2))]
-        //[TestCase("9 * +5 ",                 ExpectedResult = 9 * +5)] not support
+        [TestCase("9 * ( ( 1 + 2 * 3 ) /2)", ExpectedResult = 9 * ((1 + 2       * 3) / 2))]
+        //[TestCase("9 * +5 ",                 ExpectedResult = 9 * +5)] not support => 9 * (+5) is support
         public static int Test_Arithmetic_Int(string input)
         {
             var res    = (InkValue)Ink.Evaluate(input);
