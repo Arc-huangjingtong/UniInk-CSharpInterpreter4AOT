@@ -978,7 +978,7 @@
         }
 
         /// <summary> Find the outermost operator range in the specified left and right </summary>
-        public static (int StartIndex, int EndIndex) GetMatchOperator(InkSyntaxList keys, InkOperator opLeft, InkOperator opRight, int start, int end)
+        protected static (int StartIndex, int EndIndex) GetMatchOperator(InkSyntaxList keys, InkOperator opLeft, InkOperator opRight, int start, int end)
         {
             int startIndex = -1, balance = -1;
 
@@ -1107,8 +1107,8 @@
         {
             foreach (var obj in keys.ObjectList)
             {
-                //match [;] or [{]
-                if (obj is InkOperator @operator && (Equals(@operator, InkOperator.Semicolon) || Equals(@operator, InkOperator.BraceLeft)))
+                //match [;]
+                if (obj is InkOperator @operator && Equals(@operator, InkOperator.Semicolon))
                 {
                     return true;
                 }
@@ -1442,6 +1442,7 @@
             {
                 case InkValue rightValue :
                 {
+                    rightValue.Calculate();
                     var result = rightValue.Clone();
                     result.returner = true;
                     return result;
@@ -1579,6 +1580,9 @@
 
             value.Value_Meta.Clear();
             value.isCalculate = false;
+            value.setter      = false;
+            value.getter      = false;
+            value.returner    = false;
 
             pool.Enqueue(value);
         }
@@ -2071,8 +2075,6 @@
         public readonly List<object> ObjectList = new(UniInk_Speed.CAPACITY_LIST);
         public readonly List<object> CastOther  = new(UniInk_Speed.CAPACITY_LIST);
         public readonly List<bool>   IndexDirty = new(UniInk_Speed.CAPACITY_LIST);
-
-        public object ReturnObject = null;
 
 
 

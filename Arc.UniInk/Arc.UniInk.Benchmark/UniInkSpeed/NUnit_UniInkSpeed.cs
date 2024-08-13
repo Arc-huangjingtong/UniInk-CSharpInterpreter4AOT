@@ -16,6 +16,7 @@
     using Arc.UniInk;
     using System;
     using System.Collections.Generic;
+    using JetBrains.Util;
     using NUnit.Framework;
 
 
@@ -377,53 +378,55 @@
 
         ///////////////////////////////////////////////  Extension Test ////////////////////////////////////////////////
 
-        // [Repeat(10)]
-        // [TestCase("  if( 1 > 2 )          "
-        //         + "  {                    "
-        //         + "    123                "
-        //         + "  }                    "
-        //         + "  else                 "
-        //         + "  {                    "
-        //         + "    456                "
-        //         + "  }                    ")]
-        // /////////////////////////////////////
-        // [TestCase("  if( 1 > 2 )          "
-        //         + "  {                    "
-        //         + "    123                "
-        //         + "  }                    "
-        //         + "  else if (3>6)        "
-        //         + "  {                    "
-        //         + "    456                "
-        //         + "  }                    "
-        //         + "  else                 "
-        //         + "  {                    "
-        //         + "    666                "
-        //         + "  }                    ")]
+        //[Repeat(1)]
+        ///////////////////////////////////////
+        [TestCase("  if ( 1 > 2 )      "
+                + "  {                 "
+                + "     123            "
+                + "  }                 "
+                + "  else              "
+                + "  {                 "
+                + "    return 456      "
+                + "  }                 ")]
+        ///////////////////////////////////////
+        [TestCase("  if ( 1 > 2 )      "
+                + "  {                 "
+                + "     123            "
+                + "  }                 "
+                + "  else if ( 3 > 6 ) "
+                + "  {                 "
+                + "     456            "
+                + "  }                 "
+                + "  else              "
+                + "  {                 "
+                + "    return 666      "
+                + "  }                 ")]
+        ///////////////////////////////////////
+        [TestCase("  if ( 1 > 2 )      "
+                + "  {                 "
+                + "     123            "
+                + "  }                 "
+                + "  else if ( 3 > 6 ) "
+                + "  {                 "
+                + "     456            "
+                + "  }                 "
+                + "  else if ( 3 < 6 ) "
+                + "  {                 "
+                + "    return 456      "
+                + "  }                 "
+                + "  else              "
+                + "  {                 "
+                + "    return 666      "
+                + "  }                 ")]
         public static void Test_Expression_IfStatements(string input)
         {
-            var test = Ink.Evaluate(input);
+            var test = Ink.Evaluate_IfStatement(input);
             if (test is InkValue value)
             {
                 Console.WriteLine(value.Value_int); // each time , the result will be different
 
                 InkValue.Release(value);
             }
-        }
-
-        [TestCase("((((((()()()()()))))))")]
-        [TestCase("()")]
-        [TestCase("()()")]
-        [TestCase("(())(())")]
-        public static void Temp_Function_GetMatchOperator(string input)
-        {
-            var keys = Ink.CompileLexerAndFill(input, 0, input.Length - 1);
-
-            Console.WriteLine(keys.Count);
-
-            var res = UniInk_Speed.GetMatchOperator(keys, InkOperator.ParenthisLeft, InkOperator.ParenthisRight, 0, keys.Count - 1);
-
-            Console.WriteLine(res.StartIndex);
-            Console.WriteLine(res.EndIndex);
         }
 
 
