@@ -78,20 +78,19 @@
             // Then  : keyword [else if] (condition) { operation } need : [if] flag
             // End   : keyword [else] { operation }                need : [if] flag and close [if] flag
 
-            // 这个函数会被检测函数调用,那么一开始一定有一个 If 关键字
+            // This function will be called by the detection function, so there must be an If keyword at the beginning
 
-            // 定位 If(condition) 条件的开始和结束
+            // Locate the [If (condition)]'s condition
             var (conditionStart, conditionEnd)
                 = GetMatchOperator(keys, InkOperator.ParenthisLeft, InkOperator.ParenthisRight, start, keys.Count - 1);
 
-            // 检测条件是否正确,如果不正确则直接抛出异常
+            // Check if the condition is correct, if not, throw an exception directly
             if (conditionStart == -1 || start + 1 != conditionStart)
             {
                 throw new InkSyntaxException("The if statement is wronging");
             }
 
-
-            // 定位If(condition){ operation } 操作的开始和结束
+            // Locate the [(condition){ operation }] operation
             var (operationStart, operationEnd)
                 = GetMatchOperator(keys, InkOperator.BraceLeft, InkOperator.BraceRight, conditionEnd + 1, keys.Count - 1);
 
@@ -106,8 +105,6 @@
             var currentEnd  = operationEnd;
             var index_end   = keys.Count - 1;
 
-
-            // 计算条件
             var condition = ProcessList(keys, conditionStart + 1, conditionEnd - 1);
 
             if (condition is InkValue conditionValue)
@@ -117,6 +114,8 @@
                     ifCondition = true;
                     ProcessList(keys, operationStart + 1, operationEnd - 1);
                 }
+
+                InkValue.Release(conditionValue);
             }
 
 
@@ -148,7 +147,12 @@
 
                         if (!ifCondition)
                         {
-                            ProcessList(keys, opElseStart + 1, opElseEnd - 1);
+                            var result = ProcessList(keys, opElseStart + 1, opElseEnd - 1);
+
+                            if (result is InkValue resultValue)
+                            {
+                                InkValue.Release(resultValue);
+                            }
                         }
 
                         currentEnd = opElseEnd;
@@ -157,21 +161,6 @@
                     }
                     case (true, true, 1) : // else if
                     {
-                        //if (1 == 1)
-                        //{
-                        //  1 + 1;
-                        //}
-                        //else if (1 == 1)
-                        //{
-                        //  1 - 1;
-                        //}
-                        //else 
-                        //{
-                        //  1 - 1;
-                        //}
-                        //FuncA();
-                        //FuncB();
-
                         // 匹配 else if (condition) 后的条件
                         var (cdsStart, cdsEnd)
                             = GetMatchOperator(keys, InkOperator.ParenthisLeft, InkOperator.ParenthisRight, index_if + 1, index_end);
@@ -188,10 +177,17 @@
                         {
                             if (conditionValue_elseif && ifCondition == false)
                             {
-                                ProcessList(keys, opElseStart + 1, opElseEnd - 1);
+                                var result = ProcessList(keys, opElseStart + 1, opElseEnd - 1);
+
+                                if (result is InkValue resultValue)
+                                {
+                                    InkValue.Release(resultValue);
+                                }
                             }
 
                             ifCondition = conditionValue_elseif || ifCondition;
+
+                            InkValue.Release(conditionValue_elseif);
                         }
 
                         currentEnd = opElseEnd;

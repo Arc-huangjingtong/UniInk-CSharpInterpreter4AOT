@@ -423,10 +423,16 @@
             var test = Ink.Evaluate_IfStatement(input);
             if (test is InkValue value)
             {
+#if DEBUG
                 Console.WriteLine(value.Value_int); // each time , the result will be different
+#endif
 
                 InkValue.Release(value);
             }
+#if DEBUG
+            Console.WriteLine(InkValue.GetTime);
+            Console.WriteLine(InkValue.ReleaseTime);
+#endif
         }
 
 
