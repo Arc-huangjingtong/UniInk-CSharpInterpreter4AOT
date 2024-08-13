@@ -140,6 +140,37 @@ var res = Ink.Evaluate("grower + 10086") as InkValue;
 
 ```
 
+
+- ### ✨Support Control Flow(If Statement)
+
+
+```csharp
+
+//Not Support Nested call now like : if ( xxx ) { if ( ) { }  }
+var script= @" if ( 1 > 2 )      
+               {                 
+                  123            
+               }                 
+               else if ( 3 > 6 ) 
+               {                 
+                  456            
+               }                 
+               else if ( 3 < 6 ) 
+               {                 
+                 return 456      
+               }                 
+               else              
+               {                 
+                 return 666      
+               }                 ";
+
+// you should copy the UniInk_Extensions.cs to your project
+// it may enlightened you to write the custom extension
+var res = Ink.Evaluate_IfStatement(script) as InkValue;
+
+```
+
+
 # 💬Support
 
 If you have any questions, suggestions, or need assistance, please feel free
