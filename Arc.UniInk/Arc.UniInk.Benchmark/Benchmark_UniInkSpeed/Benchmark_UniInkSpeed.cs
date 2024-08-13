@@ -44,6 +44,22 @@
                                                         + "65-66-67-68-69-70-71-72-73-74-75-76-77-78-79-80-81-82-83-84-85-86-87-88-89-90-91-92-93-94-95-"
                                                         + "96-97-98-99-100";
 
+        public const string TestInput_IfStatement = @" if ( 1 > 2 )      
+                                                      {                 
+                                                         123            
+                                                      }                 
+                                                      else if ( 3 > 6 ) 
+                                                      {                 
+                                                         456            
+                                                      }                 
+                                                      else if ( 3 < 6 ) 
+                                                      {                 
+                                                        return 456      
+                                                      }                 
+                                                      else              
+                                                      {                 
+                                                        return 666      
+                                                      }                 ";
 
 
         [OneTimeSetUp]
@@ -62,6 +78,21 @@
             Console.WriteLine(result1 + "|" + result2 + "|" + result3 + "|" + result4);
 #endif
         }
+
+        [Benchmark] [Test]
+        public void TEST_IfStatement__UniInkSpeed()
+        {
+            var Ink  = NUnit_UniInkSpeed.Ink;
+            var test = Ink.Evaluate_IfStatement(TestInput_IfStatement);
+            if (test is InkValue value)
+            {
+                //Console.WriteLine(value.Value_int); // each time , the result will be different
+
+                InkValue.Release(value);
+            }
+        }
+
+
 
         private static readonly ExpressionEvaluator _expressionEvaluator = new ExpressionEvaluator();
 
