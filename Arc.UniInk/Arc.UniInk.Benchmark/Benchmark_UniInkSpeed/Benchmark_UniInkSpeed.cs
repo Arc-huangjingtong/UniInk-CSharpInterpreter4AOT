@@ -11,13 +11,15 @@
 
 
     /*
-     * | Method                                | Mean            | Error         | StdDev         | Median          | Gen0     | Gen1    | Allocated |
-     * |-------------------------------------- |----------------:|--------------:|---------------:|----------------:|---------:|--------:|----------:|
-     * | TEST_Arithmetic__UniInkSpeed          |   293,666.10 ns |    333.563 ns |     260.424 ns |   293,632.98 ns |        - |       - |      68 B |
-     * | TEST_Arithmetic__UniInkSpeed_Compiled |   175,568.29 ns |  3,454.616 ns |   5,063.732 ns |   176,105.37 ns |        - |       - |     658 B |
-     * | TEST_Arithmetic__ExpressionEvaluator  | 2,622,376.28 ns | 10,903.378 ns |  10,199.026 ns | 2,623,418.75 ns | 390.6250 | 11.7188 | 2068334 B |
-     * | TEST_Arithmetic__Sprache              | 2,797,690.07 ns | 91,953.442 ns | 265,306.706 ns | 2,677,421.88 ns | 535.1563 | 19.5313 | 2817177 B |
-     * | TEST_Arithmetic__ParsecSharp          | 1,114,429.92 ns | 21,943.809 ns |  27,751.892 ns | 1,113,960.74 ns | 162.1094 |       - |  851830 B |
+     * | Method                                | Mean        | Error     | StdDev    | Ratio | RatioSD | Gen0     | Gen1    | Allocated | Alloc Ratio |
+     * |-------------------------------------- |------------:|----------:|----------:|------:|--------:|---------:|--------:|----------:|------------:|
+     * | TEST_Arithmetic__UniInkSpeed          |   296.06 us |  0.968 us |  0.905 us |  1.00 |    0.00 |        - |       - |      68 B |        1.00 |
+     * | TEST_IfStatement__UniInkSpeed         |    11.05 us |  0.043 us |  0.038 us |  0.04 |    0.00 |        - |       - |      64 B |        0.94 |
+     * | TEST_Arithmetic__ExpressionEvaluator  | 2,621.71 us | 50.110 us | 59.653 us |  8.87 |    0.23 | 390.6250 |  3.9063 | 2068334 B |   30,416.68 |
+     * | TEST_Arithmetic__Sprache              | 2,678.89 us | 21.823 us | 19.345 us |  9.05 |    0.07 | 535.1563 | 27.3438 | 2817145 B |   41,428.60 |
+     * | TEST_Arithmetic__ParsecSharp          | 1,063.70 us |  3.801 us |  3.555 us |  3.59 |    0.02 | 162.1094 |       - |  851830 B |   12,526.91 |
+     * | TEST_Arithmetic__UniInkSpeed_Compiled |   164.65 us |  0.610 us |  0.540 us |  0.56 |    0.00 |        - |       - |     658 B |        9.68 |
+     *
      *
      * summary : UniInkSpeed is fast , and UniInkSpeed support more features. would you like to try it?
      */
