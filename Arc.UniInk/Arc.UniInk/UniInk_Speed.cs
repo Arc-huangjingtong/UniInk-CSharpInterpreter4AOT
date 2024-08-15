@@ -68,6 +68,11 @@
         /// <param name= "endIndex" > The  end  index of the expression(contain the  end  index)   </param>
         public object Evaluate(string expression, int startIndex, int endIndex)
         {
+            if (string.IsNullOrWhiteSpace(expression))
+            {
+                return null;
+            }
+            
             var keys = CompileLexerAndFill(expression, startIndex, endIndex);
 
             var result = ExecuteProcess(keys);

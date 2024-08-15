@@ -361,6 +361,21 @@
         #endregion
 
 
+        #region SP : Special Test
+
+
+        [Repeat(10000)]
+        [TestCase(" ",  ExpectedResult = null)]
+        [TestCase(null, ExpectedResult = null)]
+        [TestCase("",   ExpectedResult = null)] // string.Empty
+        public static object Test_Expression_SP(string input)
+        {
+            return Ink.Evaluate(input);
+        }
+
+
+        #endregion
+
 
         [Test]
         public static void Test_Temp()
