@@ -82,6 +82,7 @@
                 return FLT(param1, param2);
             }));
 
+
             static List<Card> FLT(IList<Card> cards, Predicate<Card> func)
             {
                 var list = new System.Collections.Generic.List<Card>();
@@ -102,6 +103,12 @@
             {
                 value.ValueType = TypeCode.Int32;
                 value.Value_int = grower++;
+            }));
+
+            Ink.RegisterVariable("Target", InkValue.SetGetter(value =>
+            {
+                value.ValueType    = TypeCode.Object;
+                value.Value_Object = Target;
             }));
 
 
@@ -351,14 +358,15 @@
         #region 5.Best Practice: Property Getter (setter will be supported in the future...)
 
 
-        [Repeat(10)]
+        [Repeat(10000)]
         [TestCase("grower + 100000")]
+        [TestCase("GET(Target, 1001)")]
         public static void Test_Expression_Getter(string input)
         {
             var test = Ink.Evaluate(input);
             if (test is InkValue value)
             {
-                Console.WriteLine(value.Value_int); // each time , the result will be different 
+                //Console.WriteLine(value.Value_int); // each time , the result will be different 
 
                 InkValue.Release(value);
             }
@@ -467,6 +475,9 @@
 
         public int grower = 100;
 
+        public static Card Target => new Card() { ID = 1, Rarity = 2 };
+
+
         public       int FoodNum;
         public const int Food = (int)MyEnum.Food;
 
@@ -485,6 +496,18 @@
 
             //  @this.FoodNum -= num;
             //Console.WriteLine(" 支付成功 支付了" + num + "元");
+        }
+
+        public static void GET(Card card, int id)
+        {
+            if (card.ID == id)
+            {
+                Console.WriteLine("ID:" + card.ID);
+            }
+            else
+            {
+                Console.WriteLine("ID:" + card.Rarity);
+            }
         }
 
 
