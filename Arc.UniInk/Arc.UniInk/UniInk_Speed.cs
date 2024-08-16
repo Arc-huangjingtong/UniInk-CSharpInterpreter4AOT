@@ -72,7 +72,7 @@
             {
                 return null;
             }
-            
+
             var keys = CompileLexerAndFill(expression, startIndex, endIndex);
 
             var result = ExecuteProcess(keys);
@@ -174,6 +174,8 @@
         /// <summary> UniInk SyntaxList : Process the SyntaxList </summary>
         protected static object ProcessList(InkSyntaxList syntaxList, int start, int end)
         {
+            if (start > end) return null;
+
             ProcessList_Lambda(syntaxList, start, end);
             ProcessList_Parenthis(syntaxList, start, end);
             ProcessList_Operators(syntaxList, start, end);
@@ -367,8 +369,9 @@
 
         protected static void ProcessList_Functions(InkSyntaxList keys, int paramStart, int paramEnd)
         {
-            var func      = keys[paramStart - 1] as InkFunction; //😊
-            var paramList = InkSyntaxList.GetTemp();             //😊
+            var func         = keys[paramStart - 1] as InkFunction; //😊
+            var paramList    = InkSyntaxList.GetTemp();             //😊
+            var sectionStart = 0;
 
             for (var i = paramStart + 1 ; i <= paramEnd - 1 ; i++)
             {
@@ -392,7 +395,8 @@
 
                 if (Equals(current, InkOperator.Comma))
                 {
-                    ProcessList_Operators(paramList, 0, paramList.Count - 1);
+                    ProcessList_Operators(paramList, sectionStart, paramList.Count - 1);
+                    sectionStart = paramList.Count;
                 }
                 else
                 {
@@ -400,8 +404,9 @@
                 }
             }
 
-            ProcessList_Operators(paramList, 0, paramList.Count - 1);
+            ProcessList_Operators(paramList, sectionStart, paramList.Count - 1);
 
+            ObjectRemoveNull(paramList.CastOther);
             var result = func?.FuncDelegate2.Invoke(paramList.CastOther);
 
             if (result is InkValue) { }
@@ -532,7 +537,7 @@
         public readonly Dictionary<int, InkValue> dic_Variables = new(CAPACITY_DICT);
 
         /// <summary> Some temp  variables mapping </summary>
-        public readonly Dictionary<int, InkValue> dic_Variables_Temp = new(CAPACITY_DICT);
+        public Dictionary<int, InkValue> dic_Variables_Temp = new(CAPACITY_DICT);
 
 
 
@@ -1092,21 +1097,6 @@
             return (priorityOperator, index);
         }
 
-        /// <summary> Get the hash code of the string from <see cref="startIndex"/> to <see cref="endIndex"/> </summary>
-        public static int GetStringSliceHashCode(string str, int startIndex, int endIndex)
-        {
-            var hash = 0;
-            for (var i = startIndex ; i <= endIndex ; i++)
-            {
-                hash = hash * 31 + str[i];
-            }
-
-            return hash;
-        }
-
-        public static int GetStringSliceHashCode(string str) => GetStringSliceHashCode(str, 0, str.Length - 1);
-
-
         /// <summary> Judge the input String is a Script or not (depend on the operator:[;] [{])              </summary>
         protected static bool InputIsScript(InkSyntaxList keys)
         {
@@ -1122,6 +1112,32 @@
 
             return false;
         }
+
+        protected static void ObjectRemoveNull(List<object> objectList)
+        {
+            for (var i = 0 ; i < objectList.Count ; i++)
+            {
+                if (objectList[i] == null)
+                {
+                    objectList.RemoveAt(i);
+                    i--;
+                }
+            }
+        }
+
+        /// <summary> Get the hash code of the string from <see cref="startIndex"/> to <see cref="endIndex"/> </summary>
+        public static int GetStringSliceHashCode(string str, int startIndex, int endIndex)
+        {
+            var hash = 0;
+            for (var i = startIndex ; i <= endIndex ; i++)
+            {
+                hash = hash * 31 + str[i];
+            }
+
+            return hash;
+        }
+
+        public static int GetStringSliceHashCode(string str) => GetStringSliceHashCode(str, 0, str.Length - 1);
     }
 
 
@@ -1249,7 +1265,11 @@
         {
             switch (left)
             {
-                case null : return right;
+                case null when right is InkValue rightValue :
+                {
+                    var inkDefult = InkValue.Get();
+                    return inkDefult - rightValue;
+                }
                 case InkValue leftValue when right is InkValue rightValue :
                 {
                     return leftValue - rightValue;
@@ -1584,10 +1604,16 @@
             ReleaseTime++;
 
             value.Value_Meta.Clear();
-            value.isCalculate = false;
-            value.setter      = false;
-            value.getter      = false;
-            value.returner    = false;
+            value.isCalculate  = false;
+            value.setter       = false;
+            value.getter       = false;
+            value.returner     = false;
+            value.Value_int    = 0;
+            value.Value_bool   = false;
+            value.Value_char   = default;
+            value.Value_float  = 0;
+            value.Value_double = 0;
+            value.Value_Object = null;
 
             pool.Enqueue(value);
         }

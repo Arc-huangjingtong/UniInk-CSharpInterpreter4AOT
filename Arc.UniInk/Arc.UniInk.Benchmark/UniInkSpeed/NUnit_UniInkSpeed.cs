@@ -272,8 +272,10 @@
 
 
         [Repeat(10000)]
-        [TestCase("SUM(SUM(1,2,3),SUM(1,2,3),1) + 123456789 ", ExpectedResult = 1 + 2 + 3 + 1 + 2 + 3 + 1 + 123456789)]
-        [TestCase("SUM(SUM(1,2,3),SUM(1,2,3),1) + SUM(1,2,3)", ExpectedResult = 1 + 2 + 3 + 1 + 2 + 3 + 1 + 1 + 2 + 3)]
+        [TestCase("SUM(SUM(1,2,3),SUM(1,2,3),1) + 123456789 ",  ExpectedResult = 1         + 2 + 3 + 1 + 2 + 3 + 1 + 123456789)]
+        [TestCase("SUM(SUM(1,2,-3),SUM(1,2,3),1) + SUM(1,2,3)", ExpectedResult = 1 + 2 - 3 + 1 + 2 + 3 + 1 + 1 + 2 + 3)]
+        [TestCase("SUM(1,1-2,3)",                               ExpectedResult = 3)]
+        [TestCase("SUM(1,-2,3)",                                ExpectedResult = 2)]
         public static int Test_Expression_Function(string input)
         {
             var res = Ink.Evaluate(input);
@@ -366,8 +368,10 @@
 
         [Repeat(10000)]
         [TestCase(" ",  ExpectedResult = null)]
-        [TestCase(null, ExpectedResult = null)]
         [TestCase("",   ExpectedResult = null)] // string.Empty
+        [TestCase(null, ExpectedResult = null)]
+        [TestCase(";;", ExpectedResult = null)]
+        [TestCase(";",  ExpectedResult = null)]
         public static object Test_Expression_SP(string input)
         {
             return Ink.Evaluate(input);
