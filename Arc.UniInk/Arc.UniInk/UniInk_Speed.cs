@@ -1267,8 +1267,10 @@
             {
                 case null when right is InkValue rightValue :
                 {
-                    var inkDefult = InkValue.Get();
-                    return inkDefult - rightValue;
+                    var inkDefult = InkValue.GetIntValue(0);
+                    var result    = inkDefult - rightValue;
+                    InkValue.Release(inkDefult);
+                    return result;
                 }
                 case InkValue leftValue when right is InkValue rightValue :
                 {
@@ -1711,6 +1713,7 @@
 
                     break;
                 }
+                case TypeCode.Object : break;
                 case TypeCode.String : break;
                 default :              throw new InkSyntaxException("Unknown ValueType");
             }

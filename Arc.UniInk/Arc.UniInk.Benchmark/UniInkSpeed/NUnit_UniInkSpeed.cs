@@ -271,11 +271,13 @@
         #region 3.Function: Function call
 
 
-        [Repeat(10000)]
+        //[Repeat(10000)]
         [TestCase("SUM(SUM(1,2,3),SUM(1,2,3),1) + 123456789 ",  ExpectedResult = 1         + 2 + 3 + 1 + 2 + 3 + 1 + 123456789)]
         [TestCase("SUM(SUM(1,2,-3),SUM(1,2,3),1) + SUM(1,2,3)", ExpectedResult = 1 + 2 - 3 + 1 + 2 + 3 + 1 + 1 + 2 + 3)]
         [TestCase("SUM(1,1-2,3)",                               ExpectedResult = 3)]
         [TestCase("SUM(1,-2,3)",                                ExpectedResult = 2)]
+        [TestCase("SUM(1,2,-3)",                                ExpectedResult = 1 + 2 - 3)]
+        [TestCase("SUM(1,2,3)",                                 ExpectedResult = 1     + 2 + 3)]
         public static int Test_Expression_Function(string input)
         {
             var res = Ink.Evaluate(input);
@@ -287,6 +289,9 @@
                 result = inkValue.Value_int;
                 InkValue.Release(inkValue);
             }
+
+            Console.WriteLine(InkValue.GetTime);
+            Console.WriteLine(InkValue.ReleaseTime);
 
             return result;
         }
