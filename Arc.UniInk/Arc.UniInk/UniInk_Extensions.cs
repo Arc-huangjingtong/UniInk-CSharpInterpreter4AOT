@@ -1,21 +1,100 @@
 ﻿namespace Arc.UniInk
 {
 
+    /******************************************************************************************************************
+    * 📰 Title    :  UniInk_Note (https://github.com/Arc-huangjingtong/UniInk-CSharpInterpreter4Unity)                *
+    * 🔖 Version  :  1.0.0                                                                                            *
+    * 😀 Authors  :  Arc (https://github.com/Arc-huangjingtong)                                                       *
+    * 📝 Desc     :  Provide commonly used string-related processing tools                                            *
+    /******************************************************************************************************************/
+
     using System.Text.RegularExpressions;
+    using System;
 
 
-    /*******************************************************************************************************************
-    *📰 Title    :  UniInk_Note (https://github.com/Arc-huangjingtong/UniInk-CSharpInterpreter4Unity)                  *
-    *🔖 Version  :  1.0.0                                                                                              *
-    *😀 Authors  :  Arc (https://github.com/Arc-huangjingtong)                                                         *
-    *📝 Desc     :  Provide commonly used string-related processing tools                                              *
-    /*******************************************************************************************************************/
+    /// <summary> Provide commonly tools in <see cref="UniInk_Speed"/> </summary>
+    /// <remarks> [⚠]not assurance zero GC </remarks>
+    public static class UniInk_Extensions
+    {
+        /// <summary> Get a Bool? Value with UniInk </summary>
+        /// <remarks> Automatically recycle the generated InkValue internally, and return null if the operation fails </remarks> 
+        public static bool? EvaluateBool(this UniInk_Speed ink, string expression)
+        {
+            var result = ink.Evaluate_IfStatement(expression);
+
+            if (result is InkValue { ValueType: TypeCode.Boolean } inkValue)
+            {
+                var resultBool = inkValue.Value_bool;
+
+                InkValue.Release(inkValue);
+
+                return resultBool;
+            }
+
+            return null;
+        }
+
+        /// <summary> Get a Int32? Value with UniInk </summary>
+        /// <remarks> Automatically recycle the generated InkValue internally, and return null if the operation fails </remarks>
+        public static int? EvaluateInt(this UniInk_Speed ink, string expression)
+        {
+            var result = ink.Evaluate_IfStatement(expression);
+
+            if (result is InkValue { ValueType: TypeCode.Int32 } inkValue)
+            {
+                var resultInt = inkValue.Value_int;
+
+                InkValue.Release(inkValue);
+
+                return resultInt;
+            }
+
+            return null;
+        }
+
+        #region Remove comments
+
+
+        //Base on : https://stackoverflow.com/questions/3524317/regex-to-strip-line-comments-from-c-sharp/3524689#3524689
+        private static readonly Regex removeCommentsRegex = new($"{blockComments}|{lineComments}|{stringsIgnore}|{verbatimStringsIgnore}", RegexOptions.Singleline | RegexOptions.Compiled);
+        private static readonly Regex newLineCharsRegex   = new(@"\r\n|\r|\n", RegexOptions.Compiled);
+
+        private const string verbatimStringsIgnore = @"@(""[^""]*"")+";           //language=regex
+        private const string stringsIgnore         = @"""((\\[^\n]|[^""\n])*)"""; //language=regex
+        private const string blockComments         = @"/\*(.*?)\*/";              //language=regex
+        private const string lineComments          = @"//[^\r\n]*";               //language=regex
+
+
+        /// <summary> Remove all line and block comments from the specified C# script </summary> 
+        /// <returns> C# script without comments                                      </returns>
+        /// <param name="scriptWithComments"> C# script with comments                   </param>
+        public static string RemoveComments(string scriptWithComments)
+        {
+            return removeCommentsRegex.Replace(scriptWithComments, Evaluator);
+
+            string Evaluator(Match match)
+            {
+                if (match.Value.StartsWith("/"))
+                {
+                    var newLineCharsMatch = newLineCharsRegex.Match(match.Value);
+
+                    return match.Value.StartsWith("/*") && newLineCharsMatch.Success ? newLineCharsMatch.Value : " ";
+                }
+
+                return match.Value;
+            }
+        }
+
+
+        #endregion
+    }
 
 
 
     #region Support for UniInk_Speed : If Statement
 
 
+    /// Part: Support for UniInk_Speed : If Statement
     public partial class UniInk_Speed
     {
         /// <summary> Process the script with the if statement(or not) </summary>
@@ -99,8 +178,6 @@
                 throw new InkSyntaxException("The if statement is wronging");
             }
 
-            var flag_if     = true;
-            var flag_result = false;
             var ifCondition = false;
             var currentEnd  = operationEnd;
             var index_end   = keys.Count - 1;
@@ -240,48 +317,5 @@
 
 
     #endregion
-
-
-
-    /// <summary> Provide commonly tools in <see cref="UniInk_Speed"/> </summary>
-    /// <remarks> not assurance zero GC </remarks>
-    public static class UniInk_Extensions
-    {
-        #region Remove comments
-
-
-        //Base on : https://stackoverflow.com/questions/3524317/regex-to-strip-line-comments-from-c-sharp/3524689#3524689
-        private static readonly Regex removeCommentsRegex = new($"{blockComments}|{lineComments}|{stringsIgnore}|{verbatimStringsIgnore}", RegexOptions.Singleline | RegexOptions.Compiled);
-        private static readonly Regex newLineCharsRegex   = new(@"\r\n|\r|\n", RegexOptions.Compiled);
-
-        private const string verbatimStringsIgnore = @"@(""[^""]*"")+";           //language=regex
-        private const string stringsIgnore         = @"""((\\[^\n]|[^""\n])*)"""; //language=regex
-        private const string blockComments         = @"/\*(.*?)\*/";              //language=regex
-        private const string lineComments          = @"//[^\r\n]*";               //language=regex
-
-
-        /// <summary> Remove all line and block comments from the specified C# script </summary> 
-        /// <returns> C# script without comments                                      </returns>
-        /// <param name="scriptWithComments"> C# script with comments                   </param>
-        public static string RemoveComments(string scriptWithComments)
-        {
-            return removeCommentsRegex.Replace(scriptWithComments, Evaluator);
-
-            string Evaluator(Match match)
-            {
-                if (match.Value.StartsWith("/"))
-                {
-                    var newLineCharsMatch = newLineCharsRegex.Match(match.Value);
-
-                    return match.Value.StartsWith("/*") && newLineCharsMatch.Success ? newLineCharsMatch.Value : " ";
-                }
-
-                return match.Value;
-            }
-        }
-
-
-        #endregion
-    }
 
 }

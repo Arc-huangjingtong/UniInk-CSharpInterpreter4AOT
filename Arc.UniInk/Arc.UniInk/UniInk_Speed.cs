@@ -26,8 +26,9 @@
         public const double EPSILON_DOUBLE = 0.000001d;
         public const int    CAPACITY_LIST  = 30;
         public const int    CAPACITY_DICT  = 80;
-
-
+        public const int    FUNC_MAX_LEN   = 10; // Max length of function name
+        public const int    VARI_MAX_LEN   = 10; // Max length of variable name
+        
         ///////////////////////////////////////////////   Constructor   ////////////////////////////////////////////////
 
         /// <summary> Default Constructor : Initialize variables and parsing Methods        </summary>
@@ -97,9 +98,7 @@
         public void RegisterVariable(string varName, InkValue inkValue)
         {
             var hash = GetStringSliceHashCode(varName, 0, varName.Length - 1);
-
             InkValue.GetTime--;
-
             if (!dic_Variables.ContainsKey(hash))
             {
                 inkValue.dontRelease = true;
@@ -158,7 +157,6 @@
 
             ReleaseTempVariables();
         }
-
 
 
         /// <summary> Clear the cache in UniInk anytime , Internal cache pool will be clear </summary>
@@ -647,9 +645,7 @@
         /// <returns> the evaluate is success or not                 </returns>
         protected bool EvaluateFunction(string expression, InkSyntaxList keys, ref int i)
         {
-            const int variableMaxLen = 5;
-
-            for (var len = variableMaxLen ; len >= 0 ; len--)
+            for (var len = FUNC_MAX_LEN ; len >= 0 ; len--)
             {
                 if (i + len >= expression.Length) continue; // long=>short, || first than |, so we need to check the length
 
@@ -711,9 +707,8 @@
                 return true;
             }
 
-            const int variableMaxLen = 5;
 
-            for (var len = variableMaxLen ; len >= 0 ; len--)
+            for (var len = VARI_MAX_LEN ; len >= 0 ; len--)
             {
                 if (i + len >= expression.Length) continue; // long=>short, || first than |, so we need to check the length
 
