@@ -16,7 +16,6 @@
     using Arc.UniInk;
     using System;
     using System.Collections.Generic;
-    using JetBrains.Util;
     using NUnit.Framework;
 
 

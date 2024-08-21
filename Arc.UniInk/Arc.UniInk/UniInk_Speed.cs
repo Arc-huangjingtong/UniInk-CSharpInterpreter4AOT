@@ -255,7 +255,8 @@
             {
                 var (curOperator, index) = GetHighestPriorityOperator(keys, _startIndex, _endIndex);
 
-                if (Equals(curOperator, InkOperator.Empty))
+
+                if (Equals(curOperator, InkOperator.Empty) || Equals(curOperator, InkOperator.Semicolon))
                 {
                     hasOperators = false;
                     continue;
