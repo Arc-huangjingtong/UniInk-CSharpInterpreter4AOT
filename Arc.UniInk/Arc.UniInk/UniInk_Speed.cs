@@ -28,7 +28,7 @@
         public const int    CAPACITY_DICT  = 80;
         public const int    FUNC_MAX_LEN   = 10; // Max length of function name
         public const int    VARI_MAX_LEN   = 10; // Max length of variable name
-        
+
         ///////////////////////////////////////////////   Constructor   ////////////////////////////////////////////////
 
         /// <summary> Default Constructor : Initialize variables and parsing Methods        </summary>
@@ -136,6 +136,11 @@
                 if (any) continue;
 
                 throw new InkSyntaxException($"Invalid character : [{expression[i]}] at [{i}  {expression}] ");
+            }
+
+            if (Equals(keys[keys.Count - 1], InkOperator.Semicolon))
+            {
+                keys.ObjectList.RemoveAt(keys.Count - 1);
             }
 
             return keys;

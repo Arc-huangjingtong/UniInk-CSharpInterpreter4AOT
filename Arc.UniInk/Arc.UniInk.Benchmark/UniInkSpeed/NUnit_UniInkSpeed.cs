@@ -284,7 +284,8 @@
         [TestCase("SUM(1,1-2,3)",                               ExpectedResult = 3)]
         [TestCase("SUM(1,-2,3)",                                ExpectedResult = 2)]
         [TestCase("SUM(1,2,-3)",                                ExpectedResult = 1 + 2 - 3)]
-        [TestCase("SUM(1,2,3)",                                 ExpectedResult = 1     + 2 + 3)]
+        [TestCase("SUM(1,2,3);SUM(1,2,3);",                     ExpectedResult = 6)]
+        [TestCase("SUM(1,2,3);",                                ExpectedResult = 6)]
         public static int Test_Expression_Function(string input)
         {
             var res = Ink.Evaluate(input);
@@ -327,7 +328,7 @@
 
         [Repeat(10000)]
         [TestCase("FLT(Config,var b => GET(b, Rarity) == 2)")]
-        [TestCase("FLT(Config,var c => GET(c, Rarity) == 2  && GET(c, ID) == 1)")]
+        [TestCase("var cards = FLT(Config,var c => GET(c, Rarity) == 2  && GET(c, ID) == 1)")]
         public static void Test_Expression_Lambda(string input)
         {
             var res = Ink.Evaluate(input);
@@ -444,7 +445,7 @@
                 + "  }                 "
                 + "  else if ( 3 < 6 ) "
                 + "  {                 "
-                + "    return 456      "
+                + "    return 456;      "
                 + "  }                 "
                 + "  else              "
                 + "  {                 "
