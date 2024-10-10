@@ -36,7 +36,12 @@
             Ink.RegisterFunction("SUM", new(list => InkValue.GetIntValue((int)(InkValue)list[0] + (int)(InkValue)list[1] + (int)(InkValue)list[2])));
             Ink.RegisterFunction("LOG", new(prms =>
             {
-                Console.WriteLine(prms[0]);
+                if (prms[0] is InkValue value)
+                {
+                    value.isCalculate = true;
+                    Console.WriteLine(value.ToString());
+                }
+
                 return null;
             }));
 
@@ -431,11 +436,11 @@
         ///////////////////////////////////////
         [TestCase("  if ( 1 > 2 )       "
                 + "  {                  "
-                + "     123             "
+                + "    LOG(Target);     "
                 + "  }                  "
                 + "  else               "
                 + "  {                  "
-                + "    return 456       "
+                + "    LOG(Target);     "
                 + "  }                  ")]
         ///////////////////////////////////////
         [TestCase("  if ( 1 > 2 )       "
@@ -532,13 +537,16 @@
         {
             public int ID;
             public int Rarity;
+
+            /// <inheritdoc />
+            public override string ToString() => "TEST";
         }
 
 
         public Card CRE(int id, int rarity) => new() { ID = id, Rarity = rarity };
 
 
-        public List<Card> Config = new List<Card>()
+        public List<Card> Config = new()
         {
             new Card() { ID = 1, Rarity = 2 }, new Card() { ID = 2, Rarity = 2 }, new Card() { ID = 3, Rarity = 3 }
           , new Card() { ID = 4, Rarity = 4 }, new Card() { ID = 5, Rarity = 5 }, new Card() { ID = 6, Rarity = 6 }
