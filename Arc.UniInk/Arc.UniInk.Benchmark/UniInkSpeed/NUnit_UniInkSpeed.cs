@@ -117,6 +117,22 @@
             Ink.RegisterVariable("Config", InkValue.GetObjectValue(Config));
         }
 
+
+        #region SP : Features Test
+
+
+        [Repeat(10000)]
+        [TestCase("999*123123*321321/999/666 ", ExpectedResult = 232)] // Computation overflow
+        public static object Test_Expression_Extreme(string input)
+        {
+            var result = Ink.Evaluate(input);
+            return result;
+        }
+
+
+        #endregion
+
+
         #region 1.Basic: Arithmetic Test , return result InkValue and Release it
 
 
@@ -130,7 +146,7 @@
         [TestCase("9*((1+(1+1)+(1+1))+1+1)", ExpectedResult = 9 * ((1 + (1 + 1) + (1 + 1)) + 1 + 1))]
         [TestCase("9*((1+(2+3)*(4+5))+6+7)", ExpectedResult = 9 * ((1 + (2 + 3) * (4 + 5)) + 6 + 7))]
         [TestCase("9 * ( ( 1 + 2 * 3 ) /2)", ExpectedResult = 9 * ((1 + 2       * 3) / 2))]
-        //[TestCase("9 * +5 ",                 ExpectedResult = 9 * +5)] not support => 9 * (+5) is support
+        //[TestCase("9 * +5 ",                 ExpectedResult = 9 * +5)] not support but 9 * (+5) is support
         public static int Test_Arithmetic_Int(string input)
         {
             var res    = (InkValue)Ink.Evaluate(input);
@@ -382,9 +398,9 @@
         [Repeat(10000)]
         [TestCase(" ",  ExpectedResult = null)]
         [TestCase("",   ExpectedResult = null)] // string.Empty
-        [TestCase(null, ExpectedResult = null)]
         [TestCase(";;", ExpectedResult = null)]
         [TestCase(";",  ExpectedResult = null)]
+        //[TestCase(null, ExpectedResult = null)] // null will throw exception
         public static object Test_Expression_SP(string input)
         {
             return Ink.Evaluate(input);
@@ -392,6 +408,7 @@
 
 
         #endregion
+
 
 
         [Test]
@@ -475,7 +492,7 @@
 
         public int grower = 100;
 
-        public static Card Target => new Card() { ID = 1, Rarity = 2 };
+        public static Card Target => new() { ID = 1, Rarity = 2 };
 
 
         public       int FoodNum;

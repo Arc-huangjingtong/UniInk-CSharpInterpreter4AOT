@@ -15,9 +15,19 @@
   &lt;Assembly Path="F:\UniInk-CSharpInterpreter4AOT\Arc.UniInk\packages\BenchmarkDotNet.Annotations.0.13.12\lib\netstandard2.0\BenchmarkDotNet.Annotations.dll" /&gt;&#xD;
 &lt;/AssemblyExplorer&gt;</s:String>
 	<s:Boolean x:Key="/Default/Environment/Hierarchy/Build/SolBuilderDuo/RunBuildOnSolutionLoaded/@EntryValue">True</s:Boolean>
-	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=80fdb53a_002D5c5b_002D45e2_002D8259_002Dea491742ea0a/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="Test_Expression_Function(&amp;quot;SUM(1,1-2,3)&amp;quot;)" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;&#xD;
+	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=28c73505_002Da699_002D4413_002Dafb5_002D1e61fae561c4/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" Name="Test_Helper" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;&#xD;
+  &lt;TestAncestor&gt;&#xD;
+    &lt;TestId&gt;NUnit3x::1BA70864-1706-44D0-9D58-669FD5703A14::.NETFramework,Version=v4.8::Arc.UniInk.NUnitTest.NUnit_UniInkSpeed.Test_Helper&lt;/TestId&gt;&#xD;
+  &lt;/TestAncestor&gt;&#xD;
+&lt;/SessionState&gt;</s:String>
+	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=80fdb53a_002D5c5b_002D45e2_002D8259_002Dea491742ea0a/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" Name="Test_Expression_Function(&amp;quot;SUM(1,1-2,3)&amp;quot;)" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;&#xD;
   &lt;TestAncestor&gt;&#xD;
     &lt;TestId&gt;NUnit3x::1BA70864-1706-44D0-9D58-669FD5703A14::.NETFramework,Version=v4.8::Arc.UniInk.NUnitTest.NUnit_UniInkSpeed&lt;/TestId&gt;&#xD;
+  &lt;/TestAncestor&gt;&#xD;
+&lt;/SessionState&gt;</s:String>
+	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=c77413da_002D401c_002D45d3_002D8314_002Db573197dadbf/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="Test_Helper #2" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;&#xD;
+  &lt;TestAncestor&gt;&#xD;
+    &lt;TestId&gt;NUnit3x::1BA70864-1706-44D0-9D58-669FD5703A14::.NETFramework,Version=v4.8::Arc.UniInk.NUnitTest.NUnit_UniInkSpeed.Test_Helper&lt;/TestId&gt;&#xD;
   &lt;/TestAncestor&gt;&#xD;
 &lt;/SessionState&gt;</s:String>
 	
