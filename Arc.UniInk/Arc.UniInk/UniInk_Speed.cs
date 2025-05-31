@@ -541,7 +541,7 @@
         public readonly Dictionary<int, InkValue> dic_Variables = new(CAPACITY_DICT);
 
         /// <summary> Some temp  variables mapping </summary>
-        public Dictionary<int, InkValue> dic_Variables_Temp = new(CAPACITY_DICT);
+        public readonly Dictionary<int, InkValue> dic_Variables_Temp = new(CAPACITY_DICT);
 
 
 
@@ -1613,7 +1613,7 @@
             value.returner     = false;
             value.Value_int    = 0;
             value.Value_bool   = false;
-            value.Value_char   = default;
+            value.Value_char   = '\0';
             value.Value_float  = 0;
             value.Value_double = 0;
             value.Value_Object = null;
@@ -2145,5 +2145,4 @@
     }
 
 }
-//2058 lines of code
 //3000 lines of code [MAX]
