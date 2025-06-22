@@ -420,7 +420,6 @@
         <Compile Include="Refer_Sprache\Tests\RegexTests.cs" />
         <Compile Include="Refer_Sprache\Tests\ResultTests.cs" />
         <Compile Include="UniInkSpeed\NUnit_UniInkSpeed.cs" />
-        <Compile Include="UniInk\NUnit_UniInk.cs" />
         <Compile Include="Utils\Utils_MemoryTool.cs" />
         <Compile Include="Refer_ExpressionEvaluator\ExpressionEvaluator.cs" />
         <Compile Include="Refer_ParsecSharp\ExpressionParser.cs" />

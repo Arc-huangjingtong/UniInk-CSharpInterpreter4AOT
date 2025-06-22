@@ -22,7 +22,7 @@
     [TestFixture]
     public sealed partial class NUnit_UniInkSpeed
     {
-        public static readonly UniInk_Speed Ink = new();
+        public static readonly UniInk Ink = new();
 
         public bool isInit;
 

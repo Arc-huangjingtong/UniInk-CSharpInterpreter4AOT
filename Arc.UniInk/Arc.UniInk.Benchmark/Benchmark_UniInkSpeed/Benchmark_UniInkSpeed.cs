@@ -153,10 +153,10 @@
         [Benchmark] [Test] [Repeat(100)]
         public void TEST_Arithmetic__UniInkSpeed_Compiled()
         {
-            var result1 = UniInk_Speed.ExecuteProcess(Compiled_TestInput_Arithmetic_Int_01);
-            var result2 = UniInk_Speed.ExecuteProcess(Compiled_TestInput_Arithmetic_Int_02);
-            var result3 = UniInk_Speed.ExecuteProcess(Compiled_TestInput_Arithmetic_Int_03);
-            var result4 = UniInk_Speed.ExecuteProcess(Compiled_TestInput_Arithmetic_Int_04);
+            var result1 = UniInk.ExecuteProcess(Compiled_TestInput_Arithmetic_Int_01);
+            var result2 = UniInk.ExecuteProcess(Compiled_TestInput_Arithmetic_Int_02);
+            var result3 = UniInk.ExecuteProcess(Compiled_TestInput_Arithmetic_Int_03);
+            var result4 = UniInk.ExecuteProcess(Compiled_TestInput_Arithmetic_Int_04);
 
             InkSyntaxList.Recover(Compiled_TestInput_Arithmetic_Int_01);
             InkSyntaxList.Recover(Compiled_TestInput_Arithmetic_Int_02);

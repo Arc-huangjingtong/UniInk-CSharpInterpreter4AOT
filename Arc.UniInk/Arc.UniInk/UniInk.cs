@@ -1,42 +1,51 @@
 ﻿namespace Arc.UniInk
 {
 
-    /*******************************************************************************************************************
-    *📰 Title    :  UniInk_Speed (https://github.com/Arc-huangjingtong/UniInk-CSharpInterpreter4Unity)                 *
-    *🔖 Version  :  1.0.0                                                                                              *
-    *😀 Author   :  Arc (https://github.com/Arc-huangjingtong)                                                         *
-    *🔑 Licence  :  MIT (https://github.com/Arc-huangjingtong/UniInk-CSharpInterpreter4Unity/blob/main/LICENSE)        *
-    *🤝 Support  :  [.NET Framework 4+] [C# 9.0+] [IL2CPP Support]                                                     *
-    *📝 Desc     :  [High performance] [zero box & unbox] [zero GC!] [zero reflection runtime] [Easy-use]              *
-    /*******************************************************************************************************************/
-
-    // ReSharper disable SpecifyACultureInStringConversionExplicitly
-    // ReSharper disable PartialTypeWithSinglePart
     using System;
     using System.Collections.Generic;
 
+    /******************************************************************************************************************/
+    /* Title    :  UniInk_Speed (https://github.com/Arc-huangjingtong/UniInk-CSharpInterpreter4Unity)                 */
+    /* Author   :  Arc (https://github.com/Arc-huangjingtong)                                                         */
+    /* Version  :  1.1.0 (Increase readability)                                                                       */
+    /* Licence  :  MIT (https://github.com/Arc-huangjingtong/UniInk-CSharpInterpreter4Unity/blob/main/LICENSE)        */
+    /* Support  :  [.NET Framework 4+] [C# 9.0+] [IL2CPP Support]                                                     */
+    /* Feature  :  [High performance] [zero box & unbox] [zero GC!] [zero reflection runtime] [Easy-use]              */
+    /******************************************************************************************************************/
 
-    /// <summary> The C# Evaluator easy to use : you can execute simple expression or scripts with a string   </summary>
-    /// <remarks> If you want to custom your own rules , you should read the code easily and modify it !      </remarks>
-    public partial class UniInk_Speed
+
+
+    /// <summary> The C# Evaluator easy to use : you can execute simple expression or scripts with a string </summary>
+    /// <remarks> If you want to custom your own rules , you should read the code easily and modify it ! </remarks>
+    public partial class UniInk
     {
-        ///////////////////////////////////////////////     Settings    ////////////////////////////////////////////////
+        /**************************************************  Config  **************************************************/
 
-        public const float  EPSILON_FLOAT  = 0.000001f;
-        public const double EPSILON_DOUBLE = 0.000001d;
-        public const int    CAPACITY_LIST  = 30;
-        public const int    CAPACITY_DICT  = 80;
-        public const int    FUNC_MAX_LEN   = 10; // Max length of function name
-        public const int    VARI_MAX_LEN   = 10; // Max length of variable name
+        internal const float  EPSILON_FLOAT     = 0.000001f; // The epsilon value for float
+        internal const double EPSILON_DOUBLE    = 0.000001d; // The epsilon value for double
+        internal const int    FUNC_NAME_MAX_LEN = 10;        // Max length of function name
+        internal const int    VARI_NAME_MAX_LEN = 10;        // Max length of variable name
 
-        ///////////////////////////////////////////////   Constructor   ////////////////////////////////////////////////
+        internal const int INK_VALUE_POOL_CAPACITY    = 128;  // The capacity of InkValue.Pool
+        internal const int INK_SYNTAX_POOL_CAPACITY   = 64;   // The capacity of InkSyntaxList.Pool and Lambda.Pool
+        internal const int STRING_MAX_LEN             = 128;  // The max length of string that will be parsed
+        internal const int EXPRESSION_ELEMENT_MAX_LEN = 1024; // The max length of expression's element that will be parsed
+        internal const int FUNCTION_CAPACITY          = 32;   // The capacity of UniInk.dic_Functions
+        internal const int FUNCTION_GLOBAL_CAPACITY   = 64;   // The capacity of UniInk.dic_GlobalFunctions
+        internal const int VARIABLE_CAPACITY          = 32;   // The capacity of UniInk.dic_Variables
+        internal const int VARIABLE_TEMP_CAPACITY     = 32;   // The capacity of UniInk.dic_Variables_Temp
+        internal const int OPERATOR_FUNC_CAPACITY     = 32;   // The capacity of InkOperator.Dic_OperatorsFunc
+        internal const int INK_OPERATOR_CAPACITY      = 64;   // The capacity of InkOperator.Dic_Values
+
+        /***************************************************  Ctor  ***************************************************/
 
         /// <summary> Default Constructor : Initialize variables and parsing Methods        </summary>
         /// <remarks> the variables are saved the object’s reference, not the value         </remarks>
         /// <param name="variables"> Set variables can replace a key string with value object </param>
-        public UniInk_Speed(Dictionary<string, InkValue> variables = null)
+        public UniInk(IDictionary<string, InkValue> variables = null)
         {
-            ParsingMethods = new(CAPACITY_LIST)
+            const int PARSING_METHODS_CAPACITY = 7;
+            ParsingMethods = new(PARSING_METHODS_CAPACITY)
             {
                 EvaluateOperators //
               , EvaluateFunction  //
@@ -501,7 +510,7 @@
 
 
         /// <summary> Some UnaryPostfix operators func mapping </summary>
-        protected static readonly Dictionary<InkOperator, Func<object, object, object>> dic_OperatorsFunc = new(CAPACITY_DICT)
+        protected static readonly Dictionary<InkOperator, Func<object, object, object>> dic_OperatorsFunc = new(OPERATOR_FUNC_CAPACITY)
         {
             { InkOperator.Plus, InkOperator.InkOperator_Plus }                     //
           , { InkOperator.Minus, InkOperator.InkOperator_Minus }                   //
@@ -522,26 +531,35 @@
         };
 
         /// <summary> Some Escaped Char mapping </summary>
-        protected static readonly Dictionary<char, char> dic_EscapedChar = new(CAPACITY_DICT)
+        protected static char GetEscapedChar(char c)
         {
-            { '\\', '\\' }, { '\'', '\'' } //
-          , { '0', '\0' }, { 'a', '\a' }   //
-          , { 'b', '\b' }, { 'f', '\f' }   //
-          , { 'n', '\n' }, { 'r', '\r' }   //
-          , { 't', '\t' }, { 'v', '\v' }   //
-        };
+            return c switch
+            {
+                '\\' => '\\' //
+              , '\'' => '\'' //
+              , '0'  => '\0' //
+              , 'a'  => '\a' //
+              , 'b'  => '\b' //
+              , 'f'  => '\f' //
+              , 'n'  => '\n' //
+              , 'r'  => '\r' //
+              , 't'  => '\t' //
+              , 'v'  => '\v' //
+              , _    => throw new InkSyntaxException($"Unknown escape character[{c}]")
+            };
+        }
 
         /// <summary> Some Global Functions mapping </summary>
-        public static readonly Dictionary<int, InkFunction> dic_GlobalFunctions = new(CAPACITY_DICT);
+        protected static readonly Dictionary<int, InkFunction> dic_GlobalFunctions = new(FUNCTION_GLOBAL_CAPACITY);
 
         /// <summary> Some local functions mapping </summary>
-        public readonly Dictionary<int, InkFunction> dic_Functions = new(CAPACITY_DICT);
+        public readonly Dictionary<int, InkFunction> dic_Functions = new(FUNCTION_CAPACITY);
 
         /// <summary> Some local variables mapping </summary>
-        public readonly Dictionary<int, InkValue> dic_Variables = new(CAPACITY_DICT);
+        public readonly Dictionary<int, InkValue> dic_Variables = new(VARIABLE_CAPACITY);
 
         /// <summary> Some temp  variables mapping </summary>
-        public readonly Dictionary<int, InkValue> dic_Variables_Temp = new(CAPACITY_DICT);
+        public readonly Dictionary<int, InkValue> dic_Variables_Temp = new(VARIABLE_TEMP_CAPACITY);
 
 
 
@@ -651,7 +669,7 @@
         /// <returns> the evaluate is success or not                 </returns>
         protected bool EvaluateFunction(string expression, InkSyntaxList keys, ref int i)
         {
-            for (var len = FUNC_MAX_LEN ; len >= 0 ; len--)
+            for (var len = FUNC_NAME_MAX_LEN ; len >= 0 ; len--)
             {
                 if (i + len >= expression.Length) continue; // long=>short, || first than |, so we need to check the length
 
@@ -714,7 +732,7 @@
             }
 
 
-            for (var len = VARI_MAX_LEN ; len >= 0 ; len--)
+            for (var len = VARI_NAME_MAX_LEN ; len >= 0 ; len--)
             {
                 if (i + len >= expression.Length) continue; // long=>short, || first than |, so we need to check the length
 
@@ -841,15 +859,8 @@
                 {
                     i++;
 
-                    if (dic_EscapedChar.TryGetValue(input[i], out var EscapedChar))
-                    {
-                        value = InkValue.GetCharValue(EscapedChar);
-                        i++;
-                    }
-                    else
-                    {
-                        throw new InkSyntaxException($"Unknown escape character[{input[i]}] : You can customize them in [dic_EscapedChar]");
-                    }
+                    value = InkValue.GetCharValue(GetEscapedChar(input[i]));
+                    i++;
                 }
                 else if (input[i].Equals('\''))
                 {
@@ -895,15 +906,8 @@
                     {
                         i++;
 
-                        if (dic_EscapedChar.TryGetValue(input[i], out var EscapedChar))
-                        {
-                            value.Value_Meta.Add(EscapedChar);
-                            i++;
-                        }
-                        else
-                        {
-                            throw new InkSyntaxException($"Unknown escape character[{input[i]}] : You can customize them in [dic_EscapedChar]");
-                        }
+                        value.Value_Meta.Add(GetEscapedChar(input[i]));
+                        i++;
                     }
                     else if (input[i].Equals('\"'))
                     {
@@ -1148,67 +1152,77 @@
     /// <summary> UniInk Operator : Custom your own Operator! </summary>
     public partial class InkOperator
     {
-        public static readonly Dictionary<int, InkOperator> Dic_Values = new(UniInk_Speed.CAPACITY_DICT);
+        public static readonly Dictionary<int, InkOperator> Dic_Values = new(UniInk.INK_OPERATOR_CAPACITY);
 
         //priority refer to : https://learn.microsoft.com/zh-cn/dotnet/csharp/language-reference/operators/
         //keyword  refer to : https://learn.microsoft.com/zh-cn/dotnet/csharp/language-reference/keywords/
         public static readonly InkOperator ParenthisLeft  = new("(", 1);
         public static readonly InkOperator ParenthisRight = new(")", 1);
-        public static readonly InkOperator Dot            = new(".", 2);
-        public static readonly InkOperator BracketStart   = new("[", 2);
-        public static readonly InkOperator BracketEnd     = new("]", 2);
-        public static readonly InkOperator Increment      = new("++", 2);
-        public static readonly InkOperator Decrement      = new("--", 2);
+        public static readonly InkOperator Dot            = new(".", 2);  // don't support , its reserved
+        public static readonly InkOperator BracketStart   = new("[", 2);  // don't support , its reserved
+        public static readonly InkOperator BracketEnd     = new("]", 2);  // don't support , its reserved
+        public static readonly InkOperator Increment      = new("++", 2); // don't support , its reserved
+        public static readonly InkOperator Decrement      = new("--", 2); // don't support , its reserved
         public static readonly InkOperator LogicalNOT     = new("!", 3);
-        public static readonly InkOperator BitNot         = new("~", 3);
-        public static readonly InkOperator Cast           = new("😊()", 4);
+        public static readonly InkOperator BitNot         = new("~", 3);    // don't support , its reserved
+        public static readonly InkOperator Cast           = new("😊()", 4); // don't support , its reserved
         public static readonly InkOperator Multiply       = new("*", 5);
         public static readonly InkOperator Divide         = new("/", 5);
         public static readonly InkOperator Modulo         = new("%", 5);
         public static readonly InkOperator Plus           = new("+", 6);
         public static readonly InkOperator Minus          = new("-", 6);
-        public static readonly InkOperator LeftShift      = new("<<", 7);
-        public static readonly InkOperator RightShift     = new(">>", 7);
+        public static readonly InkOperator LeftShift      = new("<<", 7); // don't support , its reserved
+        public static readonly InkOperator RightShift     = new(">>", 7); // don't support , its reserved
         public static readonly InkOperator Lower          = new("<", 8);
         public static readonly InkOperator Greater        = new(">", 8);
         public static readonly InkOperator LowerOrEqual   = new("<=", 8);
         public static readonly InkOperator GreaterOrEqual = new(">=", 8);
         public static readonly InkOperator Equal          = new("==", 9);
         public static readonly InkOperator NotEqual       = new("!=", 9);
-        public static readonly InkOperator BitwiseAnd     = new("&", 10);
-        public static readonly InkOperator BitwiseXor     = new("^", 11);
-        public static readonly InkOperator BitwiseOr      = new("|", 12);
+        public static readonly InkOperator BitwiseAnd     = new("&", 10); // don't support , its reserved
+        public static readonly InkOperator BitwiseXor     = new("^", 11); // don't support , its reserved
+        public static readonly InkOperator BitwiseOr      = new("|", 12); // don't support , its reserved
         public static readonly InkOperator ConditionalAnd = new("&&", 13);
         public static readonly InkOperator ConditionalOr  = new("||", 14);
-        public static readonly InkOperator Conditional    = new("?:", 15);
+        public static readonly InkOperator Conditional    = new("?:", 15); // don't support , its reserved
         public static readonly InkOperator Assign         = new("=", 16);
         public static readonly InkOperator Comma          = new(",", 16);
         public static readonly InkOperator Lambda         = new("=>", 17);
         public static readonly InkOperator BraceLeft      = new("{", 20);
         public static readonly InkOperator BraceRight     = new("}", 20);
         public static readonly InkOperator Semicolon      = new(";", 20);
-        public static readonly InkOperator Colon          = new(":", -1);
-        public static readonly InkOperator QuestionMark   = new("?", -1);
-        public static readonly InkOperator At             = new("@\"", -1);
-        public static readonly InkOperator Dollar         = new("$\"", -1);
-        public static readonly InkOperator Hash           = new("#", -1);
+        public static readonly InkOperator Colon          = new(":", -1);   // don't support , its reserved
+        public static readonly InkOperator QuestionMark   = new("?", -1);   // don't support , its reserved
+        public static readonly InkOperator At             = new("@\"", -1); // don't support , its reserved
+        public static readonly InkOperator Dollar         = new("$\"", -1); // don't support , its reserved
+        public static readonly InkOperator Hash           = new("#", -1);   // don't support , its reserved
 
 
         public static readonly InkOperator KeyIf       = new("if", 20);
         public static readonly InkOperator KeyVar      = new("var", 20);
         public static readonly InkOperator KeyElse     = new("else", 20);
         public static readonly InkOperator KeyReturn   = new("return", 20);
-        public static readonly InkOperator KeySwitch   = new("switch", 20);   // don't support
-        public static readonly InkOperator KeyWhile    = new("while", 20);    // don't support
-        public static readonly InkOperator KeyFor      = new("for", 20);      // don't support
-        public static readonly InkOperator KeyForeach  = new("foreach", 20);  // don't support
-        public static readonly InkOperator KeyIn       = new("in", 20);       // don't support
-        public static readonly InkOperator KeyBreak    = new("break", 20);    // don't support
-        public static readonly InkOperator KeyContinue = new("continue", 20); // don't support
+        public static readonly InkOperator KeySwitch   = new("switch", 20);   // don't support , its reserved
+        public static readonly InkOperator KeyWhile    = new("while", 20);    // don't support , its reserved
+        public static readonly InkOperator KeyFor      = new("for", 20);      // don't support , its reserved
+        public static readonly InkOperator KeyForeach  = new("foreach", 20);  // don't support , its reserved
+        public static readonly InkOperator KeyIn       = new("in", 20);       // don't support , its reserved
+        public static readonly InkOperator KeyBreak    = new("break", 20);    // don't support , its reserved
+        public static readonly InkOperator KeyContinue = new("continue", 20); // don't support , its reserved
         public static readonly InkOperator Empty       = new("😊", short.MaxValue);
 
 
-        public static int MaxOperatorLen;
+        public static short MaxOperatorLen;
+
+
+        protected InkOperator(string name, short priorityIndex)
+        {
+            PriorityIndex  = priorityIndex;
+            MaxOperatorLen = Math.Max(MaxOperatorLen, (short)name.Length);
+            Name           = name;
+            var hash = UniInk.GetStringSliceHashCode(name, 0, name.Length - 1);
+            Dic_Values.Add(hash, this);
+        }
 
         /// <summary> the lower the value, the higher the priority </summary>
         public readonly short PriorityIndex;
@@ -1222,15 +1236,6 @@
         protected readonly short OperatorValue = indexer++;
 
 
-
-        protected InkOperator(string name, short priorityIndex)
-        {
-            PriorityIndex  = priorityIndex;
-            MaxOperatorLen = Math.Max(MaxOperatorLen, name.Length);
-            Name           = name;
-            var hash = UniInk_Speed.GetStringSliceHashCode(name, 0, name.Length - 1);
-            Dic_Values.Add(hash, this);
-        }
 
         public override bool Equals(object otherOperator) => otherOperator is InkOperator Operator && OperatorValue == Operator.OperatorValue;
 
@@ -1508,7 +1513,7 @@
     /// <summary> In UniInk , every valueType is Object , No Boxing! </summary>
     public partial class InkValue
     {
-        public static readonly Queue<InkValue> pool = new(UniInk_Speed.CAPACITY_LIST);
+        public static readonly Queue<InkValue> pool = new(UniInk.INK_VALUE_POOL_CAPACITY);
 
         public static InkValue Get()
         {
@@ -1632,7 +1637,7 @@
 
         public TypeCode ValueType;
 
-        public readonly List<char> Value_Meta = new(UniInk_Speed.CAPACITY_LIST);
+        public readonly List<char> Value_Meta = new(UniInk.STRING_MAX_LEN);
 
         public bool isCalculate;
 
@@ -1785,16 +1790,10 @@
                     foreach (var c in left.Value_Meta) answer.Value_Meta.Add(c);
                     foreach (var c in right.Value_Meta) answer.Value_Meta.Add(c);
                     break;
-                case (TypeCode.Int32, TypeCode.Int32) :
-                    answer.Value_int = left.Value_int + right.Value_int;
-                    break;
-                case (TypeCode.Single, TypeCode.Single) :
-                    answer.Value_float = left.Value_float + right.Value_float;
-                    break;
-                case (TypeCode.Double, TypeCode.Double) :
-                    answer.Value_double = left.Value_double + right.Value_double;
-                    break;
-                default : throw new InkSyntaxException("worrying operator using!");
+                case (TypeCode.Int32, TypeCode.Int32) :   answer.Value_int    = left.Value_int    + right.Value_int; break;
+                case (TypeCode.Single, TypeCode.Single) : answer.Value_float  = left.Value_float  + right.Value_float; break;
+                case (TypeCode.Double, TypeCode.Double) : answer.Value_double = left.Value_double + right.Value_double; break;
+                default :                                 throw new InkSyntaxException("worrying operator using!");
             }
 
             answer.isCalculate = true;
@@ -1813,16 +1812,10 @@
 
             switch (left.ValueType, right.ValueType)
             {
-                case (TypeCode.Int32, TypeCode.Int32) :
-                    answer.Value_int = left.Value_int - right.Value_int;
-                    break;
-                case (TypeCode.Single, TypeCode.Single) :
-                    answer.Value_float = left.Value_float - right.Value_float;
-                    break;
-                case (TypeCode.Double, TypeCode.Double) :
-                    answer.Value_double = left.Value_double - right.Value_double;
-                    break;
-                default : throw new InkSyntaxException("worrying operator using!");
+                case (TypeCode.Int32, TypeCode.Int32) :   answer.Value_int    = left.Value_int    - right.Value_int; break;
+                case (TypeCode.Single, TypeCode.Single) : answer.Value_float  = left.Value_float  - right.Value_float; break;
+                case (TypeCode.Double, TypeCode.Double) : answer.Value_double = left.Value_double - right.Value_double; break;
+                default :                                 throw new InkSyntaxException("worrying operator using!");
             }
 
             answer.isCalculate = true;
@@ -1841,16 +1834,10 @@
 
             switch (answer.ValueType)
             {
-                case TypeCode.Int32 :
-                    answer.Value_int = left.Value_int * right.Value_int;
-                    break;
-                case TypeCode.Single :
-                    answer.Value_float = left.Value_float * right.Value_float;
-                    break;
-                case TypeCode.Double :
-                    answer.Value_double = left.Value_double * right.Value_double;
-                    break;
-                default : throw new InkSyntaxException("worrying operator using!");
+                case TypeCode.Int32 :  answer.Value_int    = left.Value_int    * right.Value_int; break;
+                case TypeCode.Single : answer.Value_float  = left.Value_float  * right.Value_float; break;
+                case TypeCode.Double : answer.Value_double = left.Value_double * right.Value_double; break;
+                default :              throw new InkSyntaxException("worrying operator using!");
             }
 
             answer.isCalculate = true;
@@ -1870,16 +1857,10 @@
 
             switch (left.ValueType, right.ValueType)
             {
-                case (TypeCode.Int32, TypeCode.Int32) :
-                    answer.Value_int = left.Value_int / right.Value_int;
-                    break;
-                case (TypeCode.Single, TypeCode.Single) :
-                    answer.Value_float = left.Value_float / right.Value_float;
-                    break;
-                case (TypeCode.Double, TypeCode.Double) :
-                    answer.Value_double = left.Value_double / right.Value_double;
-                    break;
-                default : throw new InkSyntaxException("worrying operator using!");
+                case (TypeCode.Int32, TypeCode.Int32) :   answer.Value_int    = left.Value_int    / right.Value_int; break;
+                case (TypeCode.Single, TypeCode.Single) : answer.Value_float  = left.Value_float  / right.Value_float; break;
+                case (TypeCode.Double, TypeCode.Double) : answer.Value_double = left.Value_double / right.Value_double; break;
+                default :                                 throw new InkSyntaxException("worrying operator using!");
             }
 
             answer.isCalculate = true;
@@ -1898,16 +1879,10 @@
 
             switch (left.ValueType, right.ValueType)
             {
-                case (TypeCode.Int32, TypeCode.Int32) :
-                    answer.Value_int = left.Value_int % right.Value_int;
-                    break;
-                case (TypeCode.Single, TypeCode.Single) :
-                    answer.Value_float = left.Value_float % right.Value_float;
-                    break;
-                case (TypeCode.Double, TypeCode.Double) :
-                    answer.Value_double = left.Value_double % right.Value_double;
-                    break;
-                default : throw new InkSyntaxException("worrying operator using!");
+                case (TypeCode.Int32, TypeCode.Int32) :   answer.Value_int    = left.Value_int    % right.Value_int; break;
+                case (TypeCode.Single, TypeCode.Single) : answer.Value_float  = left.Value_float  % right.Value_float; break;
+                case (TypeCode.Double, TypeCode.Double) : answer.Value_double = left.Value_double % right.Value_double; break;
+                default :                                 throw new InkSyntaxException("worrying operator using!");
             }
 
             answer.isCalculate = true;
@@ -1924,16 +1899,10 @@
 
             switch (left.ValueType, right.ValueType)
             {
-                case (TypeCode.Int32, TypeCode.Int32) :
-                    answer.Value_bool = left.Value_int > right.Value_int;
-                    break;
-                case (TypeCode.Boolean, TypeCode.Boolean) :
-                    answer.Value_bool = left.Value_float > right.Value_float;
-                    break;
-                case (TypeCode.Double, TypeCode.Double) :
-                    answer.Value_bool = left.Value_double > right.Value_double;
-                    break;
-                default : throw new InkSyntaxException("worrying operator using!");
+                case (TypeCode.Int32, TypeCode.Int32) :     answer.Value_bool = left.Value_int    > right.Value_int; break;
+                case (TypeCode.Boolean, TypeCode.Boolean) : answer.Value_bool = left.Value_float  > right.Value_float; break;
+                case (TypeCode.Double, TypeCode.Double) :   answer.Value_bool = left.Value_double > right.Value_double; break;
+                default :                                   throw new InkSyntaxException("worrying operator using!");
             }
 
 
@@ -1949,16 +1918,10 @@
 
             switch (left.ValueType, right.ValueType)
             {
-                case (TypeCode.Int32, TypeCode.Int32) :
-                    answer.Value_bool = left.Value_int < right.Value_int;
-                    break;
-                case (TypeCode.Boolean, TypeCode.Boolean) :
-                    answer.Value_bool = left.Value_float < right.Value_float;
-                    break;
-                case (TypeCode.Double, TypeCode.Double) :
-                    answer.Value_bool = left.Value_double < right.Value_double;
-                    break;
-                default : throw new InkSyntaxException("worrying operator using!");
+                case (TypeCode.Int32, TypeCode.Int32) :     answer.Value_bool = left.Value_int    < right.Value_int; break;
+                case (TypeCode.Boolean, TypeCode.Boolean) : answer.Value_bool = left.Value_float  < right.Value_float; break;
+                case (TypeCode.Double, TypeCode.Double) :   answer.Value_bool = left.Value_double < right.Value_double; break;
+                default :                                   throw new InkSyntaxException("worrying operator using!");
             }
 
 
@@ -1974,15 +1937,9 @@
 
             switch (left.ValueType, right.ValueType)
             {
-                case (TypeCode.Int32, TypeCode.Int32) :
-                    answer.Value_bool = left.Value_int == right.Value_int;
-                    break;
-                case (TypeCode.Boolean, TypeCode.Boolean) :
-                    answer.Value_bool = Math.Abs(left.Value_float - right.Value_float) < UniInk_Speed.EPSILON_FLOAT;
-                    break;
-                case (TypeCode.Double, TypeCode.Double) :
-                    answer.Value_bool = Math.Abs(left.Value_double - right.Value_double) < UniInk_Speed.EPSILON_DOUBLE;
-                    break;
+                case (TypeCode.Int32, TypeCode.Int32) :     answer.Value_bool = left.Value_int                                   == right.Value_int; break;
+                case (TypeCode.Boolean, TypeCode.Boolean) : answer.Value_bool = Math.Abs(left.Value_float  - right.Value_float)  < UniInk.EPSILON_FLOAT; break;
+                case (TypeCode.Double, TypeCode.Double) :   answer.Value_bool = Math.Abs(left.Value_double - right.Value_double) < UniInk.EPSILON_DOUBLE; break;
                 case (TypeCode.String, TypeCode.String) :
                 {
                     if (left.Value_Meta.Count != right.Value_Meta.Count) break;
@@ -2040,8 +1997,8 @@
     /// <summary> InkSyntaxList is a list of object, it can be used to store the syntax object </summary>
     public partial class InkSyntaxList
     {
-        public static readonly Queue<InkSyntaxList> pool        = new(UniInk_Speed.CAPACITY_LIST);
-        public static readonly List<InkSyntaxList>  LambdaCache = new(UniInk_Speed.CAPACITY_LIST);
+        public static readonly Queue<InkSyntaxList> pool        = new(UniInk.INK_SYNTAX_POOL_CAPACITY);
+        public static readonly List<InkSyntaxList>  LambdaCache = new(UniInk.INK_SYNTAX_POOL_CAPACITY);
         public static          InkSyntaxList        Get() => pool.Count > 0 ? pool.Dequeue() : new();
 
         public static InkSyntaxList GetTemp()
@@ -2107,9 +2064,9 @@
             }
         }
 
-        public readonly List<object> ObjectList = new(UniInk_Speed.CAPACITY_LIST);
-        public readonly List<object> CastOther  = new(UniInk_Speed.CAPACITY_LIST);
-        public readonly List<bool>   IndexDirty = new(UniInk_Speed.CAPACITY_LIST);
+        public readonly List<object> ObjectList = new(UniInk.EXPRESSION_ELEMENT_MAX_LEN);
+        public readonly List<object> CastOther  = new(UniInk.EXPRESSION_ELEMENT_MAX_LEN);
+        public readonly List<bool>   IndexDirty = new(UniInk.EXPRESSION_ELEMENT_MAX_LEN);
 
 
 

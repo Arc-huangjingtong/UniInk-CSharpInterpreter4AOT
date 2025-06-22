@@ -12,13 +12,13 @@
     using System;
 
 
-    /// <summary> Provide commonly tools in <see cref="UniInk_Speed"/> </summary>
+    /// <summary> Provide commonly tools in <see cref="UniInk"/> </summary>
     /// <remarks> [⚠]not assurance zero GC </remarks>
     public static class UniInk_Extensions
     {
         /// <summary> Get a Bool? Value with UniInk </summary>
         /// <remarks> Automatically recycle the generated InkValue internally, and return null if the operation fails </remarks> 
-        public static bool? EvaluateBool(this UniInk_Speed ink, string expression)
+        public static bool? EvaluateBool(this UniInk ink, string expression)
         {
             var result = ink.Evaluate_IfStatement(expression);
 
@@ -36,7 +36,7 @@
 
         /// <summary> Get a Int32? Value with UniInk </summary>
         /// <remarks> Automatically recycle the generated InkValue internally, and return null if the operation fails </remarks>
-        public static int? EvaluateInt(this UniInk_Speed ink, string expression)
+        public static int? EvaluateInt(this UniInk ink, string expression)
         {
             var result = ink.Evaluate_IfStatement(expression);
 
@@ -95,7 +95,7 @@
 
 
     /// Part: Support for UniInk_Speed : If Statement
-    public partial class UniInk_Speed
+    public partial class UniInk
     {
         /// <summary> Process the script with the if statement(or not) </summary>
         /// <remarks> Not support Nested if statement </remarks>

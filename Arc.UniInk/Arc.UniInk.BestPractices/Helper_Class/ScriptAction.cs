@@ -15,7 +15,7 @@
         public ScriptAction()
         {
             //1. Create a new instance of the UniInk_Speed class.
-            Evaluator = new UniInk_Speed();
+            Evaluator = new UniInk();
 
             //2. A simple way to register Enum values.
             //or you can use 
@@ -50,7 +50,7 @@
             }));
         }
 
-        public static UniInk_Speed Evaluator;
+        public static UniInk Evaluator;
 
         public List<CardData_Base> CardConfig;
 
