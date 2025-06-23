@@ -21,6 +21,8 @@
 - [ ] Unity Package Support.
 - [ ] Write more test cases.
 - [ ] Serializable function? Maybe interesting?
+- [ ] improve the readability.
+- [ ] thread safe support (or provide a thread safe way to execute many expression).
 
 # ✨Features
 

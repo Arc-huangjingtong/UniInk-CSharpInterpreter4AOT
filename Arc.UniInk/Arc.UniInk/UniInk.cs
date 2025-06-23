@@ -4,15 +4,21 @@
     using System;
     using System.Collections.Generic;
 
-    /******************************************************************************************************************/
+    /* ================================================== SUMMARY  ================================================== */
     /* Title    :  UniInk_Speed (https://github.com/Arc-huangjingtong/UniInk-CSharpInterpreter4Unity)                 */
     /* Author   :  Arc (https://github.com/Arc-huangjingtong)                                                         */
     /* Version  :  1.1.0 (Increase readability)                                                                       */
     /* Licence  :  MIT (https://github.com/Arc-huangjingtong/UniInk-CSharpInterpreter4Unity/blob/main/LICENSE)        */
     /* Support  :  [.NET Framework 4+] [C# 9.0+] [IL2CPP Support]                                                     */
-    /* Feature  :  [High performance] [zero box & unbox] [zero GC!] [zero reflection runtime] [Easy-use]              */
-    /******************************************************************************************************************/
+    /* Feature  :  [Easy-use] [High performance] [zero box & unbox] [zero GC!] [zero reflection runtime]              */
+    /* ============================================================================================================== */
 
+    /*===================================================  GUIDE  ====================================================*/
+    /* 1. Quickly Start :                                                                                             */
+    /*    var ink   = new UniInk();                               // 1. create a new instance                         */
+    /*    var res01 = ink.Evaluate("3 + 5 * 2").GetResult_Int();  // 2. use Evaluate and input an expression string   */
+    /*                                                                                                                */
+    /* 2. Register Functions :                                                                                        */
 
 
     /// <summary> The C# Evaluator easy to use : you can execute simple expression or scripts with a string </summary>
@@ -26,16 +32,16 @@
         internal const int    FUNC_NAME_MAX_LEN = 10;        // Max length of function name
         internal const int    VARI_NAME_MAX_LEN = 10;        // Max length of variable name
 
-        internal const int INK_VALUE_POOL_CAPACITY    = 128;  // The capacity of InkValue.Pool
-        internal const int INK_SYNTAX_POOL_CAPACITY   = 64;   // The capacity of InkSyntaxList.Pool and Lambda.Pool
-        internal const int STRING_MAX_LEN             = 128;  // The max length of string that will be parsed
-        internal const int EXPRESSION_ELEMENT_MAX_LEN = 1024; // The max length of expression's element that will be parsed
-        internal const int FUNCTION_CAPACITY          = 32;   // The capacity of UniInk.dic_Functions
-        internal const int FUNCTION_GLOBAL_CAPACITY   = 64;   // The capacity of UniInk.dic_GlobalFunctions
-        internal const int VARIABLE_CAPACITY          = 32;   // The capacity of UniInk.dic_Variables
-        internal const int VARIABLE_TEMP_CAPACITY     = 32;   // The capacity of UniInk.dic_Variables_Temp
-        internal const int OPERATOR_FUNC_CAPACITY     = 32;   // The capacity of InkOperator.Dic_OperatorsFunc
-        internal const int INK_OPERATOR_CAPACITY      = 64;   // The capacity of InkOperator.Dic_Values
+        internal const int INK_VALUE_POOL_CAPACITY  = 128;  // The capacity of InkValue.Pool
+        internal const int INK_SYNTAX_POOL_CAPACITY = 64;   // The capacity of InkSyntaxList.Pool and Lambda.Pool
+        internal const int STRING_MAX_LEN           = 128;  // The max length of string that will be parsed
+        internal const int EXPRESS_ELEMENT_MAX_LEN  = 1024; // The max length of expression's element that will be parsed
+        internal const int FUNCTION_CAPACITY        = 32;   // The capacity of UniInk.dic_Functions
+        internal const int FUNCTION_GLOBAL_CAPACITY = 64;   // The capacity of UniInk.dic_GlobalFunctions
+        internal const int VARIABLE_CAPACITY        = 32;   // The capacity of UniInk.dic_Variables
+        internal const int VARIABLE_TEMP_CAPACITY   = 32;   // The capacity of UniInk.dic_Variables_Temp
+        internal const int OPERATOR_FUNC_CAPACITY   = 32;   // The capacity of InkOperator.Dic_OperatorsFunc
+        internal const int INK_OPERATOR_CAPACITY    = 64;   // The capacity of InkOperator.Dic_Values
 
         /***************************************************  Ctor  ***************************************************/
 
@@ -51,7 +57,7 @@
               , EvaluateFunction  //
               , EvaluateNumber    //
               , EvaluateChar      //
-              , EvaluateString    //
+              , EvaluateString    //  
               , EvaluateBool      //
               , EvaluateVariable  //
             };
@@ -64,19 +70,17 @@
             }
         }
 
+        /***************************************************  APIs  ***************************************************/
 
-        ///////////////////////////////////////////////       APIs      ////////////////////////////////////////////////
-
-
-        /// <summary> Evaluate a expression or simple scripts                                    </summary>
+        /// <summary> Evaluate an expression or simple scripts                                   </summary>
         /// <returns> return the result object , when valueType , will be replaced to a InkValue </returns>
-        public object Evaluate(string expression) => Evaluate(expression, 0, expression.Length - 1);
+        public InkValue Evaluate(string expression) => Evaluate(expression, 0, expression.Length - 1);
 
-        /// <summary> Evaluate a expression or simple scripts in string slice                    </summary>
+        /// <summary> Evaluate an expression or simple scripts in string slice                    </summary>
         /// <returns> return the result object , when valueType , will be replaced to a InkValue </returns>
         /// <param name="startIndex"> The start index of the expression(contain the start index)   </param>
         /// <param name= "endIndex" > The  end  index of the expression(contain the  end  index)   </param>
-        public object Evaluate(string expression, int startIndex, int endIndex)
+        public InkValue Evaluate(string expression, int startIndex, int endIndex)
         {
             if (string.IsNullOrWhiteSpace(expression))
             {
@@ -89,7 +93,12 @@
 
             RecoverResources(keys);
 
-            return result;
+            if (result is InkValue inkValue)
+            {
+                return inkValue;
+            }
+
+            return null;
         }
 
 
@@ -181,7 +190,7 @@
             InkSyntaxList.ReleasePool();
         }
 
-        /////////////////////////////////////////////// Process Methods ////////////////////////////////////////////////
+        /*************************************************  Process  **************************************************/
 
         /// <summary> UniInk SyntaxList : Process the SyntaxList </summary>
         protected static object ProcessList(InkSyntaxList syntaxList, int start, int end)
@@ -506,8 +515,7 @@
             dic_Variables_Temp.Clear();
         }
 
-        ///////////////////////////////////////////////  Mapping  Data  ////////////////////////////////////////////////
-
+        /*************************************************  Mapping  **************************************************/
 
         /// <summary> Some UnaryPostfix operators func mapping </summary>
         protected static readonly Dictionary<InkOperator, Func<object, object, object>> dic_OperatorsFunc = new(OPERATOR_FUNC_CAPACITY)
@@ -562,8 +570,7 @@
         public readonly Dictionary<int, InkValue> dic_Variables_Temp = new(VARIABLE_TEMP_CAPACITY);
 
 
-
-        /////////////////////////////////////////////// Parsing Methods ////////////////////////////////////////////////
+        /*************************************************  Parsing  **************************************************/
 
         protected delegate bool ParsingMethodDelegate(string expression, InkSyntaxList stack, ref int i);
 
@@ -761,8 +768,7 @@
         }
 
 
-        /////////////////////////////////////////////// Helping Methods ////////////////////////////////////////////////
-
+        /**************************************************  Helper  **************************************************/
 
         /// <summary> Match <see cref="value"/> from <see cref="input"/> 's  <see cref="startIndex"/>         </summary>
         protected static bool StartsWithInputStrFromIndex(string input, string value, int startIndex)
@@ -1028,8 +1034,6 @@
             return (-1, -1);
         }
 
-
-
         protected static (bool result, int index) FindOperator(InkSyntaxList keys, InkOperator @operator, int start, int end)
         {
             for (var i = start ; i <= end ; i++)
@@ -1146,7 +1150,7 @@
     }
 
 
-    ////////////////////////////////////////////////// Helping Class ///////////////////////////////////////////////////
+    /*************************************************  Helper Class  *************************************************/
 
 
     /// <summary> UniInk Operator : Custom your own Operator! </summary>
@@ -1594,7 +1598,6 @@
             return value;
         }
 
-
         public static InkValue SetGetter(Action<InkValue> getter)
         {
             var value = Get();
@@ -1602,7 +1605,6 @@
             value.Getter = getter;
             return value;
         }
-
 
         public static void Release(InkValue value)
         {
@@ -1773,6 +1775,125 @@
 
         public override int  GetHashCode()      => Value_Meta.GetHashCode();
         public override bool Equals(object obj) => obj is InkValue value && Value_Meta == value.Value_Meta;
+
+        /// <summary> Get the result of the value as an int, and auto release the value from pool. </summary>
+        public int GetResult_Int()
+        {
+            if (!isCalculate) Calculate();
+
+            if (ValueType == TypeCode.Int32)
+            {
+                var result = Value_int;
+
+                Release(this);
+
+                return result;
+            }
+
+            throw new InkSyntaxException($"The value type is not Int32, but {ValueType}");
+        }
+
+        /// <summary> Get the result of the value as a bool, and auto release the value from pool. </summary>
+        public bool GetResult_Bool()
+        {
+            if (!isCalculate) Calculate();
+
+            if (ValueType == TypeCode.Boolean)
+            {
+                var result = Value_bool;
+
+                Release(this);
+
+                return result;
+            }
+
+            throw new InkSyntaxException($"The value type is not Boolean, but {ValueType}");
+        }
+
+        /// <summary> Get the result of the value as a char, and auto release the value from pool. </summary>
+        public char GetResult_Char()
+        {
+            if (!isCalculate) Calculate();
+
+            if (ValueType == TypeCode.Char)
+            {
+                var result = Value_char;
+
+                Release(this);
+
+                return result;
+            }
+
+            throw new InkSyntaxException($"The value type is not Char, but {ValueType}");
+        }
+
+        /// <summary> Get the result of the value as a float, and auto release the value from pool. </summary>
+        public float GetResult_Float()
+        {
+            if (!isCalculate) Calculate();
+
+            if (ValueType == TypeCode.Single)
+            {
+                var result = Value_float;
+
+                Release(this);
+
+                return result;
+            }
+
+            throw new InkSyntaxException($"The value type is not Single, but {ValueType}");
+        }
+
+        /// <summary> Get the result of the value as a double, and auto release the value from pool. </summary>
+        public double GetResult_Double()
+        {
+            if (!isCalculate) Calculate();
+
+            if (ValueType == TypeCode.Double)
+            {
+                var result = Value_double;
+
+                Release(this);
+
+                return result;
+            }
+
+            throw new InkSyntaxException($"The value type is not Double, but {ValueType}");
+        }
+
+        /// <summary> Get the result of the value as a string, and auto release the value from pool. </summary>
+        public string GetResult_String()
+        {
+            if (!isCalculate) Calculate();
+
+            if (ValueType == TypeCode.String)
+            {
+                var result = Value_String;
+
+                Release(this);
+
+                return result;
+            }
+
+            throw new InkSyntaxException($"The value type is not String, but {ValueType}");
+        }
+
+        /// <summary> Get the result of the value as an object, and auto release the value from pool. </summary>
+        public object GetResult_Object()
+        {
+            if (!isCalculate) Calculate();
+
+            if (ValueType == TypeCode.Object)
+            {
+                var result = Value_Object;
+
+                Release(this);
+
+                return result;
+            }
+
+            throw new InkSyntaxException($"The value type is not Object, but {ValueType}");
+        }
 
 
         public static InkValue operator +(InkValue left, InkValue right)
@@ -2064,9 +2185,9 @@
             }
         }
 
-        public readonly List<object> ObjectList = new(UniInk.EXPRESSION_ELEMENT_MAX_LEN);
-        public readonly List<object> CastOther  = new(UniInk.EXPRESSION_ELEMENT_MAX_LEN);
-        public readonly List<bool>   IndexDirty = new(UniInk.EXPRESSION_ELEMENT_MAX_LEN);
+        public readonly List<object> ObjectList = new(UniInk.EXPRESS_ELEMENT_MAX_LEN);
+        public readonly List<object> CastOther  = new(UniInk.EXPRESS_ELEMENT_MAX_LEN);
+        public readonly List<bool>   IndexDirty = new(UniInk.EXPRESS_ELEMENT_MAX_LEN);
 
 
 
