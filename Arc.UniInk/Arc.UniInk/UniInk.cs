@@ -4,6 +4,7 @@
     using System;
     using System.Collections.Generic;
 
+
     /* ================================================== SUMMARY  ================================================== */
     /* Title    :  UniInk_Speed (https://github.com/Arc-huangjingtong/UniInk-CSharpInterpreter4Unity)                 */
     /* Author   :  Arc (https://github.com/Arc-huangjingtong)                                                         */
@@ -13,12 +14,19 @@
     /* Feature  :  [Easy-use] [High performance] [zero box & unbox] [zero GC!] [zero reflection runtime]              */
     /* ============================================================================================================== */
 
+
     /*===================================================  GUIDE  ====================================================*/
     /* 1. Quickly Start :                                                                                             */
-    /*    var ink   = new UniInk();                               // 1. create a new instance                         */
-    /*    var res01 = ink.Evaluate("3 + 5 * 2").GetResult_Int();  // 2. use Evaluate and input an expression string   */
+    /*    // 1. create a new instance                                                                                 */
+    /*    var ink   = new UniInk();                                                                                   */
     /*                                                                                                                */
+    /*    // 2. use Evaluate and input an expression string                                                           */
+    /*    var res01 = ink.Evaluate("3 + 5 * 2").GetResult_Int();   */
+    /*    var res02 = ink.Evaluate("3333.333f-3.3f+3.3f+  3.3f - 3.3f").GetResult_Float() // Auto ignore WhiteSpace   */
+    /*    var res03 = ink.Evaluate("true && false || true").GetResult_Bool();                                         */
+    /*    var res04 = ink.Evaluate("LOG(\"Hello World!\")").GetResult_String();                                       */
     /* 2. Register Functions :                                                                                        */
+
 
 
     /// <summary> The C# Evaluator easy to use : you can execute simple expression or scripts with a string </summary>
@@ -1610,7 +1618,6 @@
         {
             if (value.dontRelease) return;
 
-
             ReleaseTime++;
 
             value.Value_Meta.Clear();
@@ -2088,6 +2095,7 @@
 
             return answer;
         }
+        
 
         public static InkValue operator !=(InkValue left, InkValue right) => (left  == right).Negate();
         public static InkValue operator >=(InkValue left, InkValue right) => (left  < right).Negate();

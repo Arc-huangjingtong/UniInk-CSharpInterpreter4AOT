@@ -1,12 +1,12 @@
 ﻿namespace Arc.UniInk
 {
 
-    /******************************************************************************************************************
-    * 📰 Title    :  UniInk_Note (https://github.com/Arc-huangjingtong/UniInk-CSharpInterpreter4Unity)                *
-    * 🔖 Version  :  1.0.0                                                                                            *
-    * 😀 Authors  :  Arc (https://github.com/Arc-huangjingtong)                                                       *
-    * 📝 Desc     :  Provide commonly used string-related processing tools                                            *
-    /******************************************************************************************************************/
+    /* ================================================== SUMMARY  ================================================== */
+    /* Title    :  UniInk_Extensions (https://github.com/Arc-huangjingtong/UniInk-CSharpInterpreter4Unity)            */
+    /* Authors  :  Arc (https://github.com/Arc-huangjingtong)                                                         */
+    /* Version  :  1.1.0                                                                                              */
+    /* Desc     :  Provide commonly used string-related processing tools                                              */
+    /* ============================================================================================================== */
 
     using System.Text.RegularExpressions;
     using System;
@@ -91,10 +91,7 @@
 
 
 
-    #region Support for UniInk_Speed : If Statement
-
-
-    /// Part: Support for UniInk_Speed : If Statement
+    // Part: Support for UniInk : If Statement
     public partial class UniInk
     {
         /// <summary> Process the script with the if statement(or not) </summary>
@@ -316,6 +313,11 @@
     }
 
 
-    #endregion
+    // Part: Support for UniInk : StringBuilder
+    public partial class UniInk { }
+
+
+    // Part: Support for UniInk : Span<Char>
+    public partial class UniInk { }
 
 }
