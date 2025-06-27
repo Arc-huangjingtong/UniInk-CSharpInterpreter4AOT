@@ -17,14 +17,19 @@
 
     /*===================================================  GUIDE  ====================================================*/
     /* 1. Quickly Start :                                                                                             */
-    /*    // 1. create a new instance                                                                                 */
+    /*    // 1.1 create a new instance                                                                                */
     /*    var ink   = new UniInk();                                                                                   */
     /*                                                                                                                */
-    /*    // 2. use Evaluate and input an expression string                                                           */
-    /*    var res01 = ink.Evaluate("3 + 5 * 2").GetResult_Int();   */
-    /*    var res02 = ink.Evaluate("3333.333f-3.3f+3.3f+  3.3f - 3.3f").GetResult_Float() // Auto ignore WhiteSpace   */
-    /*    var res03 = ink.Evaluate("true && false || true").GetResult_Bool();                                         */
-    /*    var res04 = ink.Evaluate("LOG(\"Hello World!\")").GetResult_String();                                       */
+    /*    // 1.2 use Evaluate and input an expression string                                                          */
+    /*    var res01 = ink.Evaluate("3 + 5 * 2").GetResult_Int();                                                      */
+    /* 2. Features                                                                                                    */
+    /*    // 2.1 Auto ignore WhiteSpace                                                                               */
+    /*    // 2.2 Auto detect case                                                                                     */
+    /*    var res02 = ink.Evaluate("3333.333f-3.3f+3.3f+  3.3f - 3.3F").GetResult_Float()                             */
+    /*    var res03 = ink.Evaluate("true && false || True").GetResult_Bool();                                         */
+    /*                                                                                                                */
+    /*    // 4. String add is zero GC too                                                                             */
+    /*    var res04 = ink.Evaluate("\"Hello\"+\"World\"+\"!\"").GetResult_String();                                   */
     /* 2. Register Functions :                                                                                        */
 
 
@@ -778,22 +783,36 @@
 
         /**************************************************  Helper  **************************************************/
 
-        /// <summary> Match <see cref="value"/> from <see cref="input"/> 's  <see cref="startIndex"/>         </summary>
-        protected static bool StartsWithInputStrFromIndex(string input, string value, int startIndex)
+        /// <summary> Match <see cref="value"/> from <see cref="input"/> 's  <see cref="startIndex"/> </summary>
+        protected static bool StartsWithInputStrFromIndex(string input, string value, int startIndex, bool ignoreFirstCase = false)
         {
             if (input.Length - startIndex < value.Length)
             {
                 return false;
             }
 
-            for (var i = 0 ; i < value.Length ; i++)
+            if (ignoreFirstCase)
+            {
+                if (char.ToLower(input[startIndex]) ==char.ToLower(value[0]))
+                {
+                    return false;
+                }
+            }
+            else 
+            {
+                if (input[startIndex] != value[0])
+                {
+                    return false;
+                }
+            }
+
+            for (var i = 1 ; i < value.Length ; i++)
             {
                 if (input[i + startIndex] != value[i])
                 {
                     return false;
                 }
             }
-
 
             return true;
         }
@@ -947,19 +966,21 @@
         /// <summary> Find <see cref="input"/> is whether start with bool from <see cref="startIndex"/>       </summary>
         protected static bool StartsWithBoolFromIndex(string input, int startIndex, out InkValue value, out int len)
         {
-            const string trueStr  = "true";
-            const string falseStr = "false";
+            const string trueStr01  = "true";
+            const string trueStr02  = "True";
+            const string falseStr01 = "false";
+            const string falseStr02 = "False";
 
-            if (StartsWithInputStrFromIndex(input, falseStr, startIndex))
+            if (StartsWithInputStrFromIndex(input, falseStr01, startIndex))
             {
-                len   = falseStr.Length;
+                len   = falseStr01.Length;
                 value = InkValue.GetBoolValue(false);
                 return true;
             }
 
-            if (StartsWithInputStrFromIndex(input, trueStr, startIndex))
+            if (StartsWithInputStrFromIndex(input, trueStr01, startIndex))
             {
-                len   = trueStr.Length;
+                len   = trueStr01.Length;
                 value = InkValue.GetBoolValue(true);
                 return true;
             }
@@ -2095,7 +2116,7 @@
 
             return answer;
         }
-        
+
 
         public static InkValue operator !=(InkValue left, InkValue right) => (left  == right).Negate();
         public static InkValue operator >=(InkValue left, InkValue right) => (left  < right).Negate();
