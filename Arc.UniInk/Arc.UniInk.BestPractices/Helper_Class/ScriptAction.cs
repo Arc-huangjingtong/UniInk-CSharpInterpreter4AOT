@@ -37,15 +37,13 @@
             Evaluator.RegisterVariable("PREPARE",    InkValue.GetIntValue((int)EPhaseTypes.TurnPrepare));
             Evaluator.RegisterVariable("AI_MAIN",    InkValue.GetIntValue((int)EPhaseTypes.TurnAI));
 
-            Evaluator.RegisterVariable("PHASE", InkValue.SetGetter(value =>
+            Evaluator.RegisterVariable("PHASE", InkValue.SetGetter(InkValue.GetIntValue((int)PHASE), value =>
             {
-                value.ValueType = TypeCode.Int32;
                 value.Value_int = (int)PHASE;
             }));
 
-            Evaluator.RegisterVariable("grower", InkValue.SetGetter(value =>
+            Evaluator.RegisterVariable("grower", InkValue.SetGetter(InkValue.GetIntValue((int)PHASE),value =>
             {
-                value.ValueType = TypeCode.Int32;
                 value.Value_int = grower;
             }));
         }

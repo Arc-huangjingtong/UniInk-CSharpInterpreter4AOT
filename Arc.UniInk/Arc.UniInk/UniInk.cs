@@ -22,16 +22,78 @@
     /*                                                                                                                */
     /*    // 1.2 use Evaluate and input an expression string                                                          */
     /*    var res01 = ink.Evaluate("3 + 5 * 2").GetResult_Int();                                                      */
-    /* 2. Features                                                                                                    */
+    /* 2. Operate Features :                                                                                          */
     /*    // 2.1 Auto ignore WhiteSpace                                                                               */
-    /*    // 2.2 Auto detect case                                                                                     */
+    /*    // 2.2 Auto ignore case(Ff,Dd,T(t)rue,F(f)alse)                                                             */
     /*    var res02 = ink.Evaluate("3333.333f-3.3f+3.3f+  3.3f - 3.3F").GetResult_Float()                             */
-    /*    var res03 = ink.Evaluate("true && false || True").GetResult_Bool();                                         */
+    /*    var res03 = ink.Evaluate("true && false || True && 1+1==1+1").GetResult_Bool();                             */
+    /*    // 2.3 Arithmetic overflow (because the compute is runtime)                                                 */
+    /*    var res04 = ink.Evaluate("999 * 123123 * 321321 / 999 / 666").GetResult_Int();                              */
+    /*    var ans04 = unchecked(999 * 123123 * 321321) / 999 / 666);                                                  */
+    /*    // res04 == ans04 == 232                                                                                    */
+    /*    // 2.4 Don't support two operators together                                                                 */
+    /*    var worry01 = "9 * -1"                                                                                      */
+    /*    var suggest01 = "9 * (-1)"; // you should use parenthis to avoid the worry01                                */
+    /*    var suggest02 = "-1*9"; // just those two operators are not together to avoid the worry01                   */
     /*                                                                                                                */
-    /*    // 4. String add is zero GC too                                                                             */
-    /*    var res04 = ink.Evaluate("\"Hello\"+\"World\"+\"!\"").GetResult_String();                                   */
-    /* 2. Register Functions :                                                                                        */
-
+    /*    // 2.5 String add is zero GC too(the inner logic is List<char>                                              */
+    /*    var res05 = ink.Evaluate("\"Hello\"+\"World\"+\"!\"").GetResult_String();                                   */
+    /* 3. Call C# Layer                                                                                               */
+    /*    // 3.1 Register a local function(param: IList<object> return: object                                        */
+    /*    object SUM(IList<object> list)                                                                              */
+    /*    {                                                                                                           */
+    /*       // the param and return value must be InkValue,and its will be auto released                             */
+    /*       // If you are not in the above situations to generate InkValue, you will produce GC                      */
+    /*       // Such as :                                                                                             */
+    /*       // var temp = inkValue + inkValue                                                                        */
+    /*       // and temp is not return value, you must use InkValue.Release(temp) to release it                       */
+    /*       var param1 = (InkValue)list[0];                                                                          */
+    /*       var param2 = (InkValue)list[1];                                                                          */
+    /*       var param3 = (InkValue)list[2];                                                                          */
+    /*       var sum    = InkValue.GetIntValue(param1.Value_int + param2.Value_int + param3.Value_int);               */
+    /*       return sum;                                                                                              */
+    /*     }                                                                                                          */
+    /*     // the register function API                                                                               */
+    /*     Ink.RegisterFunction("SUM", new InkFunction(SUM));                                                         */
+    /*     var res06 = Ink.Evaluate("SUM(SUM(1,2,-3),SUM(1,2,3),1) + SUM(1,2,3)")                                     */
+    /*                                                                                                                */
+    /*     // 3.2 Register Variable                                                                                   */
+    /*     Ink.RegisterVariable("Age", InkValue.GetIntValue(25));                                                     */
+    /*     Ink.RegisterVariable("Ages", InkValue.GetObjectValue(new List<int>(){11,12,13,14,15}));                    */
+    /*     Ink.RegisterVariable("IsBoy", InkValue.GetBoolValue(true));                                                */
+    /*                                                                                                                */
+    /*  4. Scripts Features                                                                                           */
+    /*     // 4.1 Evaluate Scripts(use Semicolon[;] to split the scripts)                                             */
+    /*     // 4.2 The last expression will be the result of the script, so you can use it to return a value           */
+    /*     var res07 = Ink.Evaluate("var a = 1; var b = 2; a + b;").GetResult_Int();                                  */
+    /*     // 4.3 Can use registered functions and variables in scripts                                               */
+    /*     var res08 = Ink.Evaluate("var a = 1; var b = 2; SUM(a,b,Age);").GetResult_Int();                           */
+    /*                                                                                                                */
+    /*  5. Other Features                                                                                             */
+    /*                                                                                                                */
+    /*     // 5.1 Custom Lambda Predicate<T> Expression                                                               */
+    /*     List<int> AgeSearch(IList<int> ages, Predicate<int> func)                                                  */
+    /*     {                                                                                                          */
+    /*         var list = new List<int>();                                                                            */
+    /*                                                                                                                */
+    /*         foreach (var card in ages)                                                                             */
+    /*         {                                                                                                      */
+    /*             if (func(card))                                                                                    */
+    /*             {                                                                                                  */
+    /*                list.Add(card);                                                                                 */
+    /*             }                                                                                                  */
+    /*         }                                                                                                      */
+    /*                                                                                                                */
+    /*         return list;                                                                                           */
+    /*     }                                                                                                          */
+    /*     var res09 = Ink.Evaluate("AgeSearch(Ages,var b => GET(b, Rarity) == 2)").GetResult_Object();               */
+    /*                                                                                                                */
+    /*     // 5.2 Custom Getter (when you evaluate the variable, it will be auto called)                              */
+    /*     Ink.RegisterVariable("grower", InkValue.SetGetter(InkValue.GetIntValue(0), value => value.Value_int++));   */
+    /*                                                                                                                */
+    /*                                                                                                                */
+    /*                                                                                                                */
+    /*                                                                                                                */
 
 
     /// <summary> The C# Evaluator easy to use : you can execute simple expression or scripts with a string </summary>
@@ -373,7 +435,7 @@
                 }
                 else
                 {
-                    throw new InkSyntaxException($"Unknown Operator : {curOperator}");
+                    throw new InkSyntaxException($"Unknown Operator : {curOperator},index : {index}");
                 }
             }
 
@@ -442,7 +504,7 @@
             ProcessList_Operators(paramList, sectionStart, paramList.Count - 1);
 
             ObjectRemoveNull(paramList.CastOther);
-            var result = func?.FuncDelegate2.Invoke(paramList.CastOther);
+            var result = func?.FuncDelegate.Invoke(paramList.CastOther);
 
             if (result is InkValue) { }
             else if (result is not null)
@@ -793,12 +855,12 @@
 
             if (ignoreFirstCase)
             {
-                if (char.ToLower(input[startIndex]) ==char.ToLower(value[0]))
+                if (char.ToLower(input[startIndex]) == char.ToLower(value[0]))
                 {
                     return false;
                 }
             }
-            else 
+            else
             {
                 if (input[startIndex] != value[0])
                 {
@@ -978,9 +1040,23 @@
                 return true;
             }
 
+            if (StartsWithInputStrFromIndex(input, falseStr02, startIndex))
+            {
+                len   = falseStr02.Length;
+                value = InkValue.GetBoolValue(false);
+                return true;
+            }
+
             if (StartsWithInputStrFromIndex(input, trueStr01, startIndex))
             {
                 len   = trueStr01.Length;
+                value = InkValue.GetBoolValue(true);
+                return true;
+            }
+
+            if (StartsWithInputStrFromIndex(input, trueStr02, startIndex))
+            {
+                len   = trueStr02.Length;
                 value = InkValue.GetBoolValue(true);
                 return true;
             }
@@ -1135,7 +1211,7 @@
             return (priorityOperator, index);
         }
 
-        /// <summary> Judge the input String is a Script or not (depend on the operator:[;] [{])              </summary>
+        /// <summary> Judge the input String is a Script or not (depend on the operator:[;] [{]) </summary>
         protected static bool InputIsScript(InkSyntaxList keys)
         {
             foreach (var obj in keys.ObjectList)
@@ -1524,22 +1600,10 @@
     {
         public InkFunction(Func<List<object>, object> func)
         {
-            FuncDelegate2 = func;
+            FuncDelegate = func;
         }
 
-        public InkFunction(Func<List<object>, object> func, Type[] paramTypes, Type returnType)
-        {
-            FuncDelegate2 = func;
-            ParamTypes    = paramTypes;
-            ReturnType    = returnType;
-        }
-
-        public readonly Type[] ParamTypes;
-
-        public readonly Type ReturnType;
-
-
-        public readonly Func<List<object>, object> FuncDelegate2;
+        public readonly Func<List<object>, object> FuncDelegate;
     }
 
 
@@ -1627,9 +1691,8 @@
             return value;
         }
 
-        public static InkValue SetGetter(Action<InkValue> getter)
+        public static InkValue SetGetter(InkValue value, Action<InkValue> getter)
         {
-            var value = Get();
             value.getter = true;
             value.Getter = getter;
             return value;
@@ -2246,7 +2309,7 @@
 
 
     /// <summary> InkSyntaxException throw when the syntax is wrong  </summary>
-    public partial class InkSyntaxException : Exception
+    public class InkSyntaxException : Exception
     {
         public InkSyntaxException(string message) : base(message) { }
     }

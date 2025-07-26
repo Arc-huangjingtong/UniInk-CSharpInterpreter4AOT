@@ -26,6 +26,23 @@
 
         public bool isInit;
 
+        object SUM(IList<object> list)
+        {
+            // the param and return value must be InkValue,and its will be auto released
+            // If you are not in the above situations to generate InkValue, you will produce GC
+            // Such as :
+            // var temp = inkValue + inkValue
+            // and temp is not return value, you must use InkValue.Release(temp) to release it
+
+            var param1 = (InkValue)list[0];
+            var param2 = (InkValue)list[1];
+            var param3 = (InkValue)list[2];
+
+            var sum = InkValue.GetIntValue(param1.Value_int + param2.Value_int + param3.Value_int);
+
+            return sum;
+        }
+
         [OneTimeSetUp]
         public void Test_Initiation()
         {
@@ -33,12 +50,11 @@
 
             isInit = true;
 
-            Ink.RegisterFunction("SUM", new(list => InkValue.GetIntValue((int)(InkValue)list[0] + (int)(InkValue)list[1] + (int)(InkValue)list[2])));
+            Ink.RegisterFunction("SUM", new InkFunction(SUM));
             Ink.RegisterFunction("LOG", new(prms =>
             {
                 if (prms[0] is InkValue value)
                 {
-                    value.isCalculate = true;
                     Console.WriteLine(value.ToString());
                 }
 
@@ -87,7 +103,7 @@
             }));
 
 
-            static List<Card> FLT(IList<Card> cards, Predicate<Card> func)
+            List<Card> FLT(IList<Card> cards, Predicate<Card> func)
             {
                 var list = new System.Collections.Generic.List<Card>();
 
@@ -102,17 +118,27 @@
                 return list;
             }
 
-
-            Ink.RegisterVariable("grower", InkValue.SetGetter(value =>
+            List<int> AgeSearch(IList<int> ages, Predicate<int> func)
             {
-                value.ValueType = TypeCode.Int32;
-                value.Value_int = grower++;
-            }));
+                var list = new System.Collections.Generic.List<int>();
 
-            Ink.RegisterVariable("Target", InkValue.SetGetter(value =>
+                foreach (var card in ages)
+                {
+                    if (func(card))
+                    {
+                        list.Add(card);
+                    }
+                }
+
+                return list;
+            }
+
+
+            Ink.RegisterVariable("grower", InkValue.SetGetter(InkValue.GetIntValue(0), value => value.Value_int++));
+
+            Ink.RegisterVariable("Target", InkValue.SetGetter(InkValue.GetObjectValue(Target), _ =>
             {
-                value.ValueType    = TypeCode.Object;
-                value.Value_Object = Target;
+                Target.ID++;
             }));
 
 
@@ -127,10 +153,10 @@
 
 
         [Repeat(10000)]
-        [TestCase("999*123123*321321/999/666 ", ExpectedResult = 232)] // Computation overflow
+        [TestCase("999*123123*321321/999/666 ", ExpectedResult = unchecked(999 * 123123 * 321321) / 999 / 666)] // arithmetic overflow
         public static object Test_Expression_Extreme(string input)
         {
-            var result = Ink.Evaluate(input);
+            var result = Ink.Evaluate(input).GetResult_Int(); // result is 232
             return result;
         }
 
@@ -151,7 +177,9 @@
         [TestCase("9*((1+(1+1)+(1+1))+1+1)", ExpectedResult = 9 * ((1 + (1 + 1) + (1 + 1)) + 1 + 1))]
         [TestCase("9*((1+(2+3)*(4+5))+6+7)", ExpectedResult = 9 * ((1 + (2 + 3) * (4 + 5)) + 6 + 7))]
         [TestCase("9 * ( ( 1 + 2 * 3 ) /2)", ExpectedResult = 9 * ((1 + 2       * 3) / 2))]
-        //[TestCase("9 * +5 ",                 ExpectedResult = 9 * +5)] not support but 9 * (+5) is support
+        //[TestCase("9 *+5 ",                  ExpectedResult = 9  * +5)] // not support
+        [TestCase("+9*5 ",     ExpectedResult = +9 * 5)]  // support
+        [TestCase("9 * (-5) ", ExpectedResult = 9  * -5)] // support
         public static int Test_Arithmetic_Int(string input)
         {
             var res    = (InkValue)Ink.Evaluate(input);
@@ -197,13 +225,15 @@
 
 
         [Repeat(10000)]
-        [TestCase("!true && false || true && false ", ExpectedResult = (!true && false) || (true && false))]
-        [TestCase("1 > 2 || 2 > 1 || 2==1          ", ExpectedResult = 1 > 2            || 2 > 1  || 2 == 1)]
-        [TestCase("1 < 2 || 2 ==1 || 2 < 1         ", ExpectedResult = 1 < 2            || 2 == 1 || 2 < 1)]
-        [TestCase("1 >= 2 && 2 >= 1                ", ExpectedResult = 1 >= 2 && 2           >= 1)]
-        [TestCase("1 <= 2 || 2 <= 1                ", ExpectedResult = 1 <= 2 || 2           <= 1)]
-        [TestCase("1 == 2 && 2 == 1                ", ExpectedResult = 1 == 2 && 2           == 1)]
-        [TestCase("1 != 2 || 2 != 1                ", ExpectedResult = 1 != 2 || 2           != 1)]
+        [TestCase("!true && false || true && false ",   ExpectedResult = (!true && false) || (true && false))]
+        [TestCase("1 > 2 || 2 > 1 || 2==1          ",   ExpectedResult = 1 > 2            || 2 > 1  || 2 == 1)]
+        [TestCase("1 < 2 || 2 ==1 || 2 < 1         ",   ExpectedResult = 1 < 2            || 2 == 1 || 2 < 1)]
+        [TestCase("1 >= 2 && 2 >= 1                ",   ExpectedResult = 1 >= 2 && 2           >= 1)]
+        [TestCase("1 <= 2 || 2 <= 1                ",   ExpectedResult = 1 <= 2 || 2           <= 1)]
+        [TestCase("1 == 2 && 2 == 1                ",   ExpectedResult = 1 == 2 && 2           == 1)]
+        [TestCase("1 != 2 || 2 != 1                ",   ExpectedResult = 1 != 2        || 2    != 1)]
+        [TestCase("1 != 1+1 || 2 != 1                ", ExpectedResult = 1 != 1 + 1    || 2    != 1)]
+        [TestCase("true && false || True && 1+1==1+1",  ExpectedResult = true && false || true && 1 + 1 == 1 + 1)]
         public static bool Test_Arithmetic_Bool(string input)
         {
             var res    = (InkValue)Ink.Evaluate(input);
@@ -353,9 +383,9 @@
         {
             var res = Ink.Evaluate(input);
 
-            if (res is InkValue inkValue)
+            if (res != null)
             {
-                if (inkValue.Value_Object is List<Card> cards)
+                if (res.Value_Object is List<Card> cards)
                 {
                     Console.WriteLine(cards.Count);
                     foreach (var card in cards)
@@ -365,7 +395,7 @@
                     }
                 }
 
-                InkValue.Release(inkValue);
+                InkValue.Release(res);
             }
 
             // Console.WriteLine(InkValue.GetTime);
