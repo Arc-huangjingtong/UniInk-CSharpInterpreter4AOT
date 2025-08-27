@@ -17,3 +17,6 @@ Arc.UniInk/Arc.UniInk.sln.DotSettings.user
 /Arc.UniInk/Arc.UniInk.BestPractices/obj
 /Arc.UniInk/Arc.UniInk.BestPractices/obj
 /Arc.UniInk/Arc.UniInk.BestPractices/obj
+# NuGet packages
+*.nupkg
+*.snupkg

@@ -12,12 +12,20 @@
 
 # 😀Start
 
-### Download [This](https://github.com/Arc-huangjingtong/UniInk-CSharpInterpreter4AOT/blob/main/Arc.UniInk/Arc.UniInk/UniInk_Speed.cs) is Enough !
+### Option 1: NuGet Package (Recommended)
+```bash
+dotnet add package Arc.UniInk
+```
+
+### Option 2: Single File Download
+Download [This](https://github.com/Arc-huangjingtong/UniInk-CSharpInterpreter4AOT/blob/main/Arc.UniInk/Arc.UniInk/UniInk_Speed.cs) is Enough !
+
+For detailed NuGet setup and publishing guide, see [NUGET-GUIDE.md](NUGET-GUIDE.md).
 
 # 📝RoadMap
 
 - [ ] Support more features.
-- [ ] Nuget Package Support.
+- [x] Nuget Package Support. ([Guide](NUGET-GUIDE.md))
 - [ ] Unity Package Support.
 - [ ] Write more test cases.
 - [ ] Serializable function? Maybe interesting?
