@@ -218,8 +218,8 @@ InkValue.Release(result);
 3. **错误诊断**: 提供更详细的错误信息和调试支持
 
 ### 长期发展
-1. **跨平台支持**: 迁移到 .NET Standard/.NET 5+
-2. **NuGet 包**: 发布官方 NuGet 包
+1. **跨平台支持**: ✅ 已迁移到 .NET Standard 2.0
+2. **NuGet 包**: ✅ 已实现 NuGet 包支持 (详见 [NUGET-GUIDE.md](NUGET-GUIDE.md))
 3. **语法扩展**: 支持更多 C# 语法特性
 4. **可视化工具**: 提供表达式调试和分析工具
 

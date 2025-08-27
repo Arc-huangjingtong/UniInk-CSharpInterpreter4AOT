@@ -1,73 +1,50 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-    <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props"
-            Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')"/>
-    <PropertyGroup>
-        <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-        <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-        <ProjectGuid>{F969106D-BD96-4E8F-A217-4B90D2975179}</ProjectGuid>
-        <OutputType>Library</OutputType>
-        <AppDesignerFolder>Properties</AppDesignerFolder>
-        <RootNamespace>Arc.UniInk</RootNamespace>
-        <AssemblyName>Arc.UniInk</AssemblyName>
-        <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
-        <FileAlignment>512</FileAlignment>
-        <LangVersion>9</LangVersion>
-    </PropertyGroup>
-    <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-        <PlatformTarget>AnyCPU</PlatformTarget>
-        <DebugSymbols>true</DebugSymbols>
-        <DebugType>full</DebugType>
-        <Optimize>false</Optimize>
-        <OutputPath>bin\Debug\</OutputPath>
-        <DefineConstants>DEBUG;TRACE</DefineConstants>
-        <ErrorReport>prompt</ErrorReport>
-        <WarningLevel>4</WarningLevel>
-    </PropertyGroup>
-    <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-        <PlatformTarget>AnyCPU</PlatformTarget>
-        <DebugType>pdbonly</DebugType>
-        <Optimize>true</Optimize>
-        <OutputPath>bin\Release\</OutputPath>
-        <DefineConstants>TRACE</DefineConstants>
-        <ErrorReport>prompt</ErrorReport>
-        <WarningLevel>4</WarningLevel>
-    </PropertyGroup>
-    <ItemGroup>
-        <Reference Include="mscorlib" />
-        <Reference Include="System"/>
-        <Reference Include="System.Buffers, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
-          <HintPath>..\packages\System.Buffers.4.5.1\lib\net461\System.Buffers.dll</HintPath>
-        </Reference>
-        <Reference Include="System.Core"/>
-        <Reference Include="System.Data"/>
-        <Reference Include="System.Memory, Version=4.0.1.1, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
-          <HintPath>..\packages\System.Memory.4.5.4\lib\net461\System.Memory.dll</HintPath>
-        </Reference>
-        <Reference Include="System.Numerics" />
-        <Reference Include="System.Numerics.Vectors, Version=4.1.4.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-          <HintPath>..\packages\System.Numerics.Vectors.4.5.0\lib\net46\System.Numerics.Vectors.dll</HintPath>
-        </Reference>
-        <Reference Include="System.Runtime.CompilerServices.Unsafe, Version=4.0.4.1, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-          <HintPath>..\packages\System.Runtime.CompilerServices.Unsafe.4.5.3\lib\net461\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
-        </Reference>
-        <Reference Include="System.Xml"/>
-    </ItemGroup>
-    <ItemGroup>
-        <Compile Include="UniInk_AssemblyInfo.cs" />
-        <Compile Include="UniInk_Extensions.cs" />
-        <Compile Include="UniInk.cs" />
-    </ItemGroup>
-    <ItemGroup>
-      <None Include="packages.config" />
-    </ItemGroup>
-    <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets"/>
-    <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
-         Other similar extension points exist, see Microsoft.Common.targets.
-    <Target Name="BeforeBuild">
-    </Target>
-    <Target Name="AfterBuild">
-    </Target>
-    -->
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <RootNamespace>Arc.UniInk</RootNamespace>
+    <AssemblyName>Arc.UniInk</AssemblyName>
+    
+    <!-- NuGet Package Metadata -->
+    <PackageId>Arc.UniInk</PackageId>
+    <PackageVersion>1.1.0</PackageVersion>
+    <Authors>Arc (huangjingtong)</Authors>
+    <Company>Arc</Company>
+    <Product>UniInk C# Interpreter</Product>
+    <Description>A high-performance, zero-GC, AOT-compatible C# expression interpreter. Perfect for Unity IL2CPP environments and performance-critical applications. Features single-file design, zero boxing/unboxing, and object pooling for optimal memory usage.</Description>
+    <PackageTags>csharp;interpreter;expression;aot;unity;il2cpp;performance;zero-gc;parser</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/Arc-huangjingtong/UniInk-CSharpInterpreter4AOT</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/Arc-huangjingtong/UniInk-CSharpInterpreter4AOT</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageReleaseNotes>
+      v1.1.0: Added NuGet package support with .NET Standard 2.0 compatibility
+      - Modernized project to .NET Standard 2.0 for cross-platform support
+      - Maintained full compatibility with Unity IL2CPP and AOT environments
+      - Zero-GC design with object pooling for optimal performance
+      - Single-file architecture for easy integration
+    </PackageReleaseNotes>
+    <Copyright>Copyright © 2024 Arc. All rights reserved.</Copyright>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    
+    <!-- Assembly Information -->
+    <AssemblyTitle>Arc.UniInk</AssemblyTitle>
+    <AssemblyDescription>High-performance C# expression interpreter with AOT support</AssemblyDescription>
+    <AssemblyCompany>Arc</AssemblyCompany>
+    <AssemblyProduct>UniInk C# Interpreter</AssemblyProduct>
+    <AssemblyCopyright>Copyright © 2024 Arc. All rights reserved.</AssemblyCopyright>
+    <AssemblyVersion>1.1.0.0</AssemblyVersion>
+    <FileVersion>1.1.0.0</FileVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Memory" Version="4.5.4" />
+    <PackageReference Include="System.Numerics.Vectors" Version="4.5.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
 
 </Project>
