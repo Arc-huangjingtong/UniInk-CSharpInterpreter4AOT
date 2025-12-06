@@ -403,12 +403,7 @@
         <Compile Include="Refer_Sprache\Extensions_Parser.cs" />
         <Compile Include="Refer_Sprache\Parse_Position.cs" />
         <Compile Include="Refer_Sprache\Parse_Result.cs" />
-        <Compile Include="Refer_Sprache\Scenarios\AmqpErrorTests.cs" />
-        <Compile Include="Refer_Sprache\Scenarios\AssemblerTests.cs" />
-        <Compile Include="Refer_Sprache\Scenarios\CsvTests.cs" />
-        <Compile Include="Refer_Sprache\Scenarios\ExpressionGrammarTests.cs" />
         <Compile Include="Refer_Sprache\Scenarios\ExpressionParser.cs" />
-        <Compile Include="Refer_Sprache\Scenarios\StarDateTest.cs" />
         <Compile Include="Refer_Sprache\Tests\AssertInput.cs" />
         <Compile Include="Refer_Sprache\Tests\AssertParser.cs" />
         <Compile Include="Refer_Sprache\Tests\DecimalTests.cs" />
