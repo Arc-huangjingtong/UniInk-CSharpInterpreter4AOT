@@ -15,4 +15,4 @@ var config = ManualConfig.Create(DefaultConfig.Instance)
     .AddExporter(MarkdownExporter.Default);
 
 
-BenchmarkRunner.Run<Benchmark_UniInkSpeed>(config);
+BenchmarkRunner.Run<Benchmark_UniInk>(config);

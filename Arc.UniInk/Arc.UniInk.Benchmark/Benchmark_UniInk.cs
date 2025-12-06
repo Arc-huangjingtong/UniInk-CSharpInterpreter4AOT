@@ -1,6 +1,4 @@
-﻿using ParsecSharp.Examples;
-
-namespace Arc.UniInk.NUnitTest
+﻿namespace Arc.UniInk.NUnitTest
 {
     //using Arc.UniInk.Extensions;
     using System;
@@ -8,7 +6,7 @@ namespace Arc.UniInk.NUnitTest
     using LinqyCalculator;
     using NUnit.Framework;
     using CodingSeb.ExpressionEvaluator;
-    //using ParsecSharp.Examples;
+    using ParsecSharp.Examples;
 
 
     /*
@@ -28,9 +26,9 @@ namespace Arc.UniInk.NUnitTest
 
     [TestFixture]
     [MemoryDiagnoser]
-    public class Benchmark_UniInkSpeed
+    public class Benchmark_UniInk
     {
-        public Benchmark_UniInkSpeed() => TEST_INITIATION();
+        public Benchmark_UniInk() => TEST_INITIATION();
 
 
         public const string TestInput_Arithmetic_Int_01 =
@@ -69,17 +67,17 @@ namespace Arc.UniInk.NUnitTest
 
 
         [OneTimeSetUp]
-        public void TEST_INITIATION() => new NUnit_UniInkSpeed().Test_Initiation();
+        public void TEST_INITIATION() => new NUnitTest_UniInk().Test_Initiation();
 
 
         [Benchmark(Baseline = true)]
         [Test]
         public void TEST_Arithmetic__UniInkSpeed()
         {
-            var result1 = NUnit_UniInkSpeed.Test_Arithmetic_Int(TestInput_Arithmetic_Int_01);
-            var result2 = NUnit_UniInkSpeed.Test_Arithmetic_Int(TestInput_Arithmetic_Int_02);
-            var result3 = NUnit_UniInkSpeed.Test_Arithmetic_Int(TestInput_Arithmetic_Int_03);
-            var result4 = NUnit_UniInkSpeed.Test_Arithmetic_Int(TestInput_Arithmetic_Int_04);
+            var result1 = NUnitTest_UniInk.Test_Arithmetic_Int(TestInput_Arithmetic_Int_01);
+            var result2 = NUnitTest_UniInk.Test_Arithmetic_Int(TestInput_Arithmetic_Int_02);
+            var result3 = NUnitTest_UniInk.Test_Arithmetic_Int(TestInput_Arithmetic_Int_03);
+            var result4 = NUnitTest_UniInk.Test_Arithmetic_Int(TestInput_Arithmetic_Int_04);
 
 #if DEBUG
             Console.WriteLine(result1 + "|" + result2 + "|" + result3 + "|" + result4);
@@ -90,7 +88,7 @@ namespace Arc.UniInk.NUnitTest
         [Test]
         public void TEST_IfStatement__UniInkSpeed()
         {
-            var Ink = NUnit_UniInkSpeed.Ink;
+            var Ink = NUnitTest_UniInk.Ink;
             var test = Ink.Evaluate_IfStatement(TestInput_IfStatement);
             if (test is InkValue value)
             {
@@ -146,19 +144,19 @@ namespace Arc.UniInk.NUnitTest
 
 
         public static readonly InkSyntaxList Compiled_TestInput_Arithmetic_Int_01 =
-            NUnit_UniInkSpeed.Ink.CompileLexerAndFill(TestInput_Arithmetic_Int_01, 0,
+            NUnitTest_UniInk.Ink.CompileLexerAndFill(TestInput_Arithmetic_Int_01, 0,
                 TestInput_Arithmetic_Int_01.Length - 1);
 
         public static readonly InkSyntaxList Compiled_TestInput_Arithmetic_Int_02 =
-            NUnit_UniInkSpeed.Ink.CompileLexerAndFill(TestInput_Arithmetic_Int_02, 0,
+            NUnitTest_UniInk.Ink.CompileLexerAndFill(TestInput_Arithmetic_Int_02, 0,
                 TestInput_Arithmetic_Int_02.Length - 1);
 
         public static readonly InkSyntaxList Compiled_TestInput_Arithmetic_Int_03 =
-            NUnit_UniInkSpeed.Ink.CompileLexerAndFill(TestInput_Arithmetic_Int_03, 0,
+            NUnitTest_UniInk.Ink.CompileLexerAndFill(TestInput_Arithmetic_Int_03, 0,
                 TestInput_Arithmetic_Int_03.Length - 1);
 
         public static readonly InkSyntaxList Compiled_TestInput_Arithmetic_Int_04 =
-            NUnit_UniInkSpeed.Ink.CompileLexerAndFill(TestInput_Arithmetic_Int_04, 0,
+            NUnitTest_UniInk.Ink.CompileLexerAndFill(TestInput_Arithmetic_Int_04, 0,
                 TestInput_Arithmetic_Int_04.Length - 1);
 
 
