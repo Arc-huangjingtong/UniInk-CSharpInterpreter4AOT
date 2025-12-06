@@ -313,8 +313,11 @@
         <Reference Include="Perfolizer, Version=0.2.1.0, Culture=neutral, PublicKeyToken=e864f2ec9c0b6d4c, processorArchitecture=MSIL">
             <HintPath>..\packages\Perfolizer.0.2.1\lib\netstandard2.0\Perfolizer.dll</HintPath>
         </Reference>
-        <Reference Include="Sprache, Version=2.1.0.0, Culture=neutral, PublicKeyToken=f763bc865f9b2be9, processorArchitecture=MSIL">
-            <HintPath>..\packages\Sprache.JetBrains.2.1.0\lib\net40\Sprache.dll</HintPath>
+        <Reference Include="Sprache, Version=3.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+          <HintPath>..\packages\Sprache.3.0.0-develop-00049\lib\netstandard2.0\Sprache.dll</HintPath>
+        </Reference>
+        <Reference Include="Sprache.Calc, Version=1.1.0.0, Culture=neutral, processorArchitecture=MSIL">
+          <HintPath>..\packages\Sprache.Calc.1.1.0\lib\netstandard2.0\Sprache.Calc.dll</HintPath>
         </Reference>
         <Reference Include="System"/>
         <Reference Include="System.Buffers, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
@@ -386,36 +389,6 @@
         <Compile Include="NUnitTest_UniInk.cs" />
         <Compile Include="Program.cs" />
         <Compile Include="Properties\AssemblyInfo.cs" />
-        <Compile Include="Refer_Sprache\CommentParser.cs" />
-        <Compile Include="Refer_Sprache\Extensions_Result.cs" />
-        <Compile Include="Refer_Sprache\ICommentedOfT.cs" />
-        <Compile Include="Refer_Sprache\Parse_Input.cs" />
-        <Compile Include="Refer_Sprache\IPositionAware.cs" />
-        <Compile Include="Refer_Sprache\ITextSpanOfT.cs" />
-        <Compile Include="Refer_Sprache\Option.cs" />
-        <Compile Include="Refer_Sprache\Parse.Commented.cs" />
-        <Compile Include="Refer_Sprache\Parse_Part_.cs" />
-        <Compile Include="Refer_Sprache\Parse.Optional.cs" />
-        <Compile Include="Refer_Sprache\Parse.Positioned.cs" />
-        <Compile Include="Refer_Sprache\Parse.Primitives.cs" />
-        <Compile Include="Refer_Sprache\Parse.Regex.cs" />
-        <Compile Include="Refer_Sprache\Parse.Sequence.cs" />
-        <Compile Include="Refer_Sprache\Parse_Exception.cs" />
-        <Compile Include="Refer_Sprache\Extensions_Parser.cs" />
-        <Compile Include="Refer_Sprache\Parse_Position.cs" />
-        <Compile Include="Refer_Sprache\Parse_Result.cs" />
-        <Compile Include="Refer_Sprache\Scenarios\ExpressionParser.cs" />
-        <Compile Include="Refer_Sprache\Tests\AssertInput.cs" />
-        <Compile Include="Refer_Sprache\Tests\AssertParser.cs" />
-        <Compile Include="Refer_Sprache\Tests\DecimalTests.cs" />
-        <Compile Include="Refer_Sprache\Tests\InputTests.cs" />
-        <Compile Include="Refer_Sprache\Tests\OptionTests.cs" />
-        <Compile Include="Refer_Sprache\Tests\Parse.Ref.Tests.cs" />
-        <Compile Include="Refer_Sprache\Tests\ParseTests.cs" />
-        <Compile Include="Refer_Sprache\Tests\PosAwareStr.cs" />
-        <Compile Include="Refer_Sprache\Tests\RegexTests.cs" />
-        <Compile Include="Refer_Sprache\Tests\ResultTests.cs" />
-        <Compile Include="Refer_ExpressionEvaluator\ExpressionEvaluator.cs" />
         <Compile Include="Refer_ParsecSharp\ExpressionParser.cs" />
         
     </ItemGroup>

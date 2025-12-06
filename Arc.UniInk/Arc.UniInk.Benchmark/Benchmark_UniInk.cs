@@ -3,10 +3,10 @@
     //using Arc.UniInk.Extensions;
     using System;
     using BenchmarkDotNet.Attributes;
-    using LinqyCalculator;
     using NUnit.Framework;
     using CodingSeb.ExpressionEvaluator;
     using ParsecSharp.Examples;
+    using Sprache.Calc;
 
 
     /*
@@ -115,14 +115,16 @@
 #endif
         }
 
+        private static SimpleCalculator Calculator { get; } = new SimpleCalculator();
+
         [Benchmark]
         [Test]
         public void TEST_Arithmetic__Sprache()
         {
-            var result1 = ExpressionParser.ParseExpression(TestInput_Arithmetic_Int_01).Compile().Invoke();
-            var result2 = ExpressionParser.ParseExpression(TestInput_Arithmetic_Int_02).Compile().Invoke();
-            var result3 = ExpressionParser.ParseExpression(TestInput_Arithmetic_Int_03).Compile().Invoke();
-            var result4 = ExpressionParser.ParseExpression(TestInput_Arithmetic_Int_04).Compile().Invoke();
+            var result1 = Calculator.ParseExpression(TestInput_Arithmetic_Int_01).Compile().Invoke();
+            var result2 = Calculator.ParseExpression(TestInput_Arithmetic_Int_02).Compile().Invoke();
+            var result3 = Calculator.ParseExpression(TestInput_Arithmetic_Int_03).Compile().Invoke();
+            var result4 = Calculator.ParseExpression(TestInput_Arithmetic_Int_04).Compile().Invoke();
 #if DEBUG
             Console.WriteLine(result1 + "|" + result2 + "|" + result3 + "|" + result4);
 #endif
@@ -181,16 +183,16 @@
         }
 
         public static readonly Func<double> Compiled_TestInput_Arithmetic_Int_01_Sprache =
-            ExpressionParser.ParseExpression(TestInput_Arithmetic_Int_01).Compile();
+            Calculator.ParseExpression(TestInput_Arithmetic_Int_01).Compile();
 
         public static readonly Func<double> Compiled_TestInput_Arithmetic_Int_02_Sprache =
-            ExpressionParser.ParseExpression(TestInput_Arithmetic_Int_02).Compile();
+            Calculator.ParseExpression(TestInput_Arithmetic_Int_02).Compile();
 
         public static readonly Func<double> Compiled_TestInput_Arithmetic_Int_03_Sprache =
-            ExpressionParser.ParseExpression(TestInput_Arithmetic_Int_03).Compile();
+            Calculator.ParseExpression(TestInput_Arithmetic_Int_03).Compile();
 
         public static readonly Func<double> Compiled_TestInput_Arithmetic_Int_04_Sprache =
-            ExpressionParser.ParseExpression(TestInput_Arithmetic_Int_04).Compile();
+            Calculator.ParseExpression(TestInput_Arithmetic_Int_04).Compile();
 
         // [Benchmark] [TestCase(ExpectedResult = 362881)] [Repeat(100)]
         // Debate : The Compiled Sprache is very fast, but the test answer is static and not dynamic.
