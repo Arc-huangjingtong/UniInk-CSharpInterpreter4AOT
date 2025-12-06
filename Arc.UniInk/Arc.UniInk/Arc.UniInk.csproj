@@ -54,12 +54,9 @@
         <Reference Include="System.Xml"/>
     </ItemGroup>
     <ItemGroup>
-        <Compile Include="UniInk_AssemblyInfo.cs" />
-        <Compile Include="UniInk_Extensions.cs" />
+        <Compile Include="UniInk.AssemblyInfo.cs" />
+        <Compile Include="UniInk.Extensions.cs" />
         <Compile Include="UniInk.cs" />
-    </ItemGroup>
-    <ItemGroup>
-      <None Include="packages.config" />
     </ItemGroup>
     <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets"/>
     <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
