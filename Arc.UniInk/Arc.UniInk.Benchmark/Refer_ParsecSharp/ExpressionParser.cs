@@ -1,13 +1,11 @@
-using System;
-using System.Linq.Expressions;
-using static ParsecSharp.Parser;
-using static ParsecSharp.Text;
-
-
 namespace ParsecSharp.Examples
 {
+    using System;
+    using System.Linq.Expressions;
+    using static ParsecSharp.Parser;
+    using static ParsecSharp.Text;
 
-    public interface INumber <TNumber> where TNumber : INumber<TNumber>
+    public interface INumber<TNumber> where TNumber : INumber<TNumber>
     {
         TNumber Add(TNumber value);
 
@@ -19,7 +17,7 @@ namespace ParsecSharp.Examples
     }
 
 
-    public class ExpressionParser <TNumber> where TNumber : INumber<TNumber>
+    public class ExpressionParser<TNumber> where TNumber : INumber<TNumber>
     {
         public Parser<char, TNumber> Parser { get; }
 
@@ -28,20 +26,21 @@ namespace ParsecSharp.Examples
             var addsub = Op('+', (x, y) => x.Add(y)) | Op('-', (x, y) => x.Sub(y));
             var muldiv = Op('*', (x, y) => x.Mul(y)) | Op('/', (x, y) => x.Div(y));
 
-            var open  = Char('(').Between(Spaces());
+            var open = Char('(').Between(Spaces());
             var close = Char(')').Between(Spaces());
 
             var expr = Fix<char, TNumber>(expr =>
             {
                 var factor = number | expr.Between(open, close);
-                var term   = factor.ChainLeft(muldiv);
+                var term = factor.ChainLeft(muldiv);
                 return term.ChainLeft(addsub);
             });
 
             this.Parser = expr.Between(Spaces()).End();
         }
 
-        private static Parser<char, Func<TNumber, TNumber, TNumber>> Op(char symbol, Func<TNumber, TNumber, TNumber> function) => Char(symbol).Between(Spaces()).Map(_ => function);
+        private static Parser<char, Func<TNumber, TNumber, TNumber>> Op(char symbol,
+            Func<TNumber, TNumber, TNumber> function) => Char(symbol).Between(Spaces()).Map(_ => function);
 
         public Result<char, TNumber> Parse(string source) => this.Parser.Parse(source);
     }
@@ -75,7 +74,7 @@ namespace ParsecSharp.Examples
     {
         private static readonly Parser<char, Double> number =
             Many1(DecDigit()).AppendOptional(Char('.').Append(Many1(DecDigit())))
-                             .ToDouble().Map(x => new Double(x));
+                .ToDouble().Map(x => new Double(x));
 
         public static ExpressionParser<Double> Parser { get; } = new(number);
 
@@ -120,5 +119,4 @@ namespace ParsecSharp.Examples
 
         public IntegerExpression Div(IntegerExpression value) => new(Expression.Divide(this._value, value._value));
     }
-
 }
