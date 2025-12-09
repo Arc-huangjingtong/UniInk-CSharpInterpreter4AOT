@@ -1,13 +1,11 @@
-﻿namespace Arc.UniInk.NUnitTest
+﻿namespace Arc.UniInk.Benchmark
 {
-    //using Arc.UniInk.Extensions;
     using System;
     using BenchmarkDotNet.Attributes;
-    using NUnit.Framework;
     using CodingSeb.ExpressionEvaluator;
+    using NUnit.Framework;
     using ParsecSharp.Examples;
     using Sprache.Calc;
-
 
     /*
      * | Method                                | Mean        | Error     | StdDev    | Ratio | RatioSD | Gen0     | Gen1    | Allocated | Alloc Ratio |
@@ -26,29 +24,29 @@
 
     [TestFixture]
     [MemoryDiagnoser]
-    public class Benchmark_UniInk
+    public class UniInkBenchmark
     {
-        public Benchmark_UniInk() => TEST_INITIATION();
+        public UniInkBenchmark() => TEST_INITIATION();
 
 
-        public const string TestInput_Arithmetic_Int_01 =
+        private const string TEST_INPUT_ARITHMETIC_INT_01 =
             "12345678+87654321-1*2*3*4*5*6*7*8*9+9*8*7*6*5*4*3*2*1+1*2*3*4*5*6*7*8*9-87654321-12345678";
 
-        public const string TestInput_Arithmetic_Int_02 =
+        private const string TEST_INPUT_ARITHMETIC_INT_02 =
             "1+2+3+4+5+6+7+8+9+10+11+12+13+14+15+16+17+18+19+20+21+22+23+24+25+26+27+28+29+30+31+32+33+"
             + "34+35+36+37+38+39+40+41+42+43+44+45+46+47+48+49+50+51+52+53+54+55+56+57+58+59+60+61+62+63+"
             + "64+65+66+67+68+69+70+71+72+73+74+75+76+77+78+79+80+81+82+83+84+85+86+87+88+89+90+91+92+93+"
             + "94+95+96+97+98+99+100";
 
-        public const string TestInput_Arithmetic_Int_03 = "1*2*3*4*5*6*7*8*9*10*11*12/12/11/10/9/8/7/6/5/4/3/2/1";
+        private const string TEST_INPUT_ARITHMETIC_INT_03 = "1*2*3*4*5*6*7*8*9*10*11*12/12/11/10/9/8/7/6/5/4/3/2/1";
 
-        public const string TestInput_Arithmetic_Int_04 =
+        private const string TEST_INPUT_ARITHMETIC_INT_04 =
             "0-1-2-3-4-5-6-7-8-9-10-11-12-13-14-15-16-17-18-19-20-21-22-23-24-25-26-27-28-29-30-31-32-33-"
             + "34-35-36-37-38-39-40-41-42-43-44-45-46-47-48-49-50-51-52-53-54-55-56-57-58-59-60-61-62-63-64-"
             + "65-66-67-68-69-70-71-72-73-74-75-76-77-78-79-80-81-82-83-84-85-86-87-88-89-90-91-92-93-94-95-"
             + "96-97-98-99-100";
 
-        public const string TestInput_IfStatement = @" if ( 1 > 2 )      
+        private const string TEST_INPUT_IF_STATEMENT = @" if ( 1 > 2 )      
                                                       {                 
                                                          123            
                                                       }                 
@@ -67,17 +65,17 @@
 
 
         [OneTimeSetUp]
-        public void TEST_INITIATION() => new NUnitTest_UniInk().Test_Initiation();
+        public void TEST_INITIATION() => new UniInkNUnitTest().Test_Initiation();
 
 
         [Benchmark(Baseline = true)]
         [Test]
         public void TEST_Arithmetic__UniInkSpeed()
         {
-            var result1 = NUnitTest_UniInk.Test_Arithmetic_Int(TestInput_Arithmetic_Int_01);
-            var result2 = NUnitTest_UniInk.Test_Arithmetic_Int(TestInput_Arithmetic_Int_02);
-            var result3 = NUnitTest_UniInk.Test_Arithmetic_Int(TestInput_Arithmetic_Int_03);
-            var result4 = NUnitTest_UniInk.Test_Arithmetic_Int(TestInput_Arithmetic_Int_04);
+            var result1 = UniInkNUnitTest.Test_Arithmetic_Int(TEST_INPUT_ARITHMETIC_INT_01);
+            var result2 = UniInkNUnitTest.Test_Arithmetic_Int(TEST_INPUT_ARITHMETIC_INT_02);
+            var result3 = UniInkNUnitTest.Test_Arithmetic_Int(TEST_INPUT_ARITHMETIC_INT_03);
+            var result4 = UniInkNUnitTest.Test_Arithmetic_Int(TEST_INPUT_ARITHMETIC_INT_04);
 
 #if DEBUG
             Console.WriteLine(result1 + "|" + result2 + "|" + result3 + "|" + result4);
@@ -88,27 +86,25 @@
         [Test]
         public void TEST_IfStatement__UniInkSpeed()
         {
-            var Ink = NUnitTest_UniInk.Ink;
-            var test = Ink.Evaluate_IfStatement(TestInput_IfStatement);
+            var ink = UniInkNUnitTest.Ink;
+            var test = ink.Evaluate_IfStatement(TEST_INPUT_IF_STATEMENT);
             if (test is InkValue value)
             {
-                //Console.WriteLine(value.Value_int); // each time , the result will be different
-
                 InkValue.Release(value);
             }
         }
 
 
-        private static readonly ExpressionEvaluator _expressionEvaluator = new ExpressionEvaluator();
+        private static readonly ExpressionEvaluator expressionEvaluator = new ExpressionEvaluator();
 
         [Benchmark]
         [Test]
         public void TEST_Arithmetic__ExpressionEvaluator()
         {
-            var result1 = _expressionEvaluator.Evaluate<int>(TestInput_Arithmetic_Int_01);
-            var result2 = _expressionEvaluator.Evaluate<int>(TestInput_Arithmetic_Int_02);
-            var result3 = _expressionEvaluator.Evaluate<int>(TestInput_Arithmetic_Int_03);
-            var result4 = _expressionEvaluator.Evaluate<int>(TestInput_Arithmetic_Int_04);
+            var result1 = expressionEvaluator.Evaluate<int>(TEST_INPUT_ARITHMETIC_INT_01);
+            var result2 = expressionEvaluator.Evaluate<int>(TEST_INPUT_ARITHMETIC_INT_02);
+            var result3 = expressionEvaluator.Evaluate<int>(TEST_INPUT_ARITHMETIC_INT_03);
+            var result4 = expressionEvaluator.Evaluate<int>(TEST_INPUT_ARITHMETIC_INT_04);
 
 #if DEBUG
             Console.WriteLine(result1 + "|" + result2 + "|" + result3 + "|" + result4);
@@ -121,10 +117,10 @@
         [Test]
         public void TEST_Arithmetic__Sprache()
         {
-            var result1 = Calculator.ParseExpression(TestInput_Arithmetic_Int_01).Compile().Invoke();
-            var result2 = Calculator.ParseExpression(TestInput_Arithmetic_Int_02).Compile().Invoke();
-            var result3 = Calculator.ParseExpression(TestInput_Arithmetic_Int_03).Compile().Invoke();
-            var result4 = Calculator.ParseExpression(TestInput_Arithmetic_Int_04).Compile().Invoke();
+            var result1 = Calculator.ParseExpression(TEST_INPUT_ARITHMETIC_INT_01).Compile().Invoke();
+            var result2 = Calculator.ParseExpression(TEST_INPUT_ARITHMETIC_INT_02).Compile().Invoke();
+            var result3 = Calculator.ParseExpression(TEST_INPUT_ARITHMETIC_INT_03).Compile().Invoke();
+            var result4 = Calculator.ParseExpression(TEST_INPUT_ARITHMETIC_INT_04).Compile().Invoke();
 #if DEBUG
             Console.WriteLine(result1 + "|" + result2 + "|" + result3 + "|" + result4);
 #endif
@@ -134,10 +130,10 @@
         [Test]
         public void TEST_Arithmetic__ParsecSharp()
         {
-            var result1 = Integer.Parser.Parse(TestInput_Arithmetic_Int_01).Value.Value;
-            var result2 = Integer.Parser.Parse(TestInput_Arithmetic_Int_02).Value.Value;
-            var result3 = Integer.Parser.Parse(TestInput_Arithmetic_Int_03).Value.Value;
-            var result4 = Integer.Parser.Parse(TestInput_Arithmetic_Int_04).Value.Value;
+            var result1 = Integer.Parser.Parse(TEST_INPUT_ARITHMETIC_INT_01).Value.Value;
+            var result2 = Integer.Parser.Parse(TEST_INPUT_ARITHMETIC_INT_02).Value.Value;
+            var result3 = Integer.Parser.Parse(TEST_INPUT_ARITHMETIC_INT_03).Value.Value;
+            var result4 = Integer.Parser.Parse(TEST_INPUT_ARITHMETIC_INT_04).Value.Value;
 
 #if DEBUG
             Console.WriteLine(result1 + "|" + result2 + "|" + result3 + "|" + result4);
@@ -145,21 +141,21 @@
         }
 
 
-        public static readonly InkSyntaxList Compiled_TestInput_Arithmetic_Int_01 =
-            NUnitTest_UniInk.Ink.CompileLexerAndFill(TestInput_Arithmetic_Int_01, 0,
-                TestInput_Arithmetic_Int_01.Length - 1);
+        private static readonly InkSyntaxList compiledTestInputArithmeticInt01 =
+            UniInkNUnitTest.Ink.CompileLexerAndFill(TEST_INPUT_ARITHMETIC_INT_01, 0,
+                TEST_INPUT_ARITHMETIC_INT_01.Length - 1);
 
-        public static readonly InkSyntaxList Compiled_TestInput_Arithmetic_Int_02 =
-            NUnitTest_UniInk.Ink.CompileLexerAndFill(TestInput_Arithmetic_Int_02, 0,
-                TestInput_Arithmetic_Int_02.Length - 1);
+        private static readonly InkSyntaxList compiledTestInputArithmeticInt02 =
+            UniInkNUnitTest.Ink.CompileLexerAndFill(TEST_INPUT_ARITHMETIC_INT_02, 0,
+                TEST_INPUT_ARITHMETIC_INT_02.Length - 1);
 
-        public static readonly InkSyntaxList Compiled_TestInput_Arithmetic_Int_03 =
-            NUnitTest_UniInk.Ink.CompileLexerAndFill(TestInput_Arithmetic_Int_03, 0,
-                TestInput_Arithmetic_Int_03.Length - 1);
+        private static readonly InkSyntaxList compiledTestInputArithmeticInt03 =
+            UniInkNUnitTest.Ink.CompileLexerAndFill(TEST_INPUT_ARITHMETIC_INT_03, 0,
+                TEST_INPUT_ARITHMETIC_INT_03.Length - 1);
 
-        public static readonly InkSyntaxList Compiled_TestInput_Arithmetic_Int_04 =
-            NUnitTest_UniInk.Ink.CompileLexerAndFill(TestInput_Arithmetic_Int_04, 0,
-                TestInput_Arithmetic_Int_04.Length - 1);
+        private static readonly InkSyntaxList compiledTestInputArithmeticInt04 =
+            UniInkNUnitTest.Ink.CompileLexerAndFill(TEST_INPUT_ARITHMETIC_INT_04, 0,
+                TEST_INPUT_ARITHMETIC_INT_04.Length - 1);
 
 
         [Benchmark]
@@ -167,42 +163,42 @@
         [Repeat(100)]
         public void TEST_Arithmetic__UniInkSpeed_Compiled()
         {
-            var result1 = UniInk.ExecuteProcess(Compiled_TestInput_Arithmetic_Int_01);
-            var result2 = UniInk.ExecuteProcess(Compiled_TestInput_Arithmetic_Int_02);
-            var result3 = UniInk.ExecuteProcess(Compiled_TestInput_Arithmetic_Int_03);
-            var result4 = UniInk.ExecuteProcess(Compiled_TestInput_Arithmetic_Int_04);
+            var result1 = UniInk.ExecuteProcess(compiledTestInputArithmeticInt01);
+            var result2 = UniInk.ExecuteProcess(compiledTestInputArithmeticInt02);
+            var result3 = UniInk.ExecuteProcess(compiledTestInputArithmeticInt03);
+            var result4 = UniInk.ExecuteProcess(compiledTestInputArithmeticInt04);
 
-            InkSyntaxList.Recover(Compiled_TestInput_Arithmetic_Int_01);
-            InkSyntaxList.Recover(Compiled_TestInput_Arithmetic_Int_02);
-            InkSyntaxList.Recover(Compiled_TestInput_Arithmetic_Int_03);
-            InkSyntaxList.Recover(Compiled_TestInput_Arithmetic_Int_04);
+            InkSyntaxList.Recover(compiledTestInputArithmeticInt01);
+            InkSyntaxList.Recover(compiledTestInputArithmeticInt02);
+            InkSyntaxList.Recover(compiledTestInputArithmeticInt03);
+            InkSyntaxList.Recover(compiledTestInputArithmeticInt04);
 
 #if DEBUG
             Console.WriteLine(result1 + "|" + result2 + "|" + result3 + "|" + result4);
 #endif
         }
 
-        public static readonly Func<double> Compiled_TestInput_Arithmetic_Int_01_Sprache =
-            Calculator.ParseExpression(TestInput_Arithmetic_Int_01).Compile();
+        private static readonly Func<double> compiledTestInputArithmeticInt01Sprache =
+            Calculator.ParseExpression(TEST_INPUT_ARITHMETIC_INT_01).Compile();
 
-        public static readonly Func<double> Compiled_TestInput_Arithmetic_Int_02_Sprache =
-            Calculator.ParseExpression(TestInput_Arithmetic_Int_02).Compile();
+        private static readonly Func<double> compiledTestInputArithmeticInt02Sprache =
+            Calculator.ParseExpression(TEST_INPUT_ARITHMETIC_INT_02).Compile();
 
-        public static readonly Func<double> Compiled_TestInput_Arithmetic_Int_03_Sprache =
-            Calculator.ParseExpression(TestInput_Arithmetic_Int_03).Compile();
+        private static readonly Func<double> compiledTestInputArithmeticInt03Sprache =
+            Calculator.ParseExpression(TEST_INPUT_ARITHMETIC_INT_03).Compile();
 
-        public static readonly Func<double> Compiled_TestInput_Arithmetic_Int_04_Sprache =
-            Calculator.ParseExpression(TestInput_Arithmetic_Int_04).Compile();
+        private static readonly Func<double> compiledTestInputArithmeticInt04Sprache =
+            Calculator.ParseExpression(TEST_INPUT_ARITHMETIC_INT_04).Compile();
 
         // [Benchmark] [TestCase(ExpectedResult = 362881)] [Repeat(100)]
         // Debate : The Compiled Sprache is very fast, but the test answer is static and not dynamic.
         //| TEST_Arithmetic_Compiled__Sprache     |        14.94 ns |      0.286 ns |       0.267 ns |        14.95 ns |        - |       - |         - |
         public double TEST_Arithmetic__Sprache__Compiled()
         {
-            var result1 = Compiled_TestInput_Arithmetic_Int_01_Sprache();
-            var result2 = Compiled_TestInput_Arithmetic_Int_02_Sprache();
-            var result3 = Compiled_TestInput_Arithmetic_Int_03_Sprache();
-            var result4 = Compiled_TestInput_Arithmetic_Int_04_Sprache();
+            var result1 = compiledTestInputArithmeticInt01Sprache();
+            var result2 = compiledTestInputArithmeticInt02Sprache();
+            var result3 = compiledTestInputArithmeticInt03Sprache();
+            var result4 = compiledTestInputArithmeticInt04Sprache();
 
 #if DEBUG
             Console.WriteLine(result1 + "|" + result2 + "|" + result3 + "|" + result4);

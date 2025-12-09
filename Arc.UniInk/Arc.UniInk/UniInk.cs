@@ -127,20 +127,14 @@ namespace Arc.UniInk
         public UniInk(IDictionary<string, InkValue> variables = null)
         {
             const int PARSING_METHODS_CAPACITY = 7;
-            ParsingMethods = new(PARSING_METHODS_CAPACITY)
+            ParsingMethods = new List<ParsingMethodDelegate>(PARSING_METHODS_CAPACITY)
             {
-                EvaluateOperators //
-                ,
-                EvaluateFunction //
-                ,
-                EvaluateNumber //
-                ,
-                EvaluateChar //
-                ,
-                EvaluateString //
-                ,
-                EvaluateBool //
-                ,
+                EvaluateOperators,
+                EvaluateFunction, //
+                EvaluateNumber, //
+                EvaluateChar, //
+                EvaluateString, //
+                EvaluateBool, //
                 EvaluateVariable //
             };
 
@@ -323,16 +317,16 @@ namespace Arc.UniInk
 
         protected static void ProcessList_Parentheses(InkSyntaxList keys, int start, int end)
         {
-            var hasParenthis = true;
+            var hasParentheses = true;
 
-            while (hasParenthis)
+            while (hasParentheses)
             {
                 int startIndex, endIndex;
 
-                (hasParenthis, startIndex, endIndex) = FindSection(keys, InkOperator.ParenthisLeft,
+                (hasParentheses, startIndex, endIndex) = FindSection(keys, InkOperator.ParenthisLeft,
                     InkOperator.ParenthisRight, start, end);
 
-                if (!hasParenthis) continue;
+                if (!hasParentheses) continue;
 
                 if (startIndex > 0 && keys[startIndex - 1] is InkFunction)
                 {
@@ -349,13 +343,13 @@ namespace Arc.UniInk
             }
         }
 
-        protected static void ProcessList_Operators(InkSyntaxList keys, int _startIndex, int _endIndex)
+        protected static void ProcessList_Operators(InkSyntaxList keys, int start, int end)
         {
             var hasOperators = true;
 
             while (hasOperators)
             {
-                var (curOperator, index) = GetHighestPriorityOperator(keys, _startIndex, _endIndex);
+                var (curOperator, index) = GetHighestPriorityOperator(keys, start, end);
 
 
                 if (Equals(curOperator, InkOperator.Empty) || Equals(curOperator, InkOperator.Semicolon))
@@ -374,7 +368,7 @@ namespace Arc.UniInk
                 var endIndex = index;
 
 
-                for (var i = index - 1; i >= _startIndex; i--) // Left
+                for (var i = index - 1; i >= start; i--) // Left
                 {
                     if (keys.IndexDirty[i])
                     {
@@ -403,7 +397,7 @@ namespace Arc.UniInk
                     startIndex = index;
                 }
 
-                for (var i = index + 1; i <= _endIndex; i++) // Right
+                for (var i = index + 1; i <= end; i++) // Right
                 {
                     if (keys.IndexDirty[i])
                     {
@@ -448,7 +442,7 @@ namespace Arc.UniInk
                 }
             }
 
-            for (var i = _startIndex; i <= _endIndex; i++)
+            for (var i = start; i <= end; i++)
             {
                 if (!keys.IndexDirty[i])
                 {
@@ -674,13 +668,13 @@ namespace Arc.UniInk
         protected static readonly Dictionary<int, InkFunction> dic_GlobalFunctions = new(FUNCTION_GLOBAL_CAPACITY);
 
         /// <summary> Some local functions mapping </summary>
-        public readonly Dictionary<int, InkFunction> dic_Functions = new(FUNCTION_CAPACITY);
+        protected readonly Dictionary<int, InkFunction> dic_Functions = new(FUNCTION_CAPACITY);
 
         /// <summary> Some local variables mapping </summary>
-        public readonly Dictionary<int, InkValue> dic_Variables = new(VARIABLE_CAPACITY);
+        protected readonly Dictionary<int, InkValue> dic_Variables = new(VARIABLE_CAPACITY);
 
         /// <summary> Some temp  variables mapping </summary>
-        public readonly Dictionary<int, InkValue> dic_Variables_Temp = new(VARIABLE_TEMP_CAPACITY);
+        protected readonly Dictionary<int, InkValue> dic_Variables_Temp = new(VARIABLE_TEMP_CAPACITY);
 
 
         /*************************************************  Parsing  **************************************************/

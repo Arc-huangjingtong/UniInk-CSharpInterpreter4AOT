@@ -1,10 +1,33 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <TargetFrameworks>net10.0;net48</TargetFrameworks>
-    <AssemblyName>Arc.UniInk</AssemblyName>
-    <RootNamespace>Arc.UniInk</RootNamespace>
-    <LangVersion>9</LangVersion>
-    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-  </PropertyGroup>
-  <!-- Rely on SDK implicit Compile items (all *.cs in project folder) -->
+    <PropertyGroup>
+        <TargetFrameworks>net10.0;net48</TargetFrameworks>
+        <AssemblyName>Arc.UniInk</AssemblyName>
+        <RootNamespace>Arc.UniInk</RootNamespace>
+        <LangVersion>9</LangVersion>
+        <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <PackageId>Arc.UniInk</PackageId>
+        <Version>0.1.0</Version>
+        <Authors>Arc-huangjingtong</Authors>
+        <Description>UniInk C# Interpreter for AOT environments.</Description>
+        <PackageProjectUrl>https://github.com/Arc-huangjingtong/UniInk-CSharpInterpreter4AOT</PackageProjectUrl>
+        <RepositoryUrl>https://github.com/Arc-huangjingtong/UniInk-CSharpInterpreter4AOT.git</RepositoryUrl>
+        <RepositoryType>git</RepositoryType>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+        <!-- PackageReadmeFile must use the path inside the nupkg, not the filesystem path -->
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+        <IncludeSymbols>true</IncludeSymbols>
+        <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <!-- Use repo root README.md as source, pack it to nupkg root as README.md -->
+        <None Include="..\..\README.md" Pack="true" PackagePath="README.md" />
+    </ItemGroup>
+
+
 </Project>

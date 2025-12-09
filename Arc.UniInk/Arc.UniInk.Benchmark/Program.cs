@@ -1,4 +1,4 @@
-﻿using Arc.UniInk.NUnitTest;
+﻿using Arc.UniInk.Benchmark;
 using BenchmarkDotNet.Configs;
 using BenchmarkDotNet.Exporters;
 using BenchmarkDotNet.Jobs;
@@ -15,4 +15,4 @@ var config = ManualConfig.Create(DefaultConfig.Instance)
     .AddExporter(MarkdownExporter.Default);
 
 
-BenchmarkRunner.Run<Benchmark_UniInk>(config);
+BenchmarkRunner.Run<UniInkBenchmark>(config);

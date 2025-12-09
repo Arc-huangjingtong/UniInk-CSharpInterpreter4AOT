@@ -47,9 +47,4 @@
     <PackageReference Include="System.Threading.Tasks.Extensions" Version="4.5.4" />
   </ItemGroup>
 
-  <ItemGroup>
-    <!-- Ensure old App.config is still included for net48 runs if present -->
-    <None Include="App.config" Condition="Exists('App.config')" />
-  </ItemGroup>
-
 </Project>

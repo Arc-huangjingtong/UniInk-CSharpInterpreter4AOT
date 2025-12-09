@@ -1,10 +1,10 @@
-﻿namespace Arc.UniInk.NUnitTest
+﻿namespace Arc.UniInk.Benchmark
 {
     /*******************************************************************************************************************
     *  📰 Title    :  UniInk_Speed (https://github.com/Arc-huangjingtong/UniInk-CSharpInterpreter4Unity)              *
     *  🔖 Version  :  1.0.0                                                                                           *
     *  😀 Author   :  Arc (https://github.com/Arc-huangjingtong)                                                      *
-    *  🔑 Licence  :  MIT (https://github.com/Arc-huangjingtong/UniInk-CSharpInterpreter4Unity/blob/main/LICENSE)     *
+    *  🔑 License  :  MIT (https://github.com/Arc-huangjingtong/UniInk-CSharpInterpreter4Unity/blob/main/LICENSE)     *
     *  🤝 Support  :  [.NET Framework 4+] [C# 9.0+] [IL2CPP Support]                                                  *
     *  📝 Desc     :  [High performance] [zero box & unbox] [zero GC!] [zero reflection runtime] [Easy-use]           *
     *  📦 State    :  [Developing] [0GC]                                                                              *
@@ -19,7 +19,7 @@
 
 
     [TestFixture]
-    public sealed partial class NUnitTest_UniInk
+    public sealed partial class UniInkNUnitTest
     {
         public static readonly UniInk Ink = new();
 
