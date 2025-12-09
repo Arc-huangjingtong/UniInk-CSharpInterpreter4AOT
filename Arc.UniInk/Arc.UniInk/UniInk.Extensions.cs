@@ -14,7 +14,7 @@
 
     /// <summary> Provide commonly tools in <see cref="UniInk"/> </summary>
     /// <remarks> [⚠]not assurance zero GC </remarks>
-    public static class UniInk_Extensions
+    public static class UniInkExtensions
     {
         /// <summary> Get a Bool? Value with UniInk </summary>
         /// <remarks> Automatically recycle the generated InkValue internally, and return null if the operation fails </remarks> 
