@@ -5,8 +5,15 @@
     <RootNamespace>Arc.UniInk.Benchmark</RootNamespace>
     <AssemblyName>Arc.UniInk.Benchmark</AssemblyName>
     <LangVersion>9</LangVersion>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+
+    <!-- Assembly Information -->
+    <AssemblyTitle>Arc.UniInk.Benchmark</AssemblyTitle>
+    <Product>Arc.UniInk.Benchmark</Product>
+    <Copyright>Copyright © 2024</Copyright>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
+    <Guid>1BA70864-1706-44D0-9D58-669FD5703A14</Guid>
   </PropertyGroup>
 
   <ItemGroup>
@@ -17,34 +24,10 @@
     <!-- Core benchmarking and parsing related packages -->
     <PackageReference Include="BenchmarkDotNet" Version="0.13.12" />
     <PackageReference Include="CodingSeb.ExpressionEvaluator" Version="1.4.40" />
-    <PackageReference Include="CommandLineParser" Version="2.9.1" />
-    <PackageReference Include="Gee.External.Capstone" Version="2.3.0" />
-    <PackageReference Include="Iced" Version="1.17.0" />
-    <PackageReference Include="Microsoft.Diagnostics.NETCore.Client" Version="0.2.251802" />
-    <PackageReference Include="Microsoft.Diagnostics.Runtime" Version="2.2.332302" />
-    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="3.0.2" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     <PackageReference Include="NUnit" Version="4.1.0" />
     <PackageReference Include="ParsecSharp" Version="3.5.0" />
-    <PackageReference Include="Perfolizer" Version="0.2.1" />
     <PackageReference Include="Sprache" Version="3.0.0-develop-00049" />
     <PackageReference Include="Sprache.Calc" Version="1.1.0" />
-    <!-- System.* helpers used by the project -->
-    <PackageReference Include="System.Buffers" Version="4.5.1" />
-    <PackageReference Include="System.Collections.Immutable" Version="5.0.0" />
-    <PackageReference Include="System.Drawing.Common" Version="5.0.2" />
-    <PackageReference Include="System.IO.FileSystem.AccessControl" Version="5.0.0" />
-    <PackageReference Include="System.Management" Version="5.0.0" />
-    <PackageReference Include="System.Memory" Version="4.5.4" />
-    <PackageReference Include="System.Numerics.Vectors" Version="4.5.0" />
-    <PackageReference Include="System.Reflection.Metadata" Version="5.0.0" />
-    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="5.0.0" />
-    <PackageReference Include="System.Runtime.InteropServices.RuntimeInformation" Version="4.0.0" />
-    <PackageReference Include="System.Security.AccessControl" Version="5.0.0" />
-    <PackageReference Include="System.Security.Principal.Windows" Version="5.0.0" />
-    <PackageReference Include="System.Text.Encoding.CodePages" Version="4.5.1" />
-    <PackageReference Include="System.Threading.Channels" Version="6.0.0" />
-    <PackageReference Include="System.Threading.Tasks.Extensions" Version="4.5.4" />
   </ItemGroup>
 
 </Project>

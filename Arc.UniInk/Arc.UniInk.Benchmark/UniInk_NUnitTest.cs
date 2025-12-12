@@ -119,21 +119,6 @@
                 return list;
             }
 
-            List<int> AgeSearch(IList<int> ages, Predicate<int> func)
-            {
-                var list = new System.Collections.Generic.List<int>();
-
-                foreach (var card in ages)
-                {
-                    if (func(card))
-                    {
-                        list.Add(card);
-                    }
-                }
-
-                return list;
-            }
-
 
             Ink.RegisterVariable("grower", InkValue.SetGetter(InkValue.GetIntValue(0), value => value.Value_int++));
 

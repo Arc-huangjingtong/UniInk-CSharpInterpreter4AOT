@@ -4,7 +4,17 @@
         <AssemblyName>Arc.UniInk</AssemblyName>
         <RootNamespace>Arc.UniInk</RootNamespace>
         <LangVersion>9</LangVersion>
-        <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+        <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+        
+        <!-- Assembly Information -->
+        <AssemblyTitle>Arc.UniInk</AssemblyTitle>
+        <Product>Arc.UniInk</Product>
+        <AssemblyVersion>1.0.0.0</AssemblyVersion>
+        <FileVersion>1.0.0.0</FileVersion>
+        <Guid>F969106D-BD96-4E8F-A217-4B90D2975179</Guid>
+
+        <!-- Generate XML documentation file -->
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
     </PropertyGroup>
 
     <PropertyGroup>
