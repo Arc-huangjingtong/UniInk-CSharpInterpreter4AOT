@@ -23,7 +23,7 @@
 
             if (result is InkValue { ValueType: TypeCode.Boolean } inkValue)
             {
-                var resultBool = inkValue.Value_bool;
+                var resultBool = inkValue.ValueBool;
 
                 InkValue.Release(inkValue);
 
@@ -41,7 +41,7 @@
 
             if (result is InkValue { ValueType: TypeCode.Int32 } inkValue)
             {
-                var resultInt = inkValue.Value_int;
+                var resultInt = inkValue.ValueInt;
 
                 InkValue.Release(inkValue);
 
@@ -136,7 +136,7 @@
 
             for (var i = 0; i < keys.Count; i++)
             {
-                if (keys.CastOther[i] is InkValue { returner: true } value)
+                if (keys.CastOther[i] is InkValue { IsReturner: true } value)
                 {
                     res = value.Clone();
                 }
@@ -157,7 +157,7 @@
 
             // Locate the [If (condition)]'s condition
             var (conditionStart, conditionEnd)
-                = GetMatchOperator(keys, InkOperator.ParenthisLeft, InkOperator.ParenthisRight, start, keys.Count - 1);
+                = GetMatchOperator(keys, InkOperator.ParenthesisLeft, InkOperator.ParenthesisRight, start, keys.Count - 1);
 
             // Check if the condition is correct, if not, throw an exception directly
             if (conditionStart == -1 || start + 1 != conditionStart)
@@ -238,7 +238,7 @@
                     {
                         // 匹配 else if (condition) 后的条件
                         var (cdsStart, cdsEnd)
-                            = GetMatchOperator(keys, InkOperator.ParenthisLeft, InkOperator.ParenthisRight,
+                            = GetMatchOperator(keys, InkOperator.ParenthesisLeft, InkOperator.ParenthesisRight,
                                 index_if + 1, index_end);
 
                         // 计算 else if 条件后的操作
@@ -290,6 +290,9 @@
             return false;
         }
 
+        /// <summary> Execute the process with if statement support </summary>
+        /// <param name="keys">The syntax list to process</param>
+        /// <returns>The result of the execution</returns>
         public static object ExecuteProcess_IfStatement(InkSyntaxList keys)
         {
             var res = InputIsScript_IfStatement(keys)
@@ -300,6 +303,10 @@
         }
 
         /// <summary> Evaluate the expression with the if statement </summary>
+        /// <param name="expression">The expression string to evaluate</param>
+        /// <param name="startIndex">The start index of the expression</param>
+        /// <param name="endIndex">The end index of the expression</param>
+        /// <returns>The result of the evaluation</returns>
         public object Evaluate_IfStatement(string expression, int startIndex, int endIndex)
         {
             var keys = CompileLexerAndFill(expression, startIndex, endIndex);
@@ -311,6 +318,9 @@
             return result;
         }
 
+        /// <summary> Evaluate the expression with if statement support </summary>
+        /// <param name="expression">The expression string to evaluate</param>
+        /// <returns>The result of the evaluation</returns>
         public object Evaluate_IfStatement(string expression)
         {
             return Evaluate_IfStatement(expression, 0, expression.Length - 1);

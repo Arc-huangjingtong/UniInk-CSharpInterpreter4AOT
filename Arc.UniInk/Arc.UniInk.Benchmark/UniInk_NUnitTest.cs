@@ -37,7 +37,7 @@
             var param2 = (InkValue)list[1];
             var param3 = (InkValue)list[2];
 
-            var sum = InkValue.GetIntValue(param1.Value_int + param2.Value_int + param3.Value_int);
+            var sum = InkValue.GetIntValue(param1.ValueInt + param2.ValueInt + param3.ValueInt);
 
             return sum;
         }
@@ -73,7 +73,7 @@
 
             Ink.RegisterFunction("GET", new(prms =>
             {
-                var param1 = (Card)((InkValue)prms[0]).Value_Object;
+                var param1 = (Card)((InkValue)prms[0]).ValueObject;
                 var param2 = (int)(InkValue)prms[1];
 
                 return param2 switch
@@ -97,8 +97,8 @@
 
             Ink.RegisterFunction("FLT", new(prms =>
             {
-                var param1 = (List<Card>)((InkValue)prms[0]).Value_Object;
-                var param2 = (Predicate<object>)((InkValue)prms[1]).Value_Object;
+                var param1 = (List<Card>)((InkValue)prms[0]).ValueObject;
+                var param2 = (Predicate<object>)((InkValue)prms[1]).ValueObject;
 
                 return FLT(param1, param2);
             }));
@@ -120,7 +120,7 @@
             }
 
 
-            Ink.RegisterVariable("grower", InkValue.SetGetter(InkValue.GetIntValue(0), value => value.Value_int++));
+            Ink.RegisterVariable("grower", InkValue.SetGetter(InkValue.GetIntValue(0), value => value.ValueInt++));
 
             Ink.RegisterVariable("Target", InkValue.SetGetter(InkValue.GetObjectValue(Target), _ => { Target.ID++; }));
 
@@ -164,7 +164,7 @@
         public static int Test_Arithmetic_Int(string input)
         {
             var res = (InkValue)Ink.Evaluate(input);
-            var result = res!.Value_int;
+            var result = res!.ValueInt;
             InkValue.Release(res);
 
             return result;
@@ -184,7 +184,7 @@
         public static float Test_Arithmetic_Float(string input)
         {
             var res = (InkValue)Ink.Evaluate(input);
-            var result = res!.Value_float;
+            var result = res!.ValueFloat;
             InkValue.Release(res);
 
             return result;
@@ -203,7 +203,7 @@
         public static double Test_Arithmetic_Double(string input)
         {
             var res = (InkValue)Ink.Evaluate(input);
-            var result = res!.Value_double;
+            var result = res!.ValueDouble;
             InkValue.Release(res);
 
             return result;
@@ -223,7 +223,7 @@
         public static bool Test_Arithmetic_Bool(string input)
         {
             var res = (InkValue)Ink.Evaluate(input);
-            var result = res!.Value_bool;
+            var result = res!.ValueBool;
             InkValue.Release(res);
             return result;
         }
@@ -244,7 +244,7 @@
 
             if (res is InkValue inkValue)
             {
-                result = inkValue.Value_int;
+                result = inkValue.ValueInt;
                 InkValue.Release(inkValue);
             }
 
@@ -261,7 +261,7 @@
 
             if (res is InkValue inkValue)
             {
-                result = inkValue.Value_float;
+                result = inkValue.ValueFloat;
                 InkValue.Release(inkValue);
             }
 
@@ -279,7 +279,7 @@
 
             if (res is InkValue inkValue)
             {
-                result = inkValue.Value_double;
+                result = inkValue.ValueDouble;
                 InkValue.Release(inkValue);
             }
 
@@ -298,7 +298,7 @@
 
             if (res is InkValue inkValue)
             {
-                result = inkValue.Value_bool;
+                result = inkValue.ValueBool;
                 InkValue.Release(inkValue);
             }
 
@@ -326,7 +326,7 @@
 
             if (res is InkValue inkValue)
             {
-                result = inkValue.Value_int;
+                result = inkValue.ValueInt;
                 InkValue.Release(inkValue);
             }
 
@@ -365,7 +365,7 @@
 
             if (res != null)
             {
-                if (res.Value_Object is List<Card> cards)
+                if (res.ValueObject is List<Card> cards)
                 {
                     Console.WriteLine(cards.Count);
                     foreach (var card in cards)
@@ -430,7 +430,7 @@
 
             if (res is InkValue inkValue)
             {
-                Console.WriteLine(inkValue.Value_int);
+                Console.WriteLine(inkValue.ValueInt);
                 InkValue.Release(inkValue);
             }
         }
