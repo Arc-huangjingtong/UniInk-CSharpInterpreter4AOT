@@ -14,6 +14,7 @@ on:
 jobs:
   build-and-publish:
     runs-on: ubuntu-latest
+    environment: production  # 指定为 production 环境，与 NuGet.org 可信发布策略匹配
 
     permissions:
       id-token: write  # 启用 GitHub OIDC token，用于 Trusted Publishing
