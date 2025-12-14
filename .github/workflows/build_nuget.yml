@@ -1,0 +1,120 @@
+name: Build and Publish NuGet (OIDC)
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'  # 当推送 v 开头的标签时触发，如 v0.1.0, v1.0.0
+  workflow_dispatch:  # 允许手动触发
+    inputs:
+      version:
+        description: '版本号（可选，留空则使用 csproj 中的版本）'
+        required: false
+        type: string
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write  # 启用 GitHub OIDC token，用于 Trusted Publishing
+      contents: write  # 允许创建 GitHub Release
+
+    steps:
+      - name: 📥 检出代码
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # 获取完整历史
+
+      - name: 🔧 设置 .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: 📝 提取版本号
+        id: get_version
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ] && [ -n "${{ inputs.version }}" ]; then
+            VERSION="${{ inputs.version }}"
+            echo "使用手动输入的版本号: $VERSION"
+          elif [ "${{ github.event_name }}" == "push" ] && [ -n "${{ github.ref }}" ]; then
+            VERSION=${GITHUB_REF#refs/tags/v}
+            echo "从 Git 标签提取版本号: $VERSION"
+          else
+            VERSION=$(grep -oP '<Version>\K[^<]+' Arc.UniInk/Arc.UniInk/Arc.UniInk.csproj | head -1)
+            echo "从 csproj 文件提取版本号: $VERSION"
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "✅ 版本号: $VERSION"
+
+      - name: 🔄 更新 csproj 版本号
+        if: steps.get_version.outputs.version != ''
+        run: |
+          VERSION="${{ steps.get_version.outputs.version }}"
+          sed -i "s|<Version>.*</Version>|<Version>$VERSION</Version>|g" Arc.UniInk/Arc.UniInk/Arc.UniInk.csproj
+          echo "✅ 已更新版本号到 $VERSION"
+
+      - name: 🔍 还原依赖
+        run: dotnet restore Arc.UniInk/Arc.UniInk.sln
+
+      - name: 🏗️ 构建项目
+        run: dotnet build Arc.UniInk/Arc.UniInk.sln -c Release --no-restore
+
+      - name: 🧪 运行测试（如果有）
+        run: |
+          if [ -d "Arc.UniInk/Arc.UniInk.Tests" ]; then
+            dotnet test Arc.UniInk/Arc.UniInk.sln -c Release --no-build --verbosity normal
+          else
+            echo "⚠️ 未找到测试项目，跳过测试"
+          fi
+        continue-on-error: true
+
+      - name: 📦 打包 NuGet
+        run: dotnet pack Arc.UniInk/Arc.UniInk/Arc.UniInk.csproj -c Release --no-build -o ./artifacts
+
+      - name: 📋 列出生成的包
+        run: |
+          echo "📦 生成的 NuGet 包:"
+          ls -lh ./artifacts/
+
+      - name: 🔐 NuGet 登录 (OIDC → 临时 API Key)
+        uses: NuGet/login@v1
+        id: nuget_login
+        with:
+          user: ${{ secrets.NUGET_USER }}  # 您的 nuget.org 用户名（profile name）
+
+      - name: 🚀 发布到 NuGet.org
+        run: |
+          dotnet nuget push ./artifacts/*.nupkg \
+            --api-key ${{ steps.nuget_login.outputs.NUGET_API_KEY }} \
+            --source https://api.nuget.org/v3/index.json \
+            --skip-duplicate
+
+      - name: 📤 上传构建产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget-packages-${{ steps.get_version.outputs.version }}
+          path: ./artifacts/*.nupkg
+          retention-days: 90
+
+      - name: 🎉 创建 GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: ./artifacts/*.nupkg
+          generate_release_notes: true
+          draft: false
+          prerelease: ${{ contains(steps.get_version.outputs.version, '-') }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: ✅ 发布完成
+        run: |
+          echo "=========================================="
+          echo "✅ NuGet 包发布成功！"
+          echo "=========================================="
+          echo "📦 包名称: Arc.UniInk"
+          echo "🏷️  版本号: ${{ steps.get_version.outputs.version }}"
+          echo "🔗 NuGet 链接: https://www.nuget.org/packages/Arc.UniInk/"
+          echo ""
+          echo "⏳ 包通常需要 5-15 分钟才能在 NuGet.org 上可用"
+          echo "=========================================="
