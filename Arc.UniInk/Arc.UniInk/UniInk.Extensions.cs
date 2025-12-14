@@ -55,15 +55,15 @@
 
         //Base on : https://stackoverflow.com/questions/3524317/regex-to-strip-line-comments-from-c-sharp/3524689#3524689
         private static readonly Regex removeCommentsRegex =
-            new($"{blockComments}|{lineComments}|{stringsIgnore}|{verbatimStringsIgnore}",
+            new($"{BLOCK_COMMENTS}|{LINE_COMMENTS}|{STRINGS_IGNORE}|{VERBATIM_STRINGS_IGNORE}",
                 RegexOptions.Singleline | RegexOptions.Compiled);
 
         private static readonly Regex newLineCharsRegex = new(@"\r\n|\r|\n", RegexOptions.Compiled);
 
-        private const string verbatimStringsIgnore = @"@(""[^""]*"")+"; //language=regex
-        private const string stringsIgnore = @"""((\\[^\n]|[^""\n])*)"""; //language=regex
-        private const string blockComments = @"/\*(.*?)\*/"; //language=regex
-        private const string lineComments = @"//[^\r\n]*"; //language=regex
+        private const string VERBATIM_STRINGS_IGNORE = @"@(""[^""]*"")+"; //language=regex
+        private const string STRINGS_IGNORE = @"""((\\[^\n]|[^""\n])*)"""; //language=regex
+        private const string BLOCK_COMMENTS = @"/\*(.*?)\*/"; //language=regex
+        private const string LINE_COMMENTS = @"//[^\r\n]*"; //language=regex
 
 
         /// <summary> Remove all line and block comments from the specified C# script </summary>

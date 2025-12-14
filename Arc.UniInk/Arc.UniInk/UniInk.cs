@@ -1,5 +1,4 @@
 ﻿// ReSharper disable MemberCanBePrivate.Global
-
 // ReSharper disable PartialTypeWithSinglePart
 // ReSharper disable SpecifyACultureInStringConversionExplicitly
 namespace Arc.UniInk

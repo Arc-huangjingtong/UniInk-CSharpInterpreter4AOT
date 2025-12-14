@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFrameworks>net10.0;net48</TargetFrameworks>
+    <TargetFrameworks>net10.0;</TargetFrameworks>
     <RootNamespace>Arc.UniInk.Benchmark</RootNamespace>
     <AssemblyName>Arc.UniInk.Benchmark</AssemblyName>
     <LangVersion>9</LangVersion>

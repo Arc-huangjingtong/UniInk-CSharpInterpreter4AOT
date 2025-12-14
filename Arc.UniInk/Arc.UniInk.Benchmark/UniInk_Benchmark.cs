@@ -1,4 +1,5 @@
-﻿namespace Arc.UniInk.Benchmark
+﻿// ReSharper disable UnusedVariable
+namespace Arc.UniInk.Benchmark
 {
     using System;
     using BenchmarkDotNet.Attributes;

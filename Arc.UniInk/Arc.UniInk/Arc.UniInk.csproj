@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
-        <TargetFrameworks>net10.0;net48</TargetFrameworks>
+        <TargetFrameworks>net10.0;netstandard2.1</TargetFrameworks>
         <AssemblyName>Arc.UniInk</AssemblyName>
         <RootNamespace>Arc.UniInk</RootNamespace>
         <LangVersion>9</LangVersion>
@@ -15,6 +15,8 @@
 
         <!-- Generate XML documentation file -->
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <!-- Include XML documentation file in NuGet package -->
+        <PublishDocumentationFile>true</PublishDocumentationFile>
     </PropertyGroup>
 
     <PropertyGroup>
