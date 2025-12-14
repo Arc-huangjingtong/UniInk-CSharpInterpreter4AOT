@@ -1,4 +1,6 @@
-![Header](MarkDown_Assets/UniInk_ReadmeHeader.jpg)
+<div style="text-align:center">
+  <img src="MarkDown_Assets/UniInk_ReadmeHeader.jpg" alt="UniInk Header" style="width:100%;height:auto;"/>
+</div>
 
 # ✒️ UniInk - AOT C# Interpreter
 
