@@ -1,6 +1,7 @@
 ﻿// ReSharper disable MemberCanBePrivate.Global
 // ReSharper disable PartialTypeWithSinglePart
 // ReSharper disable SpecifyACultureInStringConversionExplicitly
+
 namespace Arc.UniInk
 {
     using System;
@@ -1199,7 +1200,8 @@ namespace Arc.UniInk
         /// <param name="start"> the start index to search from </param>
         /// <param name="end"> the end index to search to </param>
         /// <returns> the result is success or not , the index of the operator </returns>
-        protected static (bool result, int index) FindOperator(InkSyntaxList keys, InkOperator @operator, int start, int end)
+        protected static (bool result, int index) FindOperator(InkSyntaxList keys, InkOperator @operator, int start,
+            int end)
         {
             for (var i = start; i <= end; i++)
             {
@@ -1351,108 +1353,158 @@ namespace Arc.UniInk
         //keyword  refer to : https://learn.microsoft.com/zh-cn/dotnet/csharp/language-reference/keywords/
         /// <summary> Left Parenthesis  "(" </summary>
         public static readonly InkOperator ParenthesisLeft = new("(", 1);
+
         /// <summary> Right Parenthesis ")" </summary>
         public static readonly InkOperator ParenthesisRight = new(")", 1);
+
         /// <summary> Dot Operator "." (don't support , it's reserved) </summary>
         public static readonly InkOperator Dot = new(".", 2);
+
         /// <summary> Array Bracket Start  "[" (don't support , it's reserved) </summary>
-        public static readonly InkOperator BracketStart = new("[", 2); 
+        public static readonly InkOperator BracketStart = new("[", 2);
+
         /// <summary> Array Bracket End    "]" (don't support , it's reserved) </summary>
-        public static readonly InkOperator BracketEnd = new("]", 2); 
+        public static readonly InkOperator BracketEnd = new("]", 2);
+
         /// <summary> Unary Plus  "++" (don't support , it's reserved) </summary>
-        public static readonly InkOperator Increment = new("++", 2); 
+        public static readonly InkOperator Increment = new("++", 2);
+
         /// <summary> Unary Minus "--" (don't support , it's reserved) </summary>
         public static readonly InkOperator Decrement = new("--", 2);
+
         /// <summary> Logical NOT "!" </summary>
         public static readonly InkOperator LogicalNot = new("!", 3);
+
         /// <summary> Bitwise NOT "~" (don't support , it's reserved) </summary>
         public static readonly InkOperator BitNot = new("~", 3);
+
         /// <summary> Unary Plus  "+" (don't support , it's reserved) </summary>
         public static readonly InkOperator Cast = new("😊()", 4);
+
         /// <summary> Multiply "*" </summary>
         public static readonly InkOperator Multiply = new("*", 5);
+
         /// <summary> Divide "/" </summary>
         public static readonly InkOperator Divide = new("/", 5);
+
         /// <summary> Modulo "%" </summary>
         public static readonly InkOperator Modulo = new("%", 5);
+
         /// <summary> Plus "+" </summary>
         public static readonly InkOperator Plus = new("+", 6);
+
         /// <summary> Minus "-" </summary>
         public static readonly InkOperator Minus = new("-", 6);
+
         /// <summary> Left Shift "&lt;&lt;" (don't support , it's reserved) </summary>
         public static readonly InkOperator LeftShift = new("<<", 7);
+
         /// <summary> Right Shift "&gt;&gt;" (don't support , it's reserved) </summary>
         public static readonly InkOperator RightShift = new(">>", 7);
+
         /// <summary> Lower "&lt;" </summary>
         public static readonly InkOperator Lower = new("<", 8);
+
         /// <summary> Greater "&gt;" </summary>
         public static readonly InkOperator Greater = new(">", 8);
+
         /// <summary> Lower Or Equal "&lt;=" </summary>
         public static readonly InkOperator LowerOrEqual = new("<=", 8);
+
         /// <summary> Greater Or Equal "&gt;=" </summary>
         public static readonly InkOperator GreaterOrEqual = new(">=", 8);
+
         /// <summary> Equal "==" </summary>
         public static readonly InkOperator Equal = new("==", 9);
+
         /// <summary> Not Equal "!=" </summary>
         public static readonly InkOperator NotEqual = new("!=", 9);
+
         /// <summary> Bitwise AND "&amp;" (don't support , it's reserved) </summary>
         public static readonly InkOperator BitwiseAnd = new("&", 10); // don't support , its reserved
+
         /// <summary> Bitwise XOR "^" (don't support , it's reserved) </summary>
         public static readonly InkOperator BitwiseXor = new("^", 11); // don't support , its reserved
+
         /// <summary> Bitwise OR "|" (don't support , it's reserved) </summary>
         public static readonly InkOperator BitwiseOr = new("|", 12); // don't support , its reserved
+
         /// <summary> Conditional AND "&amp;&amp;" </summary>
         public static readonly InkOperator ConditionalAnd = new("&&", 13);
+
         /// <summary> Conditional OR "||" </summary>
         public static readonly InkOperator ConditionalOr = new("||", 14);
+
         /// <summary> Conditional Ternary Operator "?:" (don't support , it's reserved) </summary>
         public static readonly InkOperator Conditional = new("?:", 15); // don't support , its reserved
+
         /// <summary> Assignment Operator "=" </summary>
         public static readonly InkOperator Assign = new("=", 16);
+
         /// <summary> Comma Operator "," </summary>
         public static readonly InkOperator Comma = new(",", 16);
+
         /// <summary> Lambda Expression Operator "=&gt;" </summary>
         public static readonly InkOperator Lambda = new("=>", 17);
+
         /// <summary> Left Brace "{" </summary>
         public static readonly InkOperator BraceLeft = new("{", 20);
+
         /// <summary> Right Brace "}" </summary>
         public static readonly InkOperator BraceRight = new("}", 20);
+
         /// <summary> Semicolon ";" </summary>
         public static readonly InkOperator Semicolon = new(";", 20);
+
         /// <summary> Colon ":" (don't support , it's reserved) </summary>
         public static readonly InkOperator Colon = new(":", -1);
+
         /// <summary> Question Mark "?" (don't support , it's reserved) </summary>
         public static readonly InkOperator QuestionMark = new("?", -1);
+
         /// <summary> Verbatim String Prefix "@\"" (don't support , it's reserved) </summary>
         public static readonly InkOperator At = new("@\"", -1);
+
         /// <summary> Interpolated String Prefix "$\"" (don't support , it's reserved) </summary>
         public static readonly InkOperator Dollar = new("$\"", -1);
+
         /// <summary> Preprocessor Directive "#" (don't support , it's reserved) </summary>
         public static readonly InkOperator Hash = new("#", -1);
 
 
         /// <summary> Keyword "if" - Conditional Statement </summary>
         public static readonly InkOperator KeyIf = new("if", 20);
+
         /// <summary> Keyword "var" - Variable Declaration </summary>
         public static readonly InkOperator KeyVar = new("var", 20);
+
         /// <summary> Keyword "else" - Alternative Conditional Branch </summary>
         public static readonly InkOperator KeyElse = new("else", 20);
+
         /// <summary> Keyword "return" - Return Statement </summary>
         public static readonly InkOperator KeyReturn = new("return", 20);
+
         /// <summary> Keyword "switch" - Switch Statement (don't support , it's reserved) </summary>
         public static readonly InkOperator KeySwitch = new("switch", 20);
+
         /// <summary> Keyword "while" - While Loop (don't support , it's reserved) </summary>
         public static readonly InkOperator KeyWhile = new("while", 20);
+
         /// <summary> Keyword "for" - For Loop (don't support , it's reserved) </summary>
         public static readonly InkOperator KeyFor = new("for", 20);
+
         /// <summary> Keyword "foreach" - Foreach Loop (don't support , it's reserved) </summary>
         public static readonly InkOperator KeyForeach = new("foreach", 20);
+
         /// <summary> Keyword "in" - Collection Iterator (don't support , it's reserved) </summary>
         public static readonly InkOperator KeyIn = new("in", 20);
+
         /// <summary> Keyword "break" - Break Statement (don't support , it's reserved) </summary>
         public static readonly InkOperator KeyBreak = new("break", 20);
+
         /// <summary> Keyword "continue" - Continue Statement (don't support , it's reserved) </summary>
         public static readonly InkOperator KeyContinue = new("continue", 20);
+
         /// <summary> Empty Placeholder Operator with Maximum Priority </summary>
         public static readonly InkOperator Empty = new("😊", short.MaxValue);
 
@@ -1784,7 +1836,7 @@ namespace Arc.UniInk
         public static InkValue Get()
         {
             GetTime++;
-            return pool.Count > 0 ? pool.Dequeue() : new();
+            return pool.Count > 0 ? pool.Dequeue() : new InkValue();
         }
 
         /// <summary> Clears the InkValue pool, releasing all cached instances </summary>
@@ -1792,6 +1844,7 @@ namespace Arc.UniInk
 
         /// <summary> Counter for tracking how many times Get() has been called </summary>
         public static int GetTime;
+
         /// <summary> Counter for tracking how many times Release() has been called </summary>
         public static int ReleaseTime;
 
@@ -1920,16 +1973,22 @@ namespace Arc.UniInk
 
         /// <summary> Integer value storage </summary>
         public int ValueInt;
+
         /// <summary> Boolean value storage </summary>
         public bool ValueBool;
+
         /// <summary> Char value storage </summary>
         public char ValueChar;
+
         /// <summary> Float value storage </summary>
         public float ValueFloat;
+
         /// <summary> Double value storage </summary>
         public double ValueDouble;
+
         /// <summary> Object reference storage </summary>
         public object ValueObject;
+
         /// <summary> String value computed from Value_Meta </summary>
         public string ValueString => string.Concat(ValueMeta);
 
@@ -1948,13 +2007,16 @@ namespace Arc.UniInk
 
         /// <summary> Indicates if this value is a setter </summary>
         public bool IsIsSetter;
+
         /// <summary> Indicates if this value is a getter </summary>
         public bool IsGetter;
+
         /// <summary> Indicates if this value is a return value </summary>
         public bool IsReturner;
 
         /// <summary> Setter action for this value </summary>
         public Action<InkValue> Setter;
+
         /// <summary> Getter action for this value </summary>
         public Action<InkValue> Getter;
 
@@ -2456,16 +2518,19 @@ namespace Arc.UniInk
         /// <param name="right">Right operand</param>
         /// <returns>True if left does not equal right</returns>
         public static InkValue operator !=(InkValue left, InkValue right) => (left == right).Negate();
+
         /// <summary> Greater than or equal operator overload for InkValue </summary>
         /// <param name="left">Left operand</param>
         /// <param name="right">Right operand</param>
         /// <returns>True if left is greater than or equal to right</returns>
         public static InkValue operator >=(InkValue left, InkValue right) => (left < right).Negate();
+
         /// <summary> Less than or equal operator overload for InkValue </summary>
         /// <param name="left">Left operand</param>
         /// <param name="right">Right operand</param>
         /// <returns>True if left is less than or equal to right</returns>
         public static InkValue operator <=(InkValue left, InkValue right) => (right > left).Negate();
+
         /// <summary> Logical NOT operator overload for InkValue </summary>
         /// <param name="left">The operand to negate</param>
         /// <returns>Negated boolean value</returns>
@@ -2476,22 +2541,27 @@ namespace Arc.UniInk
         /// <param name="st">The InkValue to convert</param>
         /// <returns>The integer value</returns>
         public static implicit operator int(InkValue st) => st.ValueInt;
+
         /// <summary> Implicit conversion from InkValue to float </summary>
         /// <param name="st">The InkValue to convert</param>
         /// <returns>The float value</returns>
         public static implicit operator float(InkValue st) => st.ValueFloat;
+
         /// <summary> Implicit conversion from InkValue to double </summary>
         /// <param name="st">The InkValue to convert</param>
         /// <returns>The double value</returns>
         public static implicit operator double(InkValue st) => st.ValueDouble;
+
         /// <summary> Implicit conversion from InkValue to bool </summary>
         /// <param name="st">The InkValue to convert</param>
         /// <returns>The boolean value</returns>
         public static implicit operator bool(InkValue st) => st.ValueBool;
+
         /// <summary> Implicit conversion from InkValue to char </summary>
         /// <param name="st">The InkValue to convert</param>
         /// <returns>The character value</returns>
         public static implicit operator char(InkValue st) => st.ValueChar;
+
         /// <summary> Implicit conversion from InkValue to string </summary>
         /// <param name="st">The InkValue to convert</param>
         /// <returns>The string value</returns>
@@ -2517,8 +2587,10 @@ namespace Arc.UniInk
     {
         /// <summary> Object pool for InkSyntaxList instances to reduce allocations </summary>
         public static readonly Queue<InkSyntaxList> Pool = new(UniInk.INK_SYNTAX_POOL_CAPACITY);
+
         /// <summary> Cache for lambda expressions </summary>
         public static readonly List<InkSyntaxList> LambdaCache = new(UniInk.INK_SYNTAX_POOL_CAPACITY);
+
         /// <summary> Gets an InkSyntaxList instance from the pool or creates a new one </summary>
         /// <returns>An InkSyntaxList instance ready for use</returns>
         public static InkSyntaxList Get() => Pool.Count > 0 ? Pool.Dequeue() : new();
@@ -2596,8 +2668,10 @@ namespace Arc.UniInk
 
         /// <summary> The list of objects </summary>
         public readonly List<object> ObjectList = new(UniInk.EXPRESS_ELEMENT_MAX_LEN);
+
         /// <summary> The cast other objects </summary>
         public readonly List<object> CastOther = new(UniInk.EXPRESS_ELEMENT_MAX_LEN);
+
         /// <summary> The index dirty flags </summary>
         public readonly List<bool> IndexDirty = new(UniInk.EXPRESS_ELEMENT_MAX_LEN);
 
